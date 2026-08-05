@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { KNOWLEDGE_DIRECTORIES, parseCsv, previewKnowledgeCsv, previewMemberOrdersCsv, previewCrmVerificationCsv, previewShopOrdersCsv, previewVoluntaryDirectoryCsv } = require('../src/imports');
+const { previewPaymentClueCsv } = require('../src/payment-clue-import');
 
 test('CSV parser supports quoted commas and escaped quotes', () => {
   const parsed = parseCsv('title,summary\n"报告,第一期","含""引号"""\n');
@@ -63,10 +64,10 @@ test('distributed CSV templates are valid and contain no real personal data', ()
   assert.equal(new Set(knowledge.results.map(x => x.normalized.source_directory)).size, 10);
   assert.equal(orders.results.length, 0);
   assert.equal(orders.headers.includes('phone'), true);
-  const shop = previewShopOrdersCsv(fs.readFileSync(path.join(root, 'templates', 'wechat-shop-order-evidence.csv'), 'utf8'));
+  const shop = previewPaymentClueCsv(fs.readFileSync(path.join(root, 'templates', 'wechat-shop-order-evidence.csv'), 'utf8'),{source:'wechat_shop_order'});
   const directory = previewVoluntaryDirectoryCsv(fs.readFileSync(path.join(root, 'templates', 'voluntary-directory-import.csv'), 'utf8'));
   const crm = previewCrmVerificationCsv(fs.readFileSync(path.join(root, 'templates', 'internal-crm-verification.csv'), 'utf8'));
-  assert.equal(shop.results.length, 0); assert.equal(directory.results.length, 0); assert.equal(crm.results.length, 0);
+  assert.equal(shop.counts.totalRows, 0); assert.deepEqual(shop.recognizedFields,['收件人姓名','订单发货时间','收件人手机号','商品价格']); assert.equal(directory.results.length, 0); assert.equal(crm.results.length, 0);
 });
 
 test('shop orders are only payment evidence candidates and sensitive payment fields are not echoed', () => {

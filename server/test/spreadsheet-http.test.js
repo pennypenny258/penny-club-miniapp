@@ -41,20 +41,25 @@ async function xlsxPayload(headers, row) {
   return { format: 'xlsx', dataBase64: bytes.toString('base64') };
 }
 
-test('payment XLSX preview reports safe workbook metadata and never persists or activates membership', async () => {
-  const headers = ['order_placed_at','order_status','recipient_phone','actual_paid_cents','collected_cents','payment_at','product_name','refund_cents','source_batch'];
-  const row = ['2026-07-01','paid',['1','38','0000','8000'].join(''),'10000','10000','2026-07-01','匿名产品','0','匿名批次'];
+test('payment XLSX preview accepts realistic shop columns, ignores extras and returns aggregate metadata only', async () => {
+  const headers = ['订单编号','收件人姓名','收件人手机','订单发货时间','商品实际价格(单件)','商品实际价格(总共)','买家留言','收货地址','退款状态'];
+  const row = ['匿名订单号','匿名收件人',['1','38','0000','8000'].join(''),'2026-07-01','1999','1999','匿名备注','匿名地址','未退款'];
   const payload = await xlsxPayload(headers, row);
-  payload.paymentSource = 'wechat_merchant_receipt';
+  payload.paymentSource = 'wechat_shop_order';
+  payload.priceRoleRules = { a1:'1999',a2:'2999' };
   const response = await call('/api/admin/imports/wechat-shop-orders/preview', payload);
   assert.equal(response.status, 200);
   assert.equal(response.payload.persisted, false);
-  assert.equal(response.payload.paymentSource, 'wechat_merchant_receipt');
+  assert.equal(response.payload.paymentSource, 'wechat_shop_order');
   assert.equal(response.payload.spreadsheet.sheetName, '匿名付款样本');
   assert.equal(response.payload.spreadsheet.needsMapping, false);
+  assert.equal(response.payload.summary.a1CandidateRows,1);
+  assert.equal(response.payload.summary.needsManualRows,0);
+  assert.deepEqual(response.payload.items,[]);
   const serialized = JSON.stringify(response.payload);
-  for (const raw of [row[2], row[3], row[4], row[5], row[6]]) assert.equal(serialized.includes(raw), false);
-  assert.equal(response.payload.items[0].data.determinesMembershipAlone, false);
+  for (const raw of row) assert.equal(serialized.includes(raw), false,raw);
+  assert.equal(response.payload.safeguards.determinesMembershipAlone, false);
+  assert.equal(response.payload.safeguards.publicDirectoryMutationAllowed, false);
 });
 
 test('all five Excel template endpoints return readable header-only XLSX files', async () => {

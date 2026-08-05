@@ -63,7 +63,7 @@
 | POST | `/api/admin/imports/internal-crm/preview` | 内部 CRM 模板预检；只创建私有待复核批次，不改变最终会籍 |
 | PATCH | `/api/admin/import-items/:id` | 修正允许字段并重新校验 |
 | POST | `/api/admin/import-items/:id/publish` | 将合格资料上架相应知识库分类 |
-| POST | `/api/admin/imports/wechat-shop-orders/preview` | 三类付款记录 CSV 预检；用 `paymentSource` 标记小店/商户号/手动转账，敏感值不回显 |
+| POST | `/api/admin/imports/wechat-shop-orders/preview` | 三类付款 `.xlsx` / CSV 汇总预检；按来源只识别四类最简线索，忽略无关列且不返回逐行敏感值 |
 | POST | `/api/admin/imports/voluntary-directory/preview` | 自愿公开名册独立预检 |
 | POST | `/api/admin/import-items/:id/submit-directory-review` | 在明确同意后提交公开名册人工审核 |
 | PATCH | `/api/admin/directory-profiles/:id/review` | 独立审核公开名册；不影响 CRM 会籍 |

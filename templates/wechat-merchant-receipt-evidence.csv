@@ -1,1 +1,1 @@
-order_placed_at,order_status,recipient_phone,actual_paid_cents,collected_cents,payment_at,product_name,refund_cents,source_batch
+付款人姓名,支付时间,付款人手机号,支付金额

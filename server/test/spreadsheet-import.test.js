@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 const ExcelJS = require('exceljs');
 const { parseSpreadsheetUpload, MAX_DATA_ROWS } = require('../src/spreadsheet-import');
 const { previewCrmVerificationCsv, previewShopOrdersCsv, previewVoluntaryDirectoryCsv } = require('../src/imports');
+const { previewPaymentClueCsv } = require('../src/payment-clue-import');
 
 async function syntheticWorkbook(headers, rows, customize) {
   const workbook = new ExcelJS.Workbook();
@@ -36,14 +37,16 @@ test('synthetic XLSX uses the first visible non-empty sheet and matches CSV paym
 });
 
 test('a regular 5,000-row payment export is accepted without manual splitting', async () => {
-  const headers = ['order_placed_at','order_status','recipient_phone','actual_paid_cents','collected_cents','payment_at','product_name','refund_cents','source_batch'];
+  const headers = ['订单编号','收件人姓名','收件人手机','订单发货时间','商品实际价格(总共)','订单状态','收货地址'];
   const phone = ['1','38','0000','8000'].join('');
-  const rows = Array.from({ length: 5000 }, (_, index) => ['2026-07-01','paid',phone,'10000','10000','2026-07-01','匿名会籍产品','0',`匿名批次-${index}`]);
+  const rows = Array.from({ length: 5000 }, (_, index) => [`匿名订单-${index}`,'匿名收件人',phone,'2026-07-01','1999','已完成','匿名地址']);
   const parsed = await parseSpreadsheetUpload(upload(await syntheticWorkbook(headers, rows)));
-  const preview = previewShopOrdersCsv(parsed.csv);
+  const preview = previewPaymentClueCsv(parsed.csv,{source:'wechat_shop_order',priceRoleRules:{a1:'1999',a2:'2999'}});
   assert.equal(parsed.meta.rowCount, 5000);
-  assert.equal(preview.results.length, 5000);
-  assert.equal(preview.results.every(result => result.valid && result.normalized.determinesMembershipAlone === false), true);
+  assert.equal(preview.counts.totalRows, 5000);
+  assert.equal(preview.counts.a1CandidateRows, 5000);
+  assert.equal(preview.counts.needsManualRows, 0);
+  assert.equal(preview.ignoredColumnCount, 3);
 });
 
 test('CRM and voluntary directory XLSX use the same allowlists and human review boundaries', async () => {
