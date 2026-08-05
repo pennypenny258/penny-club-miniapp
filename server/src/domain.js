@@ -6,14 +6,21 @@ function isMembershipActive(member, now = new Date()) {
 
 function evaluateMembership(member, now = new Date()) {
   const reasons = [];
+  const followUpReasons = [];
+  const inGroup = member?.groupStatus === 'in_group';
+  const outsideWindow = !member || !(new Date(member.startsAt) <= now && now < new Date(member.endsAt));
+  const renewalHold = Boolean(member && member.status === 'expired' && inGroup && outsideWindow && member.renewalNoticeStatus === 'not_notified');
   if (!member || member.userStatus !== 'active') reasons.push('USER_DISABLED');
-  if (!member || member.status !== 'active') reasons.push('MEMBERSHIP_STATUS_NOT_ACTIVE');
-  if (!member || !(new Date(member.startsAt) <= now && now < new Date(member.endsAt))) reasons.push('OUTSIDE_MEMBERSHIP_WINDOW');
-  if (!member || member.crmVerificationStatus !== 'verified') reasons.push('CRM_NOT_VERIFIED');
-  if (!member || member.latestPaymentEvidenceStatus !== 'verified') reasons.push('NO_VERIFIED_RECENT_PAYMENT');
-  if (!member || !member.latestValidPaymentAt || new Date(member.latestValidPaymentAt) > now) reasons.push('VALID_PAYMENT_TIMESTAMP_MISSING_OR_FUTURE');
-  if (!member || member.groupStatus !== 'in_group') reasons.push('NOT_CURRENTLY_IN_GROUP');
-  return { active: reasons.length === 0, reasons };
+  if (!member || (member.status !== 'active' && !renewalHold)) reasons.push('MEMBERSHIP_STATUS_NOT_ACTIVE');
+  if (outsideWindow && !renewalHold) reasons.push('OUTSIDE_MEMBERSHIP_WINDOW');
+  if (!inGroup) reasons.push('NOT_CURRENTLY_IN_GROUP');
+  if (!member || member.crmVerificationStatus !== 'verified') followUpReasons.push('CRM_NEEDS_COMPLETION');
+  if (!member || member.latestPaymentEvidenceStatus !== 'verified') followUpReasons.push('PAYMENT_CLUE_NEEDS_REVIEW');
+  if (!member || !member.latestValidPaymentAt || new Date(member.latestValidPaymentAt) > now) followUpReasons.push('PAYMENT_TIME_NEEDS_REVIEW');
+  if (renewalHold) followUpReasons.push('RENEWAL_FOLLOW_UP_PENDING');
+  const active = reasons.length === 0;
+  const operationalStatus = active ? (renewalHold ? 'renewal_follow_up_temporarily_active' : followUpReasons.length ? 'active_with_follow_up' : 'active') : 'inactive_or_needs_group_review';
+  return { active, reasons, followUpReasons, operationalStatus, renewalHold };
 }
 
 function requireActiveMember(member, now) {

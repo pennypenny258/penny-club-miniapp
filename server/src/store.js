@@ -6,14 +6,15 @@ const now = Date.now();
 const days = n => new Date(now + n * 86400000).toISOString();
 
 const users = {
-  active: { id:'u-active', nickname:'演示会员·青岚', userStatus:'active', status:'active', startsAt:days(-40), endsAt:days(325), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-40) },
-  peer: { id:'u-peer', nickname:'演示会员·远汀', userStatus:'active', status:'active', startsAt:days(-150), endsAt:days(215), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-150) },
-  near_expiry: { id:'u-near-expiry', nickname:'演示会员·星野', userStatus:'active', status:'active', startsAt:days(-350), endsAt:days(15), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-350) },
+  active: { id:'u-active', nickname:'演示会员·青岚', userStatus:'active', status:'active', startsAt:days(-40), endsAt:days(325), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-40),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'年费会员',groupLabelExpiry:days(325) },
+  peer: { id:'u-peer', nickname:'演示会员·远汀', userStatus:'active', status:'active', startsAt:days(-150), endsAt:days(215), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-150),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'续费已确认',groupLabelExpiry:days(215) },
+  near_expiry: { id:'u-near-expiry', nickname:'演示会员·星野', userStatus:'active', status:'active', startsAt:days(-350), endsAt:days(15), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-350),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'本月到期',groupLabelExpiry:days(15) },
   active_private: { id:'u-active-private', nickname:'演示会员·白榆', userStatus:'active', status:'active', startsAt:days(-90), endsAt:days(275), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-90) },
   expired: { id:'u-expired', nickname:'演示会员·旧页', userStatus:'active', status:'expired', startsAt:days(-520), endsAt:days(-155), groupStatus:'left', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-520) },
   guest: { id:'u-guest', nickname:'演示用户·待核验', userStatus:'active', status:'pending_verification', startsAt:days(-2), endsAt:days(2), groupStatus:'unknown', crmVerificationStatus:'needs_review', latestPaymentEvidenceStatus:'unverified' },
   frozen: { id:'u-frozen', nickname:'演示会员·冻结', userStatus:'suspended', status:'suspended', startsAt:days(-100), endsAt:days(265), groupStatus:'removed', crmVerificationStatus:'suspended', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-100) },
-  refund_review: { id:'u-refund-review', nickname:'演示会员·退款复核', userStatus:'active', status:'pending_verification', startsAt:days(-20), endsAt:days(345), groupStatus:'in_group', crmVerificationStatus:'needs_review', latestPaymentEvidenceStatus:'needs_review', latestValidPaymentAt:days(-20) }
+  refund_review: { id:'u-refund-review', nickname:'演示会员·退款复核', userStatus:'active', status:'pending_verification', startsAt:days(-20), endsAt:days(345), groupStatus:'in_group', crmVerificationStatus:'needs_review', latestPaymentEvidenceStatus:'needs_review', latestValidPaymentAt:days(-20),matchStatus:'conflict',renewalNoticeStatus:'not_notified',groupLabel:'待核对',groupLabelExpiry:null },
+  renewal_followup: { id:'u-renewal-followup', nickname:'演示会员·南枝', userStatus:'active', status:'expired', startsAt:days(-390), endsAt:days(-25), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'needs_review', latestValidPaymentAt:days(-390),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'已到期',groupLabelExpiry:days(-25) }
 };
 
 const crmVerifications = Object.values(users).map((user, index) => ({
@@ -52,14 +53,19 @@ const employmentVerifications = [
 ];
 
 const paymentEvidence = [
-  {id:'pay-demo-1',userId:'u-active',source:'manual_payment',evidenceStatus:'verified',occurredAt:days(-40),amountBand:'standard',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-payment-reviewed'},
-  {id:'pay-demo-2',userId:'u-peer',source:'second_payment',evidenceStatus:'verified',occurredAt:days(-150),amountBand:'standard',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-manual-entry'},
-  {id:'pay-demo-3',userId:'u-near-expiry',source:'shop_evidence',evidenceStatus:'verified',occurredAt:days(-350),amountBand:'legacy_offer',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-payment-reviewed'},
+  {id:'pay-demo-1',userId:'u-active',source:'manual_transfer',evidenceStatus:'verified',occurredAt:days(-40),amountBand:'standard',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-payment-reviewed'},
+  {id:'pay-demo-2',userId:'u-peer',source:'wechat_merchant_receipt',evidenceStatus:'verified',occurredAt:days(-150),amountBand:'standard',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-manual-entry'},
+  {id:'pay-demo-3',userId:'u-near-expiry',source:'wechat_shop_order',evidenceStatus:'verified',occurredAt:days(-350),amountBand:'legacy_offer',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-payment-reviewed'},
   {id:'pay-demo-4',userId:'u-refund-review',source:'shop_evidence',evidenceStatus:'needs_review',occurredAt:days(-20),amountBand:'standard',refundStatus:'partial',productRuleStatus:'manual_review',importBatchId:'batch-payment-errors'},
   {id:'pay-demo-5',userId:null,source:'shop_evidence',evidenceStatus:'excluded',occurredAt:days(-8),amountBand:'unknown',refundStatus:'full',productRuleStatus:'excluded_refund',importBatchId:'batch-payment-errors'},
   {id:'pay-demo-6',userId:null,source:'shop_evidence',evidenceStatus:'excluded',occurredAt:days(-6),amountBand:'unknown',refundStatus:'none',productRuleStatus:'excluded_unpaid',importBatchId:'batch-payment-errors'}
 ];
-const membershipDecisions = Object.values(users).map((user,index) => ({id:`decision-demo-${index+1}`,userId:user.id,crmStatus:user.crmVerificationStatus,paymentStatus:user.latestPaymentEvidenceStatus,expiryStatus:new Date(user.endsAt)>new Date()?'current':'expired',groupStatus:user.groupStatus,finalStatus:['active','peer','near_expiry','active_private'].includes(Object.keys(users)[index])?'active':'needs_review',decidedBy:'rule_and_human_review',decidedAt:days(-index)}));
+const groupLabelOcrResults = [
+  {id:'ocr-demo-1',candidateUserId:'u-active',alias:'青岚（匿名）',labelSuggestion:'年费会员',expirySuggestion:days(325),matchStatus:'matched',confidenceBand:'high',reviewStatus:'pending_human_confirmation'},
+  {id:'ocr-demo-2',candidateUserId:'u-renewal-followup',alias:'南枝（匿名）',labelSuggestion:'已到期',expirySuggestion:days(-25),matchStatus:'matched',confidenceBand:'medium',reviewStatus:'pending_human_confirmation'},
+  {id:'ocr-demo-3',candidateUserId:null,alias:'未匹配成员甲',labelSuggestion:'续费待核对',expirySuggestion:null,matchStatus:'unmatched',confidenceBand:'low',reviewStatus:'pending_human_confirmation'}
+];
+const membershipDecisions = Object.values(users).map((user,index) => ({id:`decision-demo-${index+1}`,userId:user.id,crmStatus:user.crmVerificationStatus,paymentStatus:user.latestPaymentEvidenceStatus,expiryStatus:new Date(user.endsAt)>new Date()?'current':'expired',groupStatus:user.groupStatus,finalStatus:user.groupStatus==='in_group'&&(user.status==='active'||(user.status==='expired'&&user.renewalNoticeStatus==='not_notified'))?'active':'needs_review',operationalStatus:user.id==='u-renewal-followup'?'renewal_follow_up_temporarily_active':undefined,decidedBy:'rule_and_human_review',decidedAt:days(-index)}));
 
 const resourceRows = [
   ['usage_guide','会员平台使用说明','会籍核验、内容访问、活动报名与对接规则。',['新手指引','规则'],'飞书/使用说明','published','completed'],
@@ -205,7 +211,7 @@ const notificationJobs = [
   {id:'n-demo-6',activityId:'a-online-open',trigger:'activity_changed',channel:'wechat_subscription',status:'template_pending'}
 ];
 const requirementCoverage = [
-  {area:'会员准入',status:'prototype',placement:'CRM / 付款证据 / 到期日 / 群状态综合判定'},
+  {area:'会员准入',status:'prototype',placement:'会员 CRM 汇总；大群状态为最终门禁，标签到期可进入续费跟进'},
   {area:'公开名册',status:'prototype',placement:'独立同意、人工审核、申请对接'},
   {area:'知识库十类迁移',status:'prototype',placement:'知识库与业务模块路由'},
   {area:'招聘融资并购',status:'prototype',placement:'AI 初筛 / 人工终审 / Agent 分发'},
@@ -237,4 +243,4 @@ function audit(actor, action, subjectType, subjectId, summary = {}) {
   audits.unshift({id:`log-${Date.now()}-${audits.length}`,actor,action,subjectType,subjectId,summary,createdAt:new Date().toISOString()});
 }
 
-module.exports = {users,crmVerifications,directoryProfiles,publicProfileUpdates,employmentVerifications,paymentEvidence,membershipDecisions,resources,activities,demands,registrations,applications,memberConnections,agentMatchRequests,memberFavorites,internalMemberProfiles,orders,renewalOffers,aiReviews,importBatches,importItems,feishuMigrationTasks,feishuMigrationItems,feishuOwnedContents,localImportBatches,localImportItems,notificationJobs,requirementCoverage,operationsReadiness,audits,audit};
+module.exports = {users,crmVerifications,directoryProfiles,publicProfileUpdates,employmentVerifications,paymentEvidence,groupLabelOcrResults,membershipDecisions,resources,activities,demands,registrations,applications,memberConnections,agentMatchRequests,memberFavorites,internalMemberProfiles,orders,renewalOffers,aiReviews,importBatches,importItems,feishuMigrationTasks,feishuMigrationItems,feishuOwnedContents,localImportBatches,localImportItems,notificationJobs,requirementCoverage,operationsReadiness,audits,audit};
