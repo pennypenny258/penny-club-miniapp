@@ -45,7 +45,7 @@
 | POST | `/api/admin/payment-evidence/manual` | 受控人工补录付款证据；不接受手机号、订单号或付款凭据 |
 | PATCH | `/api/admin/payment-evidence/:id/review` | 复核有效/退款/排除；不单独改变会籍 |
 | PATCH | `/api/admin/renewal-offers/:id` | 维护标准价、专属价、优惠理由和适用规则 |
-| GET | `/api/admin/import-templates/*.csv` | 下载资料/会员订单 CSV 模板 |
+| GET | `/api/admin/import-templates/*.csv` | 下载资料、微信小店、商户号小票和手动转账 CSV 模板 |
 | GET | `/api/admin/local-imports` | 电脑导入能力、批次和安全审核元数据；不返回文件名、路径或存储键 |
 | POST | `/api/admin/local-imports/upload` | 多文件白名单上传并私有保存；全部默认待审核 |
 | POST | `/api/admin/local-imports/metadata` | 创建无文件受控资料条目，下载固定关闭并进入待补附件队列 |
@@ -63,7 +63,7 @@
 | POST | `/api/admin/imports/internal-crm/preview` | 内部 CRM 模板预检；只创建私有待复核批次，不改变最终会籍 |
 | PATCH | `/api/admin/import-items/:id` | 修正允许字段并重新校验 |
 | POST | `/api/admin/import-items/:id/publish` | 将合格资料上架相应知识库分类 |
-| POST | `/api/admin/imports/wechat-shop-orders/preview` | 小店订单付款证据预检；敏感值不回显 |
+| POST | `/api/admin/imports/wechat-shop-orders/preview` | 三类付款记录 CSV 预检；用 `paymentSource` 标记小店/商户号/手动转账，敏感值不回显 |
 | POST | `/api/admin/imports/voluntary-directory/preview` | 自愿公开名册独立预检 |
 | POST | `/api/admin/import-items/:id/submit-directory-review` | 在明确同意后提交公开名册人工审核 |
 | PATCH | `/api/admin/directory-profiles/:id/review` | 独立审核公开名册；不影响 CRM 会籍 |

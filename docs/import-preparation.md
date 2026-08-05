@@ -7,6 +7,8 @@
 - `templates/feishu-knowledge-import.csv`：飞书十类目录迁移清单。
 - `templates/historical-member-orders.csv`：非小店历史付款/会籍人工核验空白模板。
 - `templates/wechat-shop-order-evidence.csv`：微信小店付款证据空白模板。
+- `templates/wechat-merchant-receipt-evidence.csv`：微信经营账户/商户号支付小票空白模板。
+- `templates/manual-transfer-evidence.csv`：个人手动转账维护空白模板。
 - `templates/voluntary-directory-import.csv`：自愿公开名册空白模板。
 - `templates/internal-crm-verification.csv`：内部 CRM 规范化核验空白模板。
 
@@ -70,9 +72,13 @@
 - `GET /api/admin/import-templates/knowledge.csv`
 - `GET /api/admin/import-templates/member-orders.csv`（仅空白参考，自动预检已停用）
 - `GET /api/admin/import-templates/wechat-shop-orders.csv`
+- `GET /api/admin/import-templates/wechat-merchant-receipts.csv`
+- `GET /api/admin/import-templates/manual-transfers.csv`
 - `GET /api/admin/import-templates/voluntary-directory.csv`
 - `POST /api/admin/imports/knowledge/preview`
 - `POST /api/admin/imports/wechat-shop-orders/preview`
+
+三类付款记录在后台 **会员 → 会员 CRM 库（首选）→ 导入付款记录** 中选择来源并预检。当前不引入 XLSX 解析依赖；运营者需先用 Excel 另存为 UTF-8 CSV。请求以 `paymentSource` 区分 `wechat_shop_order / wechat_merchant_receipt / manual_transfer`，三者都只生成匹配线索。
 - `POST /api/admin/imports/voluntary-directory/preview`
 - `PATCH /api/admin/import-items/:id`
 - `POST /api/admin/import-items/:id/publish`
