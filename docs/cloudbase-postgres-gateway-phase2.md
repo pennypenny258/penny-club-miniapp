@@ -1,6 +1,6 @@
 # CloudBase PostgreSQL 后端网关：第二阶段安全准备
 
-本阶段只完成离线契约、配置预检、两张只读视图和模拟测试。它**没有连接或写入 CloudBase**，也没有把任何业务 API 切到真实数据。当前 `cloudbase_staging_demo` 必须继续匿名演示；任何 CloudBase PG 变量或凭据都会被 staging 预检拒绝。
+原阶段只完成离线契约、配置预检、两张目录只读视图和模拟测试。后续微信身份准备新增了第三张最小会籍投影视图（见 `wechat-identity-membership-gate.md`），仍**没有连接或写入 CloudBase**，也没有把任何业务 API 切到真实数据。当前 `cloudbase_staging_demo` 必须继续匿名演示。
 
 ## 官方能力与本项目边界
 
@@ -18,7 +18,7 @@ CloudBase PostgreSQL Data API 基于 PostgREST，请求格式为 `https://{envId
 
 - `DATA_REPOSITORY=cloudbase_gateway` 必须被显式选择；缺任一变量即拒绝启动，不会降级到 `memory_demo`。
 - 仅允许上海国内网关域名，由经过格式验证的环境 ID 派生，不接受任意 URL，避免把服务端凭据发送到错误主机。
-- 传输层只允许 `GET` 两个固定视图：`venture_resources_published`、`venture_activities_public`；调用方不能传任意表名、路径或 SQL。
+- 传输层只允许 `GET` 固定白名单视图：两个目录视图，以及待 004 完成后供 Node 查询的最小会籍投影视图；调用方不能传任意表名、路径或 SQL。
 - 固定字段白名单、最多 100 条、超时、最大响应体、禁止重定向；错误不回显网关响应体或凭据。
 - `003_cloudbase_gateway_read_views.sql` 只暴露已发布且版权审核通过的资料元数据，以及不含会议链接的活动元数据。它撤销 `PUBLIC`、`anon`、`authenticated` 权限，只给 `service_role` 视图 SELECT。
 - `venture_private` 仍不暴露；CRM、付款、会籍判定、注册、私有对象键、来源引用、会议链接和审计日志均不在视图中。
@@ -32,7 +32,7 @@ CloudBase PostgreSQL Data API 基于 PostgREST，请求格式为 `https://{envId
 - `DATA_REPOSITORY=cloudbase_gateway`
 - `CLOUDBASE_PG_ENV_ID`：环境标识；只在云托管服务端设置。
 - `CLOUDBASE_PG_REGION=ap-shanghai`
-- `CLOUDBASE_PG_MIGRATIONS_APPLIED=003_cloudbase_gateway_read_views`
+- `CLOUDBASE_PG_MIGRATIONS_APPLIED=004_wechat_identity_entitlement`（004 尚未人工执行前不得填写或启用真实网关）
 - `CLOUDBASE_PG_CREDENTIAL_PURPOSE=server_runtime`
 - `CLOUDBASE_PG_SERVER_API_KEY`：敏感的后端 API Key。
 - `CLOUDBASE_PG_TIMEOUT_MS`、`CLOUDBASE_PG_MAX_RESPONSE_BYTES`：出站限制。

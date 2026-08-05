@@ -1,0 +1,14 @@
+{
+  "purpose": "future_wechat_identity_entitlement_preparation",
+  "prerequisite": "empty_cloudbase_pg_console_bootstrap_completed_and_verified",
+  "executionOrder": [
+    "server/db/migrations/004_wechat_identity_entitlement.sql",
+    "server/db/cloudbase-pg-console/140_record_wechat_identity_version.sql",
+    "server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql"
+  ],
+  "checksums": {
+    "server/db/migrations/004_wechat_identity_entitlement.sql": "89651f91578a44d1f5fd78e8039c7ded587bbfae3a18764ee4bb3b2090d5a621",
+    "server/db/cloudbase-pg-console/140_record_wechat_identity_version.sql": "ae21da7eccee892db3a0912cf0f5553043dd9e6bfdaff3a83ae3482f4ddeb573",
+    "server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql": "30e2497045e1772f28065016ec2d7de4a621aa37aff2fb109191d8cc3b279653"
+  }
+}

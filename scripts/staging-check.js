@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { parsePort, validateDeploymentEnvironment } = require('../server/src/deployment');
+const { resolveWechatIdentityConfig } = require('../server/src/auth/wechat-config');
 
 const root = path.join(__dirname, '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
@@ -33,6 +34,8 @@ try {
     DEPLOYMENT_PROFILE: 'cloudbase_staging_demo',
     DEMO_DATA_ONLY: 'true'
   });
+  const identity=resolveWechatIdentityConfig({NODE_ENV:'staging',WECHAT_LOGIN_ENABLED:'false'});
+  if(identity.enabled)issues.push('CloudBase 匿名测试环境不得启用真实微信身份');
 } catch (error) {
   issues.push(error.message);
 }

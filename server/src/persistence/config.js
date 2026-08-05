@@ -3,7 +3,7 @@
 const PRIVATE_SCHEMA = 'venture_private';
 const APPLICATION_ROLE = 'venture_club_app';
 const REQUIRED_MIGRATION = '002_security';
-const CLOUDBASE_GATEWAY_REQUIRED_MIGRATION = '003_cloudbase_gateway_read_views';
+const CLOUDBASE_GATEWAY_REQUIRED_MIGRATION = '004_wechat_identity_entitlement';
 const CLOUDBASE_GATEWAY_REGION = 'ap-shanghai';
 
 function hasValue(value){return Boolean(String(value||'').trim())}
