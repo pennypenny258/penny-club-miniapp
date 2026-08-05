@@ -8,11 +8,12 @@ const CLOUDBASE_GATEWAY_REGION = 'ap-shanghai';
 
 function hasValue(value){return Boolean(String(value||'').trim())}
 function integer(value,fallback,min,max,name){const parsed=value===undefined?fallback:Number(value);if(!Number.isInteger(parsed)||parsed<min||parsed>max)throw new Error(`${name} 必须是 ${min}–${max} 的整数`);return parsed}
+function booleanFlag(value,fallback,name){if(value===undefined||value===null||value==='')return fallback;if(value==='true')return true;if(value==='false')return false;throw new Error(`${name} 只允许 true 或 false`)}
 
 function resolvePersistenceConfig(environment=process.env){
   const mode=String(environment.DATA_REPOSITORY||'memory_demo').trim();
   const databaseUrlPresent=hasValue(environment.DATABASE_URL);
-  const cloudbaseConfigPresent=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE'].some(key=>hasValue(environment[key]));
+  const cloudbaseConfigPresent=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE','CLOUDBASE_CATALOG_READS_ENABLED'].some(key=>hasValue(environment[key]));
   if(!['memory_demo','postgres','cloudbase_gateway'].includes(mode))throw new Error('DATA_REPOSITORY 只允许 memory_demo、postgres 或 cloudbase_gateway');
   if(mode==='memory_demo'){
     if(environment.NODE_ENV==='production')throw new Error('生产环境禁止使用 memory_demo 数据仓库');
@@ -54,7 +55,8 @@ function resolveCloudBaseGatewayConfig(environment){
   if(environment.CLOUDBASE_PG_CREDENTIAL_PURPOSE!=='server_runtime')throw new Error('CloudBase 网关运行时只允许 server_runtime 凭据用途');
   const timeoutMs=integer(environment.CLOUDBASE_PG_TIMEOUT_MS,5000,1000,15000,'CLOUDBASE_PG_TIMEOUT_MS');
   const maxResponseBytes=integer(environment.CLOUDBASE_PG_MAX_RESPONSE_BYTES,1048576,1024,5242880,'CLOUDBASE_PG_MAX_RESPONSE_BYTES');
-  return {mode:'cloudbase_gateway',enabled:true,envId,region:CLOUDBASE_GATEWAY_REGION,origin:`https://${envId}.api.tcloudbasegateway.com`,serverApiKey:String(environment.CLOUDBASE_PG_SERVER_API_KEY).trim(),timeoutMs,maxResponseBytes,safeSummary:{mode:'cloudbase_gateway',persistent:true,transport:'https_postgrest',serverOnly:true,allowlistedReadViews:true,credentialsExposed:false}};
+  const catalogReadsEnabled=booleanFlag(environment.CLOUDBASE_CATALOG_READS_ENABLED,false,'CLOUDBASE_CATALOG_READS_ENABLED');
+  return {mode:'cloudbase_gateway',enabled:true,runtimeEnvironment:'production',envId,region:CLOUDBASE_GATEWAY_REGION,origin:`https://${envId}.api.tcloudbasegateway.com`,serverApiKey:String(environment.CLOUDBASE_PG_SERVER_API_KEY).trim(),timeoutMs,maxResponseBytes,catalogReadsEnabled,safeSummary:{mode:'cloudbase_gateway',persistent:true,transport:'https_postgrest',serverOnly:true,allowlistedReadViews:true,catalogReadsEnabled,credentialsExposed:false}};
 }
 
 function assertRuntimeRepositoryReady(config){

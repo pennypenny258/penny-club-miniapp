@@ -58,5 +58,10 @@ test('CloudBase staging profile rejects local storage and real integrations', ()
     DEMO_DATA_ONLY: 'true',
     CLOUDBASE_PG_SERVER_API_KEY: 'fixture-only'
   }), /CLOUDBASE_PG_SERVER_API_KEY/);
+  assert.throws(() => validateDeploymentEnvironment({
+    DEPLOYMENT_PROFILE: 'cloudbase_staging_demo',
+    DEMO_DATA_ONLY: 'true',
+    MEMBER_IDENTITY_PROVIDER: 'external_verified_session'
+  }), /MEMBER_IDENTITY_PROVIDER/);
   assert.equal(validateDeploymentEnvironment({DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',DATA_REPOSITORY:'memory_demo'}).anonymousDemoOnly,true);
 });

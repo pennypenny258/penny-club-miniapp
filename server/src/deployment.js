@@ -25,6 +25,8 @@ function validateDeploymentEnvironment(environment = process.env) {
     'DATABASE_URL',
     'CLOUDBASE_PG_SERVER_API_KEY',
     'CLOUDBASE_PG_ENV_ID',
+    'CLOUDBASE_CATALOG_READS_ENABLED',
+    'MEMBER_IDENTITY_PROVIDER',
     'WECHAT_APP_SECRET',
     'PAYMENT_API_KEY'
   ].filter(key => String(environment[key] || '').trim());

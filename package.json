@@ -11,6 +11,7 @@
     "miniprogram:staging-check": "node scripts/miniprogram-staging-check.js",
     "db:preflight": "node scripts/db-preflight.js",
     "db:migrations:plan": "node scripts/db-migration-plan.js",
+    "db:cloudbase-bootstrap:check": "node scripts/cloudbase-pg-bootstrap-check.js",
     "release:check": "node scripts/release-check.js"
   },
   "engines": { "node": ">=18" }

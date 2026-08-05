@@ -21,6 +21,8 @@ if (process.env.NODE_ENV === 'production') {
   if (process.env.DEMO_DATA_ONLY === 'true') issues.push('生产发布仍限定为匿名演示数据模式');
   if (process.env.ADMIN_AUTH_MODE !== 'external_session') issues.push('生产后台未启用服务端会话/RBAC，禁止使用演示角色头');
   if (process.env.DATA_REPOSITORY === 'postgres' && !process.env.DATABASE_URL) issues.push('标准 PostgreSQL 生产数据库未配置');
+  if (process.env.DATA_REPOSITORY === 'cloudbase_gateway' && process.env.CLOUDBASE_CATALOG_READS_ENABLED !== 'true') issues.push('CloudBase 真实目录读取开关尚未启用');
+  if (process.env.DATA_REPOSITORY === 'cloudbase_gateway' && process.env.MEMBER_IDENTITY_PROVIDER !== 'external_verified_session') issues.push('CloudBase 真实目录读取尚未接入可验证的服务端会员身份映射');
   try{const database=resolvePersistenceConfig(process.env);assertRuntimeRepositoryReady(database)}catch(error){issues.push(`生产持久化未就绪：${error.message}`)}
   if (!process.env.PRIVATE_STORAGE_PROVIDER || process.env.PRIVATE_STORAGE_PROVIDER === 'local') issues.push('生产私有对象存储未配置');
   if (!process.env.FIELD_ENCRYPTION_KEY_REF) issues.push('敏感字段加密密钥引用未配置');

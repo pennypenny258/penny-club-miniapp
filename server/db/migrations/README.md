@@ -7,3 +7,4 @@
 - `001_core_domains` 创建服务端私有事实域；`002_security` 撤销 PUBLIC 权限、启用 RLS、仅向既有 `venture_club_app` 角色授权，并将审计日志设为追加写。
 - `003_cloudbase_gateway_read_views` 是前向迁移，只在 `public` 创建两张经过字段删减的只读视图；匿名和登录角色没有权限，CloudBase `service_role` 仅获得视图 SELECT。它不开放 CRM、付款、会员判定、报名、对象引用或审计事实。
 - 不要把 `venture_private` 加入 PostgREST 暴露列表。前端和小程序只能调用经过会籍门禁、RBAC 和字段白名单的 Node API；CloudBase 网关凭据只存在 Node 服务端。
+- CloudBase PG 不使用标准私网直连角色时，空库控制台执行顺序与 `002` 安全执行变体见 `server/db/cloudbase-pg-console/manifest.json`。canonical `001/002/003` 校验和必须保持不变。

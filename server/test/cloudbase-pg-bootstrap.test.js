@@ -1,0 +1,17 @@
+'use strict';
+const test=require('node:test');
+const assert=require('node:assert/strict');
+const crypto=require('node:crypto');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.join(__dirname,'..','..');
+const read=relative=>fs.readFileSync(path.join(root,relative),'utf8');
+const hash=text=>crypto.createHash('sha256').update(text).digest('hex');
+const manifest=JSON.parse(read('server/db/cloudbase-pg-console/manifest.json'));
+const strip=text=>text.replace(/--.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,'');
+
+test('canonical migrations 001/002/003 remain byte-for-byte immutable',()=>{for(const [file,expected] of Object.entries(manifest.immutableCanonicalChecksums))assert.equal(hash(read(file)),expected,file)});
+test('CloudBase console preflight and final verification are read only',()=>{for(const file of [manifest.executionOrder[0],manifest.executionOrder.at(-1)])assert.doesNotMatch(strip(read(file)),/\b(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|GRANT|REVOKE|TRUNCATE|DO|CALL|EXECUTE)\b/i,file)});
+test('CloudBase security variant denies all client access to private facts',()=>{const sql=strip(read('server/db/cloudbase-pg-console/002_security_cloudbase_gateway.sql'));assert.doesNotMatch(sql,/CREATE\s+ROLE/i);assert.doesNotMatch(sql,/GRANT[\s\S]{0,120}\b(anon|authenticated)\b/i);for(const role of ['PUBLIC','anon','authenticated'])assert.match(sql,new RegExp(`REVOKE ALL ON SCHEMA venture_private FROM ${role}`));assert.match(sql,/ENABLE ROW LEVEL SECURITY/);assert.match(sql,/audit_logs_append_only/)});
+test('migration recorder only writes migration metadata after required objects exist',()=>{const sql=strip(read('server/db/cloudbase-pg-console/040_record_versions.sql'));assert.match(sql,/Bootstrap objects are incomplete/);assert.match(sql,/Append-only audit trigger is missing/);assert.match(sql,/Existing migration checksum mismatch/);assert.match(sql,/INSERT INTO venture_private\.schema_migrations/);assert.doesNotMatch(sql,/INSERT INTO venture_private\.(resources|activities|users|payment_evidence|crm_verifications)/)});
+test('CloudBase bootstrap manifest has the reviewed execution order',()=>{assert.deepEqual(manifest.executionOrder,['server/db/cloudbase-pg-console/000_preflight_readonly.sql','server/db/migrations/001_core_domains.sql','server/db/cloudbase-pg-console/002_security_cloudbase_gateway.sql','server/db/migrations/003_cloudbase_gateway_read_views.sql','server/db/cloudbase-pg-console/040_record_versions.sql','server/db/cloudbase-pg-console/090_verify_readonly.sql']);for(const [file,expected] of Object.entries(manifest.cloudbaseExecutionChecksums))assert.equal(hash(read(file)),expected,file)});

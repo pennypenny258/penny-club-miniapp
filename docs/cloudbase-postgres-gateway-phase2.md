@@ -23,6 +23,7 @@ CloudBase PostgreSQL Data API 基于 PostgREST，请求格式为 `https://{envId
 - `003_cloudbase_gateway_read_views.sql` 只暴露已发布且版权审核通过的资料元数据，以及不含会议链接的活动元数据。它撤销 `PUBLIC`、`anon`、`authenticated` 权限，只给 `service_role` 视图 SELECT。
 - `venture_private` 仍不暴露；CRM、付款、会籍判定、注册、私有对象键、来源引用、会议链接和审计日志均不在视图中。
 - `assertRuntimeRepositoryReady` 仍以 `CLOUDBASE_GATEWAY_RUNTIME_NOT_ACTIVATED` 阻断真实启动；在逐域 API 契约和集成测试完成前不能解除。
+- `GatewayCatalogReadService` 已定义资料目录和活动目录的独立只读契约，但没有接入现有 `/api/resources`、`/api/activities`。它要求真实服务端身份解析、会籍有效检查和显式功能开关，并保证门禁在网关请求之前执行；上游失败统一返回安全 503，不回落演示内存。
 
 ## 未来服务端变量类别
 
@@ -35,6 +36,8 @@ CloudBase PostgreSQL Data API 基于 PostgREST，请求格式为 `https://{envId
 - `CLOUDBASE_PG_CREDENTIAL_PURPOSE=server_runtime`
 - `CLOUDBASE_PG_SERVER_API_KEY`：敏感的后端 API Key。
 - `CLOUDBASE_PG_TIMEOUT_MS`、`CLOUDBASE_PG_MAX_RESPONSE_BYTES`：出站限制。
+- `CLOUDBASE_CATALOG_READS_ENABLED=false`：真实微信身份映射完成前必须保持关闭。
+- `MEMBER_IDENTITY_PROVIDER`：未来只能使用经验证的服务端会话身份源，不能使用演示请求头。
 
 不要同时设置 `DATABASE_URL`；这会被拒绝，避免同一事实域混用直连与网关。
 
@@ -42,7 +45,7 @@ CloudBase PostgreSQL Data API 基于 PostgREST，请求格式为 `https://{envId
 
 目前无需操作。准备真实生产环境且代码完成逐域接线后：
 
-1. 在独立的 CloudBase 生产环境完成迁移审查和备份点；通过控制台 SQL 编辑器或受控管理任务执行 `001`、`002`、`003`。已应用迁移不可修改。
+1. 先按 `cloudbase-pg-empty-database-migration.md` 在独立空测试环境完成迁移和只读验证。已应用迁移不可修改。
 2. 在 CloudBase 控制台“环境配置 → API Key 管理”创建一个仅供 Node 后端的 API Key。官方角色模型下它是 `service_role`，权限很强，当前没有更窄的服务端数据库角色 Token；必须限制在云托管服务端环境变量、限制控制台访问人员，并制定轮换/吊销流程。
 3. 只在云托管新生产版本的服务端环境变量中填写上述类别。不要放入 GitHub、Dockerfile、浏览器、小程序、日志、截图或聊天。
 4. 先用匿名数据/空库做契约测试，验证 `anon` 和 `authenticated` 无法访问两个视图、Node 未登录/非会员/RBAC 拒绝仍有效、响应没有敏感列。
