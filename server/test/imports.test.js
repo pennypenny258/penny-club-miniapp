@@ -3,12 +3,19 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { KNOWLEDGE_DIRECTORIES, parseCsv, previewKnowledgeCsv, previewMemberOrdersCsv, previewShopOrdersCsv, previewVoluntaryDirectoryCsv } = require('../src/imports');
+const { KNOWLEDGE_DIRECTORIES, parseCsv, previewKnowledgeCsv, previewMemberOrdersCsv, previewCrmVerificationCsv, previewShopOrdersCsv, previewVoluntaryDirectoryCsv } = require('../src/imports');
 
 test('CSV parser supports quoted commas and escaped quotes', () => {
   const parsed = parseCsv('title,summary\n"报告,第一期","含""引号"""\n');
   assert.equal(parsed.rows[0].title, '报告,第一期');
   assert.equal(parsed.rows[0].summary, '含"引号"');
+});
+
+test('CSV parser rejects hidden extra columns and mapped duplicate headers',()=>{
+  assert.throws(()=>parseCsv('a,b\n1,2,3'),/列数/);
+  const csv='internal_member_ref,contact_match_token,crm_verification_status,membership_start,membership_end,group_status,evidence_note,migration_status\nREF,X,verified,2026-01-01,2027-01-01,in_group,,ready';
+  const result=previewCrmVerificationCsv(csv,{internal_member_ref:'contact_match_token'});
+  assert.match(result.headerErrors.join(' '),/重复字段/);
 });
 
 test('all ten Feishu source directories have a routed destination', () => {
@@ -58,7 +65,8 @@ test('distributed CSV templates are valid and contain no real personal data', ()
   assert.equal(orders.headers.includes('phone'), true);
   const shop = previewShopOrdersCsv(fs.readFileSync(path.join(root, 'templates', 'wechat-shop-order-evidence.csv'), 'utf8'));
   const directory = previewVoluntaryDirectoryCsv(fs.readFileSync(path.join(root, 'templates', 'voluntary-directory-import.csv'), 'utf8'));
-  assert.equal(shop.results.length, 0); assert.equal(directory.results.length, 0);
+  const crm = previewCrmVerificationCsv(fs.readFileSync(path.join(root, 'templates', 'internal-crm-verification.csv'), 'utf8'));
+  assert.equal(shop.results.length, 0); assert.equal(directory.results.length, 0); assert.equal(crm.results.length, 0);
 });
 
 test('shop orders are only payment evidence candidates and sensitive payment fields are not echoed', () => {

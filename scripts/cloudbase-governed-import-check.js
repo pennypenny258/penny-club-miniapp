@@ -1,0 +1,17 @@
+'use strict';
+const crypto=require('node:crypto');const fs=require('node:fs');const path=require('node:path');
+const root=path.join(__dirname,'..'),manifest=JSON.parse(fs.readFileSync(path.join(root,'server/db/cloudbase-pg-console/governed-import-manifest.json'),'utf8')),issues=[];
+const read=file=>fs.readFileSync(path.join(root,file),'utf8'),hash=text=>crypto.createHash('sha256').update(text).digest('hex'),strip=text=>text.replace(/--.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,'');
+for(const [file,expected] of Object.entries(manifest.checksums))if(hash(read(file))!==expected)issues.push(`${file} 校验和不匹配`);
+const expected=['server/db/migrations/004_wechat_identity_entitlement.sql','server/db/cloudbase-pg-console/140_record_wechat_identity_version.sql','server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql','server/db/migrations/005_resource_private_storage.sql','server/db/cloudbase-pg-console/250_create_private_resource_bucket.sql','server/db/cloudbase-pg-console/260_record_resource_storage_version.sql','server/db/cloudbase-pg-console/290_verify_resource_storage_readonly.sql','server/db/migrations/006_governed_member_import.sql','server/db/cloudbase-pg-console/340_record_governed_import_version.sql','server/db/cloudbase-pg-console/390_verify_governed_import_readonly.sql'];
+if(JSON.stringify(manifest.executionOrder)!==JSON.stringify(expected))issues.push('会员数据导入执行顺序发生变化');
+const migration=strip(read(expected[7]));
+for(const required of ['governed_import_batches','governed_import_rows','member_private_match_tokens','member_match_candidates','membership_recompute_queue','membership_decision_snapshots','venture_governed_import_review_queue','venture_membership_recompute_inputs'])if(!migration.includes(required))issues.push(`006 缺少 ${required}`);
+for(const rpc of ['venture_begin_governed_import','venture_stage_governed_import_rows','venture_review_governed_import_row','venture_rollback_governed_import_batch','venture_record_membership_decision']){const start=migration.indexOf(`FUNCTION public.${rpc}`),next=migration.indexOf('CREATE OR REPLACE FUNCTION',start+1),body=migration.slice(start,next<0?undefined:next);if(start<0||!body.includes('assert_cloudbase_service_role'))issues.push(`${rpc} 缺少函数内 service_role 自检`)}
+if(/GRANT (?:SELECT|EXECUTE)[\s\S]{0,180} TO (anon|authenticated)/i.test(migration))issues.push('006 不得向客户端角色授权私有视图或 RPC');
+if(/\b(phone|wechat|contact_value|original_order|raw_order)\s+(text|varchar|jsonb)/i.test(migration))issues.push('006 含禁止的明文联系方式或原订单字段');
+if(!/crm_queue_membership_recompute/.test(migration)||!/payment_queue_membership_recompute/.test(migration)||!/decision-invalidated-/.test(migration))issues.push('CRM/付款变化没有安全失效并排队重算');
+if(!/public_display_consent/.test(read('server/src/imports.js'))||!/crmSyncAllowed: false/.test(read('server/src/imports.js')))issues.push('自愿公开名册隔离规则缺失');
+const recorder=strip(read(expected[8]));if(!/INSERT INTO venture_private\.schema_migrations/.test(recorder)||/INSERT INTO venture_private\.(crm_verifications|payment_evidence|public_directory_profiles|membership_decisions)/.test(recorder))issues.push('340 必须只写迁移元数据');
+const verify=strip(read(expected[9]));if(/\b(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|GRANT|REVOKE|TRUNCATE|DO|CALL|EXECUTE)\b/i.test(verify))issues.push('390 不再是只读验证');
+if(issues.length){console.error('CloudBase 会员数据导入包检查失败：\n- '+issues.join('\n- '));process.exitCode=1}else console.log('CloudBase 会员数据导入包离线检查通过；未连接数据库、未读取 CSV、未写入真实数据。');

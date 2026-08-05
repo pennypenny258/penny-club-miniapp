@@ -15,6 +15,7 @@ const KNOWLEDGE_DIRECTORIES = {
 const ACCESS_LEVELS = ['active_member', 'selected_member', 'admin_only'];
 const MIGRATION_STATUSES = ['pending', 'ready', 'skip'];
 const GROUP_STATUSES = ['in_group', 'left', 'removed', 'unknown'];
+const CRM_VERIFICATION_STATUSES = ['verified', 'needs_review', 'rejected'];
 const DANGEROUS_HEADERS = /(password|secret|token|app_?secret|payment_?key|private_?key|openid|unionid|id_?card|bank_?card|meeting_?link)/i;
 
 function parseCsv(input) {
@@ -37,14 +38,16 @@ function parseCsv(input) {
   if (!nonEmpty.length) return { headers: [], rows: [] };
   const headers = nonEmpty[0].map(v => v.trim());
   if (new Set(headers).size !== headers.length) throw new Error('CSV 表头存在重复字段');
+  if (nonEmpty.slice(1).some(values => values.length !== headers.length)) throw new Error('CSV 数据行列数与表头不一致');
   return { headers, rows: nonEmpty.slice(1).map(values => Object.fromEntries(headers.map((h, i) => [h, (values[i] || '').trim()]))) };
 }
 
 function isUnsafeCell(value) { return /^[=+@]/.test(String(value || '').trim()) || /^-\D/.test(String(value || '').trim()); }
 function isIsoDate(value) { return /^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(value) && !Number.isNaN(Date.parse(value)); }
-function baseHeaderErrors(headers, allowed) {
+function baseHeaderErrors(headers, allowed, permittedProtected = []) {
   const errors = [];
-  const dangerous = headers.filter(h => DANGEROUS_HEADERS.test(h));
+  if (new Set(headers).size !== headers.length) errors.push('映射后的 CSV 表头存在重复字段');
+  const dangerous = headers.filter(h => DANGEROUS_HEADERS.test(h) && !permittedProtected.includes(h));
   const unknown = headers.filter(h => !allowed.includes(h));
   if (dangerous.length) errors.push(`包含禁止导入的敏感字段：${dangerous.join('、')}`);
   if (unknown.length) errors.push(`包含未知字段：${unknown.join('、')}`);
@@ -104,6 +107,29 @@ function previewMemberOrdersCsv(csv, mapping = {}) {
   return { kind: 'member_order', headers, headerErrors: [...new Set(headerErrors)], results: mapped.map(validateMemberOrderRow) };
 }
 
+const crmVerificationFields = ['internal_member_ref','contact_match_token','crm_verification_status','membership_start','membership_end','group_status','evidence_note','migration_status'];
+function validateCrmVerificationRow(row, index) {
+  const errors = []; const warnings = [];
+  for (const field of ['internal_member_ref','contact_match_token','crm_verification_status','membership_start','membership_end','group_status','migration_status']) if (!row[field]) errors.push(`${field} 不能为空`);
+  if (row.crm_verification_status && !CRM_VERIFICATION_STATUSES.includes(row.crm_verification_status)) errors.push('crm_verification_status 无效');
+  if (row.membership_start && !isIsoDate(row.membership_start)) errors.push('membership_start 必须是有效日期');
+  if (row.membership_end && !isIsoDate(row.membership_end)) errors.push('membership_end 必须是有效日期');
+  if (isIsoDate(row.membership_start) && isIsoDate(row.membership_end) && new Date(row.membership_end) <= new Date(row.membership_start)) errors.push('membership_end 必须晚于 membership_start');
+  if (row.group_status && !GROUP_STATUSES.includes(row.group_status)) errors.push('group_status 无效');
+  if (row.migration_status && !MIGRATION_STATUSES.includes(row.migration_status)) errors.push('migration_status 无效');
+  if (row.evidence_note?.length > 500) errors.push('evidence_note 超过 500 字');
+  for (const [key, value] of Object.entries(row)) if (isUnsafeCell(value)) errors.push(`${key} 疑似 CSV 公式，已拒绝`);
+  if (row.group_status === 'unknown' || row.crm_verification_status !== 'verified') warnings.push('该行只能进入人工复核，不能自动激活会籍');
+  const { internal_member_ref, contact_match_token, evidence_note, ...safe } = row;
+  return { index, valid: errors.length === 0, disposition: errors.length ? 'error' : 'needs_human_review', errors, warnings, normalized: { ...safe, memberReferencePresent:Boolean(internal_member_ref), contactMatchPresent:Boolean(contact_match_token), evidenceNotePresent:Boolean(evidence_note), determinesMembershipAlone:false }, protected: { internal_member_ref, contact_match_token, evidence_note } };
+}
+function previewCrmVerificationCsv(csv, mapping = {}) {
+  const parsed = parseCsv(csv); const mapped = mappedRows(parsed, mapping); const headers = parsed.headers.map(h => mapping[h] || h);
+  const dangerous = parsed.headers.filter(h => DANGEROUS_HEADERS.test(h) && h!=='contact_match_token');
+  const headerErrors = [...(dangerous.length ? [`原始表头包含禁止导入的敏感字段：${dangerous.join('、')}`] : []), ...baseHeaderErrors(headers, crmVerificationFields,['contact_match_token'])];
+  return { kind:'crm_verification', headers, headerErrors:[...new Set(headerErrors)], results:mapped.map(validateCrmVerificationRow) };
+}
+
 const shopOrderFields = ['order_placed_at','order_status','recipient_phone','actual_paid_cents','collected_cents','payment_at','product_name','refund_cents','source_batch'];
 const SHOP_STATUSES = ['paid','completed','partial_refund','cancelled','refunded','pending'];
 function validateShopOrderRow(row, index, options = {}) {
@@ -151,4 +177,4 @@ function previewVoluntaryDirectoryCsv(csv, mapping = {}) {
   return { kind: 'voluntary_directory', headers, headerErrors: baseHeaderErrors(headers, voluntaryDirectoryFields), results: mapped.map(validateVoluntaryDirectoryRow) };
 }
 
-module.exports = { KNOWLEDGE_DIRECTORIES, knowledgeFields, memberOrderFields, shopOrderFields, voluntaryDirectoryFields, parseCsv, validateKnowledgeRow, validateMemberOrderRow, validateShopOrderRow, validateVoluntaryDirectoryRow, previewKnowledgeCsv, previewMemberOrdersCsv, previewShopOrdersCsv, previewVoluntaryDirectoryCsv };
+module.exports = { KNOWLEDGE_DIRECTORIES, knowledgeFields, memberOrderFields, crmVerificationFields, shopOrderFields, voluntaryDirectoryFields, parseCsv, validateKnowledgeRow, validateMemberOrderRow, validateCrmVerificationRow, validateShopOrderRow, validateVoluntaryDirectoryRow, previewKnowledgeCsv, previewMemberOrdersCsv, previewCrmVerificationCsv, previewShopOrdersCsv, previewVoluntaryDirectoryCsv };

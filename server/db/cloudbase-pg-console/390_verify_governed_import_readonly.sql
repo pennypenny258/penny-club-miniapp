@@ -1,0 +1,22 @@
+-- Read-only verification. Every returned value must be true before considering 006 recorded.
+SELECT
+  to_regclass('venture_private.governed_import_batches') IS NOT NULL AS governed_batches_exists,
+  to_regclass('venture_private.governed_import_rows') IS NOT NULL AS governed_rows_exists,
+  to_regclass('venture_private.member_private_match_tokens') IS NOT NULL AS private_match_tokens_exists,
+  to_regclass('venture_private.member_match_candidates') IS NOT NULL AS match_candidates_exists,
+  to_regclass('venture_private.membership_recompute_queue') IS NOT NULL AS recompute_queue_exists,
+  to_regclass('venture_private.membership_decision_snapshots') IS NOT NULL AS decision_snapshots_exists,
+  to_regclass('public.venture_governed_import_review_queue') IS NOT NULL AS safe_review_view_exists,
+  to_regclass('public.venture_membership_recompute_inputs') IS NOT NULL AS recompute_view_exists,
+  to_regprocedure('public.venture_begin_governed_import(text,text,text,text,text,integer,jsonb)') IS NOT NULL AS begin_rpc_exists,
+  to_regprocedure('public.venture_stage_governed_import_rows(text,jsonb)') IS NOT NULL AS stage_rpc_exists,
+  to_regprocedure('public.venture_review_governed_import_row(text,text,text,text,jsonb)') IS NOT NULL AS review_rpc_exists,
+  to_regprocedure('public.venture_rollback_governed_import_batch(text,text,jsonb)') IS NOT NULL AS rollback_rpc_exists,
+  to_regprocedure('public.venture_record_membership_decision(text,text,text,text,jsonb,text,boolean)') IS NOT NULL AS decision_rpc_exists,
+  EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='crm_queue_membership_recompute' AND NOT tgisinternal) AS crm_recompute_trigger_exists,
+  EXISTS(SELECT 1 FROM pg_trigger WHERE tgname='payment_queue_membership_recompute' AND NOT tgisinternal) AS payment_recompute_trigger_exists,
+  EXISTS(SELECT 1 FROM venture_private.schema_migrations WHERE version='006_governed_member_import') AS migration_version_recorded,
+  NOT has_table_privilege('anon','venture_private.governed_import_rows','SELECT') AS anon_cannot_read_rows,
+  NOT has_table_privilege('authenticated','venture_private.governed_import_rows','SELECT') AS authenticated_cannot_read_rows,
+  NOT has_table_privilege('anon','venture_private.member_private_match_tokens','SELECT') AS anon_cannot_read_match_tokens,
+  NOT has_table_privilege('authenticated','venture_private.member_private_match_tokens','SELECT') AS authenticated_cannot_read_match_tokens;

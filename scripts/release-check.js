@@ -9,6 +9,7 @@ const runtimeText = runtimeFiles.map(file => fs.readFileSync(path.join(root, 'mi
 const {resolvePersistenceConfig,assertRuntimeRepositoryReady}=require('../server/src/persistence/config');
 const {resolveWechatIdentityConfig}=require('../server/src/auth/wechat-config');
 const {resolvePrivateObjectStorageConfig}=require('../server/src/storage/config');
+const {resolveGovernedImportConfig}=require('../server/src/persistence/governed-import-config');
 const issues = [];
 
 if (!project.appid || project.appid === 'touristappid') issues.push('AppID 仍为游客/占位配置');
@@ -27,6 +28,7 @@ if (process.env.NODE_ENV === 'production') {
   if (process.env.DATA_REPOSITORY === 'cloudbase_gateway' && process.env.MEMBER_IDENTITY_PROVIDER !== 'external_verified_session') issues.push('CloudBase 真实目录读取尚未接入可验证的服务端会员身份映射');
   try{const identity=resolveWechatIdentityConfig(process.env);if(process.env.DATA_REPOSITORY==='cloudbase_gateway'&&!identity.enabled)issues.push('CloudBase 真实目录读取尚未启用服务端微信身份交换')}catch(error){issues.push(`生产会员身份未就绪：${error.message}`)}
   try{const storage=resolvePrivateObjectStorageConfig(process.env);if(process.env.DATA_REPOSITORY==='cloudbase_gateway'&&!storage.enabled)issues.push('CloudBase 真实资料库尚未启用服务端私有对象存储')}catch(error){issues.push(`生产私有对象存储未就绪：${error.message}`)}
+  try{const governed=resolveGovernedImportConfig(process.env);if(process.env.DATA_REPOSITORY==='cloudbase_gateway'&&!governed.enabled)issues.push('CRM、付款、名册持久化导入仍保持禁用')}catch(error){issues.push(`生产会员数据导入未就绪：${error.message}`)}
   try{const database=resolvePersistenceConfig(process.env);assertRuntimeRepositoryReady(database)}catch(error){issues.push(`生产持久化未就绪：${error.message}`)}
   if (!process.env.PRIVATE_STORAGE_PROVIDER || process.env.PRIVATE_STORAGE_PROVIDER === 'local') issues.push('生产私有对象存储未配置');
   if (!process.env.FIELD_ENCRYPTION_KEY_REF) issues.push('敏感字段加密密钥引用未配置');

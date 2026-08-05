@@ -1,6 +1,7 @@
 'use strict';
 
 const REQUIRED_STORAGE_MIGRATION='005_resource_private_storage';
+const ACCEPTED_STORAGE_MIGRATIONS=new Set([REQUIRED_STORAGE_MIGRATION,'006_governed_member_import']);
 const STORAGE_PROVIDER='cloudbase_pg_storage';
 const STORAGE_REGION='ap-shanghai';
 const MAX_MVP_FILE_BYTES=25*1024*1024;
@@ -26,7 +27,7 @@ function resolvePrivateObjectStorageConfig(environment=process.env){
   const required=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_STORAGE_BUCKET_ID','CLOUDBASE_STORAGE_CREDENTIAL_PURPOSE','CLOUDBASE_STORAGE_DOWNLOAD_MODE','CLOUDBASE_STORAGE_PREVIEW_MODE','OBJECT_LOCATOR_ENCRYPTION_KEY'];
   const missing=required.filter(name=>!present(environment[name]));if(missing.length)throw new Error(`CloudBase 私有对象存储配置不完整：缺少 ${missing.join(', ')}`);
   if(environment.CLOUDBASE_PG_REGION!==STORAGE_REGION)throw new Error(`CLOUDBASE_PG_REGION 当前只允许 ${STORAGE_REGION}`);
-  if(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED!==REQUIRED_STORAGE_MIGRATION)throw new Error(`CloudBase PostgreSQL 迁移版本必须为 ${REQUIRED_STORAGE_MIGRATION}`);
+  if(!ACCEPTED_STORAGE_MIGRATIONS.has(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED))throw new Error(`CloudBase PostgreSQL 迁移版本必须已包含 ${REQUIRED_STORAGE_MIGRATION}`);
   if(environment.CLOUDBASE_STORAGE_CREDENTIAL_PURPOSE!=='server_runtime')throw new Error('对象存储凭据用途必须为 server_runtime');
   if(flag(environment.CLOUDBASE_STORAGE_BUCKET_PRIVATE_CONFIRMED,false,'CLOUDBASE_STORAGE_BUCKET_PRIVATE_CONFIRMED')!==true)throw new Error('必须显式确认对象 Bucket 为 private');
   if(environment.CLOUDBASE_STORAGE_DOWNLOAD_MODE!=='node_proxy')throw new Error('当前下载模式必须为 node_proxy，禁止向客户端返回长期或裸链接');
