@@ -62,6 +62,41 @@ test('payment XLSX preview accepts realistic shop columns, ignores extras and re
   assert.equal(response.payload.safeguards.publicDirectoryMutationAllowed, false);
 });
 
+test('three merchant receipt workbooks share one safe preview batch', async () => {
+  const headers = ['付款人姓名','支付时间','付款人手机号','支付金额','订单号','备注'];
+  const files = await Promise.all([
+    xlsxPayload(headers,['匿名付款人甲','2026-07-01','13800008000','1000','匿名订单甲','匿名备注甲']),
+    xlsxPayload(headers,['匿名付款人乙','2026-07-02','13800008001','2000','匿名订单乙','匿名备注乙']),
+    xlsxPayload(headers,['匿名付款人丙','2026-07-03','13800008002','3000','匿名订单丙','匿名备注丙'])
+  ]);
+  const response = await call('/api/admin/imports/wechat-shop-orders/preview', { paymentSource:'wechat_merchant_receipt', files });
+  assert.equal(response.status, 200);
+  assert.equal(response.payload.selectedFileCount, 3);
+  assert.equal(response.payload.validFileCount, 3);
+  assert.equal(response.payload.totalRows, 3);
+  assert.equal(response.payload.files.length, 3);
+  assert.equal(response.payload.batch.selectedFileCount, 3);
+  assert.deepEqual(response.payload.items, []);
+  const serialized = JSON.stringify(response.payload);
+  for (const raw of ['匿名付款人甲','13800008000','1000','匿名订单甲','匿名备注甲','匿名付款样本']) assert.equal(serialized.includes(raw), false, raw);
+  assert.equal(response.payload.safeguards.determinesMembershipAlone, false);
+  assert.equal(response.payload.safeguards.publicDirectoryMutationAllowed, false);
+});
+
+test('merchant batch reports one unsafe file without dropping safe siblings', async () => {
+  const headers = ['付款人姓名','支付时间','付款人手机号','支付金额'];
+  const validOne = await xlsxPayload(headers,['匿名甲','2026-07-01','13800008000','1000']);
+  const invalid = { format:'xlsx', dataBase64:Buffer.from('broken').toString('base64') };
+  const validTwo = await xlsxPayload(headers,['匿名乙','','','']);
+  const response = await call('/api/admin/imports/wechat-shop-orders/preview', { paymentSource:'wechat_merchant_receipt', files:[validOne,invalid,validTwo] });
+  assert.equal(response.status, 200);
+  assert.equal(response.payload.batchStatus, 'partial_review_required');
+  assert.equal(response.payload.validFileCount, 2);
+  assert.equal(response.payload.errorFileCount, 1);
+  assert.equal(response.payload.files[1].error.code, 'SPREADSHEET_SIGNATURE_INVALID');
+  assert.equal(response.payload.files[2].summary.needsManualRows, 1);
+});
+
 test('all five Excel template endpoints return readable header-only XLSX files', async () => {
   for (const name of ['wechat-shop-orders','wechat-merchant-receipts','manual-transfers','internal-crm','voluntary-directory']) {
     const response = await download(`/api/admin/import-templates/${name}.xlsx`);
