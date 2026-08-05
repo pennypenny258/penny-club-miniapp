@@ -17,7 +17,7 @@ npm run dev
 - 健康检查：http://localhost:3000/api/health
 - 小程序 API 演示身份：请求头 `x-demo-user: active`（也可用 `expired`、`guest`）
 
-微信开发者工具导入 `miniprogram/`。本地调试时开启“不校验合法域名”，API 默认指向本机 `http://localhost:3000`；真机联调需 HTTPS 合法域名。
+微信开发者工具导入 `miniprogram/`。默认目标仍是本机 `http://localhost:3000`；连接已部署的匿名 CloudBase 测试服务时，按 [微信开发者工具连接 CloudBase 测试环境](docs/miniprogram-cloudbase-staging.md) 切换。开发者工具可临时关闭合法域名校验，但真机、体验版和发布必须使用已登记的 HTTPS 正式自有域名。
 
 macOS 非技术用户也可直接双击 `start-preview.command` 启动并打开两个入口，双击 `stop-preview.command` 关闭。
 
@@ -66,3 +66,4 @@ macOS 非技术用户也可直接双击 `start-preview.command` 启动并打开�
 - [本机飞书配置与重启指南](docs/local-feishu-configuration.md)
 - [从电脑导入资料](docs/local-material-import.md)
 - [CloudBase 云托管匿名测试环境部署](docs/cloudbase-staging-deployment.md)
+- [微信开发者工具连接 CloudBase 测试环境](docs/miniprogram-cloudbase-staging.md)

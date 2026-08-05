@@ -1,8 +1,7 @@
 function request(path, options = {}) {
   const runtime = getApp().globalData.runtime;
   const header = { 'content-type': 'application/json' };
-  // 演示身份只允许在明确的开发模式发送，正式登录必须由服务端校验微信官方登录凭证。
-  if (runtime.demoMode && runtime.environment === 'development') header['x-demo-user'] = runtime.demoIdentity;
+  // 联调只使用服务端匿名演示默认身份；不发送 cookie、自定义身份头，也不伪造 wx.login。
   return new Promise((resolve, reject) => wx.request({
     url: runtime.apiBase + path,
     method: options.method || 'GET',
