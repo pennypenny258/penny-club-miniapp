@@ -1,7 +1,7 @@
 'use strict';
 
 const REQUIRED_STORAGE_MIGRATION='005_resource_private_storage';
-const ACCEPTED_STORAGE_MIGRATIONS=new Set([REQUIRED_STORAGE_MIGRATION,'006_governed_member_import','007_governed_materialization']);
+const ACCEPTED_STORAGE_MIGRATIONS=new Set([REQUIRED_STORAGE_MIGRATION,'006_governed_member_import','007_governed_materialization','008_admin_session_rbac']);
 const STORAGE_PROVIDER='cloudbase_pg_storage';
 const STORAGE_REGION='ap-shanghai';
 const MAX_MVP_FILE_BYTES=25*1024*1024;

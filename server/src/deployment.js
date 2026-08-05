@@ -39,6 +39,10 @@ function validateDeploymentEnvironment(environment = process.env) {
     'GOVERNED_MATERIALIZATION_ADMIN_PROVIDER',
     'GOVERNED_MATERIALIZATION_AUDIT_STORE',
     'GOVERNED_MATERIALIZATION_IDEMPOTENCY_STORE',
+    'ADMIN_SESSION_HASH_KEY',
+    'ADMIN_SUBJECT_HMAC_KEY',
+    'ADMIN_IDENTITY_PROVIDER',
+    'ADMIN_SESSION_STORE',
     'MEMBER_IDENTITY_PROVIDER',
     'WECHAT_MINIPROGRAM_APP_SECRET',
     'WECHAT_APP_SECRET',
@@ -47,6 +51,8 @@ function validateDeploymentEnvironment(environment = process.env) {
   if (environment.PRIVATE_STORAGE_PROVIDER && environment.PRIVATE_STORAGE_PROVIDER !== 'disabled') forbidden.push('PRIVATE_STORAGE_PROVIDER');
   if (environment.GOVERNED_MEMBER_IMPORTS_ENABLED && environment.GOVERNED_MEMBER_IMPORTS_ENABLED !== 'false') forbidden.push('GOVERNED_MEMBER_IMPORTS_ENABLED');
   if (environment.GOVERNED_MATERIALIZATION_ENABLED && environment.GOVERNED_MATERIALIZATION_ENABLED !== 'false') forbidden.push('GOVERNED_MATERIALIZATION_ENABLED');
+  if (environment.FORMAL_ADMIN_AUTH_ENABLED && environment.FORMAL_ADMIN_AUTH_ENABLED !== 'false') forbidden.push('FORMAL_ADMIN_AUTH_ENABLED');
+  if (environment.ADMIN_AUTH_MODE && environment.ADMIN_AUTH_MODE !== 'demo_header') forbidden.push('ADMIN_AUTH_MODE');
   if (environment.DATA_REPOSITORY && environment.DATA_REPOSITORY !== 'memory_demo') forbidden.push('DATA_REPOSITORY');
   if (forbidden.length) {
     throw new Error(`CloudBase 匿名测试配置禁止注入真实集成或本机存储变量：${forbidden.join(', ')}`);

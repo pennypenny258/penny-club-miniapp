@@ -15,6 +15,7 @@
     "db:cloudbase-resource-storage:check": "node scripts/cloudbase-resource-storage-check.js",
     "db:cloudbase-governed-import:check": "node scripts/cloudbase-governed-import-check.js",
     "db:cloudbase-materialization:check": "node scripts/cloudbase-materialization-check.js",
+    "db:cloudbase-admin-auth:check": "node scripts/cloudbase-admin-auth-check.js",
     "release:check": "node scripts/release-check.js"
   },
   "engines": { "node": ">=18" }

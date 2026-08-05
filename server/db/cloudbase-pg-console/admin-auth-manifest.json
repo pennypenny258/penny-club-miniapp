@@ -1,0 +1,39 @@
+{
+  "purpose": "future formal server-side admin sessions and RBAC; do not run in anonymous staging",
+  "executionOrder": [
+    "server/db/migrations/004_wechat_identity_entitlement.sql",
+    "server/db/cloudbase-pg-console/140_record_wechat_identity_version.sql",
+    "server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql",
+    "server/db/migrations/005_resource_private_storage.sql",
+    "server/db/cloudbase-pg-console/250_create_private_resource_bucket.sql",
+    "server/db/cloudbase-pg-console/260_record_resource_storage_version.sql",
+    "server/db/cloudbase-pg-console/290_verify_resource_storage_readonly.sql",
+    "server/db/migrations/006_governed_member_import.sql",
+    "server/db/cloudbase-pg-console/340_record_governed_import_version.sql",
+    "server/db/cloudbase-pg-console/390_verify_governed_import_readonly.sql",
+    "server/db/migrations/007_governed_materialization.sql",
+    "server/db/cloudbase-pg-console/440_record_materialization_version.sql",
+    "server/db/cloudbase-pg-console/490_verify_materialization_readonly.sql",
+    "server/db/migrations/008_admin_session_rbac.sql",
+    "server/db/cloudbase-pg-console/540_record_admin_auth_version.sql",
+    "server/db/cloudbase-pg-console/590_verify_admin_auth_readonly.sql"
+  ],
+  "checksums": {
+    "server/db/migrations/004_wechat_identity_entitlement.sql": "89651f91578a44d1f5fd78e8039c7ded587bbfae3a18764ee4bb3b2090d5a621",
+    "server/db/cloudbase-pg-console/140_record_wechat_identity_version.sql": "ae21da7eccee892db3a0912cf0f5553043dd9e6bfdaff3a83ae3482f4ddeb573",
+    "server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql": "30e2497045e1772f28065016ec2d7de4a621aa37aff2fb109191d8cc3b279653",
+    "server/db/migrations/005_resource_private_storage.sql": "8a21629626d29bf3a45975be675033b01db7992ce58a6e07200a11dbbbf0d03b",
+    "server/db/cloudbase-pg-console/250_create_private_resource_bucket.sql": "8189223eebb931964c1a117ff952ca389d798589fdcf5864aebcb21aa3e44c2c",
+    "server/db/cloudbase-pg-console/260_record_resource_storage_version.sql": "fa8d6d040e769e08f2a784384ab6d2f3784bef8b79b8e8fa35fad99782e16803",
+    "server/db/cloudbase-pg-console/290_verify_resource_storage_readonly.sql": "f058004b33f220016ef6b24d73717722bf2e9737703970c05b58041c28d5c004",
+    "server/db/migrations/006_governed_member_import.sql": "a9e5889076e27ceb7095f5283cee9b9bb1493b75e757ac89a73d1d81a0612e73",
+    "server/db/cloudbase-pg-console/340_record_governed_import_version.sql": "63185c6db4776c57cacafb44f3b3f9fb9b0bf0ad62f19ef4abd61e89d67bf71d",
+    "server/db/cloudbase-pg-console/390_verify_governed_import_readonly.sql": "3ad8b012984eb8e28ce875b30077025570f01ead119911767346894091fb0118",
+    "server/db/migrations/007_governed_materialization.sql": "c764ed6e1a9b2cb0468dce929217e7ce5f2cebe37f9bffd673448fdc0ce38ded",
+    "server/db/cloudbase-pg-console/440_record_materialization_version.sql": "c5279ca95b08ebf80f32ab390de75514eb7f89132765dc8e99895bcb023f214c",
+    "server/db/cloudbase-pg-console/490_verify_materialization_readonly.sql": "87523c975505d2754086d54c4d5ad019f8fc4d8d2dd0d56f52e4809e143a0a7e",
+    "server/db/migrations/008_admin_session_rbac.sql": "1d29f1997e3d63322ae56a0fef78b559d41028e2d278527ffdc0d51e1652bd3d",
+    "server/db/cloudbase-pg-console/540_record_admin_auth_version.sql": "e1b6cf3504e57b583bc85d6bb3b9914571b90a328f1bc67c844cc6fdc08b95c7",
+    "server/db/cloudbase-pg-console/590_verify_admin_auth_readonly.sql": "6e85686e64ee460fea8c7a09888713e344fee860fb890370c21353997b9ad52e"
+  }
+}

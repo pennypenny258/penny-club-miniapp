@@ -3,7 +3,7 @@
 const PRIVATE_SCHEMA = 'venture_private';
 const APPLICATION_ROLE = 'venture_club_app';
 const REQUIRED_MIGRATION = '002_security';
-const CLOUDBASE_GATEWAY_REQUIRED_MIGRATION = '007_governed_materialization';
+const CLOUDBASE_GATEWAY_REQUIRED_MIGRATION = '008_admin_session_rbac';
 const CLOUDBASE_GATEWAY_REGION = 'ap-shanghai';
 
 function hasValue(value){return Boolean(String(value||'').trim())}
