@@ -1,6 +1,6 @@
 # PostgreSQL 持久化第一阶段：安全边界与迁移准备
 
-当前阶段**没有连接或写入任何 CloudBase 数据库**，也没有把现有 Node API 宣称为已持久化。匿名 CloudBase staging 继续使用 `memory_demo`，容器重启后演示操作会丢失；这仍是预期行为。
+当前阶段**没有连接或写入任何 CloudBase 数据库**，也没有把现有 Node API 宣称为已持久化。匿名 CloudBase staging 继续使用 `memory_demo`，容器重启后演示操作会丢失；这仍是预期行为。CloudBase PG 网关的第二阶段准备见 `cloudbase-postgres-gateway-phase2.md`。
 
 ## 为什么暂不直接切换
 

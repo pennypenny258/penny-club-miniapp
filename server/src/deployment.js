@@ -23,6 +23,8 @@ function validateDeploymentEnvironment(environment = process.env) {
     'FEISHU_APP_ID',
     'FEISHU_APP_SECRET',
     'DATABASE_URL',
+    'CLOUDBASE_PG_SERVER_API_KEY',
+    'CLOUDBASE_PG_ENV_ID',
     'WECHAT_APP_SECRET',
     'PAYMENT_API_KEY'
   ].filter(key => String(environment[key] || '').trim());

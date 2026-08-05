@@ -12,6 +12,47 @@ class PostgresRepository{
   safeReadiness(){return {kind:this.kind,persistent:true,schema:this.config.schema,tlsVerified:true,credentialsExposed:false}}
 }
 
-function createRepository({config,store,clientFactory}){return config.mode==='memory_demo'?new MemoryDemoRepository(store):new PostgresRepository({config,clientFactory})}
+const CLOUDBASE_READ_VIEWS=Object.freeze({resources:'venture_resources_published',activities:'venture_activities_public'});
+const RESOURCE_FIELDS='id,type,title,summary,tags,access_level,mobile_section,preview_status,download_enabled,published_at,updated_at';
+const ACTIVITY_FIELDS='id,format,title,description,starts_at,ends_at,registration_ends_at,category,city,venue,status,created_at';
 
-module.exports={MemoryDemoRepository,PostgresRepository,createRepository};
+class CloudBaseGatewayError extends Error{
+  constructor(message,{status,requestId,code='CLOUDBASE_GATEWAY_REQUEST_FAILED'}={}){super(message);this.name='CloudBaseGatewayError';this.code=code;this.status=status;this.requestId=requestId}
+}
+
+class CloudBaseGatewayTransport{
+  constructor({config,fetchImpl=globalThis.fetch}){if(!config?.enabled||config.mode!=='cloudbase_gateway')throw new Error('CloudBaseGatewayTransport 需要已通过预检的 cloudbase_gateway 配置');if(typeof fetchImpl!=='function')throw new Error('CloudBaseGatewayTransport 需要服务端 fetch 实现');this.config=config;this.fetchImpl=fetchImpl}
+  async readView(view,parameters){
+    if(!Object.values(CLOUDBASE_READ_VIEWS).includes(view))throw new Error('CloudBase PostgreSQL 视图不在服务端只读白名单');
+    const url=new URL(`/v1/rdb/rest/${view}`,this.config.origin);for(const [key,value] of parameters)url.searchParams.append(key,String(value));
+    const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),this.config.timeoutMs);
+    let response;
+    try{response=await this.fetchImpl(url,{method:'GET',redirect:'error',signal:controller.signal,headers:{accept:'application/json',authorization:`Bearer ${this.config.serverApiKey}`}})}catch(error){const code=error?.name==='AbortError'?'CLOUDBASE_GATEWAY_TIMEOUT':'CLOUDBASE_GATEWAY_UNAVAILABLE';throw new CloudBaseGatewayError(code==='CLOUDBASE_GATEWAY_TIMEOUT'?'CloudBase PostgreSQL 网关请求超时':'CloudBase PostgreSQL 网关不可用',{code})}finally{clearTimeout(timeout)}
+    const requestId=response.headers?.get?.('x-request-id')||undefined;
+    if(!response.ok)throw new CloudBaseGatewayError('CloudBase PostgreSQL 网关拒绝请求',{status:response.status,requestId});
+    const contentType=String(response.headers?.get?.('content-type')||'').toLowerCase();if(!contentType.includes('application/json'))throw new CloudBaseGatewayError('CloudBase PostgreSQL 网关返回了非 JSON 响应',{status:response.status,requestId,code:'CLOUDBASE_GATEWAY_INVALID_RESPONSE'});
+    const text=await readResponseText(response,this.config.maxResponseBytes,{status:response.status,requestId});
+    let data;try{data=JSON.parse(text)}catch{throw new CloudBaseGatewayError('CloudBase PostgreSQL 网关响应无法解析',{status:response.status,requestId,code:'CLOUDBASE_GATEWAY_INVALID_RESPONSE'})}
+    if(!Array.isArray(data))throw new CloudBaseGatewayError('CloudBase PostgreSQL 网关响应契约不匹配',{status:response.status,requestId,code:'CLOUDBASE_GATEWAY_INVALID_RESPONSE'});return data;
+  }
+}
+
+async function readResponseText(response,maxBytes,errorContext){
+  const declared=Number(response.headers?.get?.('content-length'));if(Number.isFinite(declared)&&declared>maxBytes)throw new CloudBaseGatewayError('CloudBase PostgreSQL 网关响应超过安全上限',{...errorContext,code:'CLOUDBASE_GATEWAY_RESPONSE_TOO_LARGE'});
+  if(!response.body?.getReader){const text=await response.text();if(Buffer.byteLength(text,'utf8')>maxBytes)throw new CloudBaseGatewayError('CloudBase PostgreSQL 网关响应超过安全上限',{...errorContext,code:'CLOUDBASE_GATEWAY_RESPONSE_TOO_LARGE'});return text}
+  const reader=response.body.getReader(),chunks=[];let total=0;
+  while(true){const {done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>maxBytes){await reader.cancel();throw new CloudBaseGatewayError('CloudBase PostgreSQL 网关响应超过安全上限',{...errorContext,code:'CLOUDBASE_GATEWAY_RESPONSE_TOO_LARGE'})}chunks.push(Buffer.from(value))}
+  return Buffer.concat(chunks,total).toString('utf8');
+}
+
+class CloudBaseGatewayRepository{
+  constructor({config,fetchImpl}){this.kind='cloudbase_gateway';this.config=config;this.transport=new CloudBaseGatewayTransport({config,fetchImpl})}
+  listPublishedResources({limit=50}={}){const safeLimit=boundedLimit(limit);return this.transport.readView(CLOUDBASE_READ_VIEWS.resources,[['select',RESOURCE_FIELDS],['order','published_at.desc'],['limit',safeLimit]])}
+  listPublicActivities({limit=50}={}){const safeLimit=boundedLimit(limit);return this.transport.readView(CLOUDBASE_READ_VIEWS.activities,[['select',ACTIVITY_FIELDS],['order','starts_at.asc'],['limit',safeLimit]])}
+  safeReadiness(){return {kind:this.kind,persistent:true,transport:'https_postgrest',serverOnly:true,methods:['published_resources.read','public_activities.read'],credentialsExposed:false}}
+}
+
+function boundedLimit(value){const parsed=Number(value);if(!Number.isInteger(parsed)||parsed<1||parsed>100)throw new Error('CloudBase 网关分页上限必须为 1–100 的整数');return parsed}
+function createRepository({config,store,clientFactory,fetchImpl}){if(config.mode==='memory_demo')return new MemoryDemoRepository(store);if(config.mode==='postgres')return new PostgresRepository({config,clientFactory});return new CloudBaseGatewayRepository({config,fetchImpl})}
+
+module.exports={CLOUDBASE_READ_VIEWS,CloudBaseGatewayError,CloudBaseGatewayTransport,CloudBaseGatewayRepository,MemoryDemoRepository,PostgresRepository,createRepository};
