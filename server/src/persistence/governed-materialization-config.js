@@ -1,7 +1,7 @@
 'use strict';
 
 const REQUIRED_MIGRATION='007_governed_materialization';
-const ACCEPTED_MIGRATIONS=new Set([REQUIRED_MIGRATION,'008_admin_session_rbac']);
+const ACCEPTED_MIGRATIONS=new Set([REQUIRED_MIGRATION,'008_admin_session_rbac','009_admin_governance']);
 function present(value){return Boolean(String(value||'').trim())}
 function resolveGovernedMaterializationConfig(environment=process.env){
   const enabled=environment.GOVERNED_MATERIALIZATION_ENABLED==='true';

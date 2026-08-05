@@ -92,5 +92,8 @@ test('CloudBase staging profile rejects local storage and real integrations', ()
   assert.throws(() => validateDeploymentEnvironment({
     DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',ADMIN_SESSION_HASH_KEY:'fixture-only'
   }), /ADMIN_SESSION_HASH_KEY/);
+  assert.throws(() => validateDeploymentEnvironment({
+    DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',ADMIN_GOVERNANCE_ENABLED:'true'
+  }), /ADMIN_GOVERNANCE_ENABLED/);
   assert.equal(validateDeploymentEnvironment({DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',DATA_REPOSITORY:'memory_demo'}).anonymousDemoOnly,true);
 });

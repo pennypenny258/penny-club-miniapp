@@ -2,6 +2,7 @@
 
 const crypto=require('node:crypto');
 const REQUIRED_MIGRATION='008_admin_session_rbac';
+const ACCEPTED_MIGRATIONS=new Set([REQUIRED_MIGRATION,'009_admin_governance']);
 function present(value){return Boolean(String(value||'').trim())}
 function flag(value,fallback,name){if(value===undefined||value===null||value==='')return fallback;if(value==='true')return true;if(value==='false')return false;throw new Error(`${name} 只允许 true 或 false`)}
 function integer(value,fallback,min,max,name){const parsed=value===undefined||value===''?fallback:Number(value);if(!Number.isInteger(parsed)||parsed<min||parsed>max)throw new Error(`${name} 必须是 ${min}–${max} 的整数`);return parsed}
@@ -15,7 +16,7 @@ function resolveFormalAdminAuthConfig(environment=process.env){
   if(environment.DEPLOYMENT_PROFILE==='cloudbase_staging_demo'||environment.DEMO_DATA_ONLY==='true')throw new Error('匿名 staging 禁止启用正式后台认证');
   const required=[...keys,'CLOUDBASE_PG_MIGRATIONS_APPLIED'];const missing=required.filter(key=>!present(environment[key]));if(missing.length)throw new Error(`正式后台认证配置不完整：缺少 ${missing.join(', ')}`);
   if(environment.ADMIN_AUTH_MODE!=='external_session'||environment.ADMIN_IDENTITY_PROVIDER!=='external_verified'||environment.ADMIN_SESSION_STORE!=='cloudbase_pg')throw new Error('正式后台必须使用外部已验证身份和 CloudBase PG 会话');
-  if(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED!==REQUIRED_MIGRATION)throw new Error(`正式后台认证要求迁移版本 ${REQUIRED_MIGRATION}`);
+  if(!ACCEPTED_MIGRATIONS.has(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED))throw new Error(`正式后台认证要求迁移版本至少包含 ${REQUIRED_MIGRATION}`);
   const issuer=String(environment.ADMIN_SESSION_ISSUER).trim();if(!/^[a-z0-9._:-]{3,80}$/i.test(issuer))throw new Error('ADMIN_SESSION_ISSUER 格式无效');
   const ttlSeconds=integer(environment.ADMIN_SESSION_TTL_SECONDS,3600,600,28800,'ADMIN_SESSION_TTL_SECONDS');
   const stepUpMaxAgeSeconds=integer(environment.ADMIN_STEP_UP_MAX_AGE_SECONDS,300,60,900,'ADMIN_STEP_UP_MAX_AGE_SECONDS');

@@ -43,6 +43,9 @@ function validateDeploymentEnvironment(environment = process.env) {
     'ADMIN_SUBJECT_HMAC_KEY',
     'ADMIN_IDENTITY_PROVIDER',
     'ADMIN_SESSION_STORE',
+    'ADMIN_BOOTSTRAP_MODE',
+    'ADMIN_ROLE_CHANGE_MODE',
+    'ADMIN_AUDIT_MODE',
     'MEMBER_IDENTITY_PROVIDER',
     'WECHAT_MINIPROGRAM_APP_SECRET',
     'WECHAT_APP_SECRET',
@@ -52,6 +55,7 @@ function validateDeploymentEnvironment(environment = process.env) {
   if (environment.GOVERNED_MEMBER_IMPORTS_ENABLED && environment.GOVERNED_MEMBER_IMPORTS_ENABLED !== 'false') forbidden.push('GOVERNED_MEMBER_IMPORTS_ENABLED');
   if (environment.GOVERNED_MATERIALIZATION_ENABLED && environment.GOVERNED_MATERIALIZATION_ENABLED !== 'false') forbidden.push('GOVERNED_MATERIALIZATION_ENABLED');
   if (environment.FORMAL_ADMIN_AUTH_ENABLED && environment.FORMAL_ADMIN_AUTH_ENABLED !== 'false') forbidden.push('FORMAL_ADMIN_AUTH_ENABLED');
+  if (environment.ADMIN_GOVERNANCE_ENABLED && environment.ADMIN_GOVERNANCE_ENABLED !== 'false') forbidden.push('ADMIN_GOVERNANCE_ENABLED');
   if (environment.ADMIN_AUTH_MODE && environment.ADMIN_AUTH_MODE !== 'demo_header') forbidden.push('ADMIN_AUTH_MODE');
   if (environment.DATA_REPOSITORY && environment.DATA_REPOSITORY !== 'memory_demo') forbidden.push('DATA_REPOSITORY');
   if (forbidden.length) {

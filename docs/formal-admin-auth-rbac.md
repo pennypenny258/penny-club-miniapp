@@ -42,3 +42,5 @@
 ## 当前唯一外部动作
 
 本地提交完成后，只需在 GitHub Desktop 检查提交文件不包含个人配置，再点击 **Push origin**。此刻不要进入 CloudBase 执行 SQL，也不要创建或填写任何凭据。
+
+首次管理员建立及后续角色变更继续受 `admin-bootstrap-role-governance.md` 约束；008 本身不允许自注册或自行授予角色。
