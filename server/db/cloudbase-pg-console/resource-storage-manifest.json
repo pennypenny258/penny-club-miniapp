@@ -1,0 +1,22 @@
+{
+  "purpose": "future_private_resource_storage_and_persistent_catalog",
+  "prerequisite": "initial_001_cloudbase002_003_040_090_bootstrap_completed_and_verified",
+  "executionOrder": [
+    "server/db/migrations/004_wechat_identity_entitlement.sql",
+    "server/db/cloudbase-pg-console/140_record_wechat_identity_version.sql",
+    "server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql",
+    "server/db/migrations/005_resource_private_storage.sql",
+    "server/db/cloudbase-pg-console/250_create_private_resource_bucket.sql",
+    "server/db/cloudbase-pg-console/260_record_resource_storage_version.sql",
+    "server/db/cloudbase-pg-console/290_verify_resource_storage_readonly.sql"
+  ],
+  "checksums": {
+    "server/db/migrations/004_wechat_identity_entitlement.sql": "89651f91578a44d1f5fd78e8039c7ded587bbfae3a18764ee4bb3b2090d5a621",
+    "server/db/cloudbase-pg-console/140_record_wechat_identity_version.sql": "ae21da7eccee892db3a0912cf0f5553043dd9e6bfdaff3a83ae3482f4ddeb573",
+    "server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql": "30e2497045e1772f28065016ec2d7de4a621aa37aff2fb109191d8cc3b279653",
+    "server/db/migrations/005_resource_private_storage.sql": "8a21629626d29bf3a45975be675033b01db7992ce58a6e07200a11dbbbf0d03b",
+    "server/db/cloudbase-pg-console/250_create_private_resource_bucket.sql": "8189223eebb931964c1a117ff952ca389d798589fdcf5864aebcb21aa3e44c2c",
+    "server/db/cloudbase-pg-console/260_record_resource_storage_version.sql": "fa8d6d040e769e08f2a784384ab6d2f3784bef8b79b8e8fa35fad99782e16803",
+    "server/db/cloudbase-pg-console/290_verify_resource_storage_readonly.sql": "f058004b33f220016ef6b24d73717722bf2e9737703970c05b58041c28d5c004"
+  }
+}

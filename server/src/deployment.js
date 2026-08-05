@@ -26,10 +26,17 @@ function validateDeploymentEnvironment(environment = process.env) {
     'CLOUDBASE_PG_SERVER_API_KEY',
     'CLOUDBASE_PG_ENV_ID',
     'CLOUDBASE_CATALOG_READS_ENABLED',
+    'CLOUDBASE_STORAGE_ENABLED',
+    'CLOUDBASE_STORAGE_BUCKET_ID',
+    'CLOUDBASE_STORAGE_CREDENTIAL_PURPOSE',
+    'CLOUDBASE_STORAGE_BUCKET_PRIVATE_CONFIRMED',
+    'OBJECT_LOCATOR_ENCRYPTION_KEY',
     'MEMBER_IDENTITY_PROVIDER',
+    'WECHAT_MINIPROGRAM_APP_SECRET',
     'WECHAT_APP_SECRET',
     'PAYMENT_API_KEY'
   ].filter(key => String(environment[key] || '').trim());
+  if (environment.PRIVATE_STORAGE_PROVIDER && environment.PRIVATE_STORAGE_PROVIDER !== 'disabled') forbidden.push('PRIVATE_STORAGE_PROVIDER');
   if (environment.DATA_REPOSITORY && environment.DATA_REPOSITORY !== 'memory_demo') forbidden.push('DATA_REPOSITORY');
   if (forbidden.length) {
     throw new Error(`CloudBase 匿名测试配置禁止注入真实集成或本机存储变量：${forbidden.join(', ')}`);

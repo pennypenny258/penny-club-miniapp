@@ -12,7 +12,7 @@ class PostgresRepository{
   safeReadiness(){return {kind:this.kind,persistent:true,schema:this.config.schema,tlsVerified:true,credentialsExposed:false}}
 }
 
-const CLOUDBASE_READ_VIEWS=Object.freeze({resources:'venture_resources_published',activities:'venture_activities_public',entitlements:'venture_member_access_entitlement'});
+const CLOUDBASE_READ_VIEWS=Object.freeze({resources:'venture_resources_published',activities:'venture_activities_public',entitlements:'venture_member_access_entitlement',resourceStorageCompliance:'venture_resource_storage_compliance',resourceDownloadObject:'venture_resource_download_object'});
 const RESOURCE_FIELDS='id,type,title,summary,tags,access_level,mobile_section,preview_status,download_enabled,published_at,updated_at';
 const ACTIVITY_FIELDS='id,format,title,description,starts_at,ends_at,registration_ends_at,category,city,venue,status,created_at';
 const ENTITLEMENT_FIELDS='subject_hash,member_id,account_active,membership_start,membership_end,crm_verified,payment_verified,payment_reviewed_at,group_active,decision_active,entitlement_version';

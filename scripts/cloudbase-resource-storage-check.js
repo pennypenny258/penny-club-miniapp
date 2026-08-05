@@ -1,0 +1,18 @@
+'use strict';
+const crypto=require('node:crypto');
+const fs=require('node:fs');
+const path=require('node:path');
+const root=path.join(__dirname,'..'),manifest=JSON.parse(fs.readFileSync(path.join(root,'server/db/cloudbase-pg-console/resource-storage-manifest.json'),'utf8')),issues=[];
+const read=file=>fs.readFileSync(path.join(root,file),'utf8'),hash=text=>crypto.createHash('sha256').update(text).digest('hex'),strip=text=>text.replace(/--.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,'');
+for(const [file,expected] of Object.entries(manifest.checksums))if(hash(read(file))!==expected)issues.push(`${file} 校验和不匹配`);
+const expected=['server/db/migrations/004_wechat_identity_entitlement.sql','server/db/cloudbase-pg-console/140_record_wechat_identity_version.sql','server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql','server/db/migrations/005_resource_private_storage.sql','server/db/cloudbase-pg-console/250_create_private_resource_bucket.sql','server/db/cloudbase-pg-console/260_record_resource_storage_version.sql','server/db/cloudbase-pg-console/290_verify_resource_storage_readonly.sql'];
+if(JSON.stringify(manifest.executionOrder)!==JSON.stringify(expected))issues.push('私有资料存储执行顺序发生变化');
+const migration=strip(read(expected[3]));
+for(const required of ['resource_upload_intents','resource_files','resource_review_records','assert_cloudbase_service_role','venture_resource_storage_compliance','venture_resource_download_object'])if(!migration.includes(required))issues.push(`005 缺少 ${required}`);
+if(!/claims->>'role'\s*<>\s*'service_role'/.test(migration))issues.push('005 特权 RPC 缺少函数内 service_role 自检');
+if(/GRANT SELECT ON public\.venture_resource_download_object TO (anon|authenticated)/i.test(migration))issues.push('005 不得向客户端角色授权下载定位视图');
+if(/\b(original_filename|public_url|source_url)\s+(text|varchar)/i.test(migration))issues.push('005 含禁止的原文件名、公开 URL 或来源 URL 字段');
+const bucket=strip(read(expected[4]));if(!/public\s*,file_size_limit/.test(bucket)||!/false,26214400/.test(bucket))issues.push('私有 Bucket 未锁定 private 与 25MB 上限');
+const recorder=strip(read(expected[5]));if(!/INSERT INTO venture_private\.schema_migrations/.test(recorder)||/INSERT INTO venture_private\.(resources|resource_files|resource_upload_intents)/.test(recorder))issues.push('260 必须只写迁移元数据');
+const verify=strip(read(expected[6]));if(/\b(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|GRANT|REVOKE|TRUNCATE|DO|CALL|EXECUTE)\b/i.test(verify))issues.push('290 不再是只读验证');
+if(issues.length){console.error('CloudBase 私有资料存储包检查失败：\n- '+issues.join('\n- '));process.exitCode=1}else console.log('CloudBase 私有资料存储包离线检查通过；未连接数据库、未创建 Bucket、未读写文件。');

@@ -28,7 +28,7 @@ CloudBase 官方说明 PG 模式支持在“数据库 → SQL 编辑器”执行
 
 最后一个文件是只读验证。返回的每一行都必须是 `passed=true`；它只检查表、RLS、授权、视图列、审计触发器和迁移版本，不读取任何业务行。
 
-以上是已经完成并验证的初始空库包，顺序与文件不可改。未来微信身份投影属于独立的下一包；现在不要执行，待依赖完成后按 `server/db/cloudbase-pg-console/wechat-identity-manifest.json` 操作。
+以上是已经完成并验证的初始空库包，顺序与文件不可改。未来微信身份与私有资料存储属于独立的下一包；现在不要执行，待依赖完成后按 `server/db/cloudbase-pg-console/resource-storage-manifest.json` 操作。
 
 ## 任一步报错时
 
