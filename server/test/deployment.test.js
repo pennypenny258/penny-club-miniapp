@@ -2,6 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 const { parsePort, validateDeploymentEnvironment } = require('../src/deployment');
 
 test('CloudBase port defaults to 3000 and accepts platform override', () => {
@@ -19,6 +21,20 @@ test('CloudBase staging profile requires anonymous demo mode', () => {
   assert.throws(() => validateDeploymentEnvironment({
     DEPLOYMENT_PROFILE: 'cloudbase_staging_demo'
   }), /DEMO_DATA_ONLY=true/);
+});
+
+test('direct local development keeps its existing default', () => {
+  assert.deepEqual(validateDeploymentEnvironment({}), {
+    profile:'local_development',
+    anonymousDemoOnly:false
+  });
+});
+
+test('CloudBase image defaults to safe anonymous staging without console variables', () => {
+  const dockerfile = fs.readFileSync(path.join(__dirname, '..', '..', 'Dockerfile'), 'utf8');
+  assert.match(dockerfile, /NODE_ENV=staging/);
+  assert.match(dockerfile, /DEPLOYMENT_PROFILE=cloudbase_staging_demo/);
+  assert.match(dockerfile, /DEMO_DATA_ONLY=true/);
 });
 
 test('CloudBase staging profile rejects local storage and real integrations', () => {

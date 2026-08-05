@@ -32,9 +32,9 @@
 
 服务名建议保持全小写并使用连字符。服务端读取平台注入的 `PORT`，没有注入时默认 3000；不要改成硬编码 80，也不要填写 9100。
 
-## 首次测试环境变量
+## 测试环境变量与安全默认
 
-在 CloudBase 服务端环境变量界面逐项填写以下三个非敏感值：
+`Dockerfile` 已内置以下三个非敏感默认值。即使首次部署时漏填控制台环境变量，新构建的镜像也会进入匿名测试模式，不会回落到 `local_development`：
 
 ```text
 NODE_ENV=staging
@@ -42,7 +42,9 @@ DEPLOYMENT_PROFILE=cloudbase_staging_demo
 DEMO_DATA_ONLY=true
 ```
 
-端口已在服务设置中填写 3000 时，可以不另填 `PORT`；如页面明确要求环境变量，则填写 `PORT=3000`。完整模板见 `config/cloudbase-staging.env.example`。
+CloudBase 服务页面配置的同名变量优先于镜像默认值。建议仍在控制台显式填写这三个值，便于运营人员辨认配置，但匿名测试的安全性不再依赖手工填写。端口已在服务设置中填写 3000 时，可以不另填 `PORT`；如页面明确要求环境变量，则填写 `PORT=3000`。完整模板见 `config/cloudbase-staging.env.example`。
+
+本机直接运行 `npm run dev` 不读取 Dockerfile，仍显示 `local_development`。这份 Dockerfile 专用于测试部署；即使在本机主动构建它，也会保守进入匿名测试模式，而不会冒充具备持久存储的本地开发服务。
 
 首次部署不要填写 `FEISHU_APP_ID`、`FEISHU_APP_SECRET`、`PRIVATE_STORAGE_DIR`、`DATABASE_URL`、微信密钥、支付密钥或其他真实系统凭据。测试配置在检测到本机私有目录或已知真实集成变量时会拒绝启动，避免误把本地能力当作云端持久能力。
 
@@ -51,6 +53,7 @@ DEMO_DATA_ONLY=true
 部署成功后只用匿名演示数据检查：
 
 - `/healthz` 返回 `ok: true`，且 `anonymousDemoOnly: true`。
+- `deploymentProfile` 返回 `cloudbase_staging_demo`；若仍为 `local_development`，说明服务仍在运行旧版本镜像，需要在 CloudBase 点击更新并重新构建部署。
 - `/member/` 能打开会员端浏览器演示。
 - `/admin/` 能打开运营后台匿名演示。
 - 不上传真实文件，不配置飞书，不录入真实会员或订单。

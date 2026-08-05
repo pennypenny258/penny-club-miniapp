@@ -1,6 +1,11 @@
 FROM node:22-bookworm-slim
 
-ENV PORT=3000
+# 这份镜像专用于 CloudBase 测试部署。即使控制台漏填环境变量，也必须安全降级为匿名演示。
+# CloudBase 服务级同名变量优先于镜像默认值；正式环境必须使用独立配置并通过 release:check。
+ENV NODE_ENV=staging \
+    DEPLOYMENT_PROFILE=cloudbase_staging_demo \
+    DEMO_DATA_ONLY=true \
+    PORT=3000
 WORKDIR /app
 
 # 只复制浏览器 MVP 运行所需的代码；本机配置、私有附件和原生小程序不进入镜像。

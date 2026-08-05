@@ -18,6 +18,9 @@ if (!issues.length) {
   if (!/CMD \["npm", "start"\]/.test(dockerfile)) issues.push('Dockerfile 未使用 npm start');
   if (!/EXPOSE 3000/.test(dockerfile)) issues.push('Dockerfile 未声明 3000 端口');
   if (!/\/healthz/.test(dockerfile)) issues.push('Dockerfile 未配置健康检查');
+  if (!/NODE_ENV=staging/.test(dockerfile)) issues.push('Dockerfile 未默认使用 staging 环境');
+  if (!/DEPLOYMENT_PROFILE=cloudbase_staging_demo/.test(dockerfile)) issues.push('Dockerfile 未默认使用 CloudBase 匿名测试配置');
+  if (!/DEMO_DATA_ONLY=true/.test(dockerfile)) issues.push('Dockerfile 未默认限制为匿名演示数据');
   for (const pattern of ['.env.*', 'server/private-storage', 'server/data']) {
     if (!dockerignore.includes(pattern)) issues.push(`.dockerignore 未排除 ${pattern}`);
   }
