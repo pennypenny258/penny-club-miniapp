@@ -67,3 +67,4 @@ macOS 非技术用户也可直接双击 `start-preview.command` 启动并打开�
 - [从电脑导入资料](docs/local-material-import.md)
 - [CloudBase 云托管匿名测试环境部署](docs/cloudbase-staging-deployment.md)
 - [微信开发者工具连接 CloudBase 测试环境](docs/miniprogram-cloudbase-staging.md)
+- [PostgreSQL 持久化第一阶段](docs/postgres-persistence-phase1.md)

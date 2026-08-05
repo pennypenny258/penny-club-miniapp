@@ -48,4 +48,10 @@ test('CloudBase staging profile rejects local storage and real integrations', ()
     DEMO_DATA_ONLY: 'true',
     FEISHU_APP_SECRET: 'fixture-only'
   }), /FEISHU_APP_SECRET/);
+  assert.throws(() => validateDeploymentEnvironment({
+    DEPLOYMENT_PROFILE: 'cloudbase_staging_demo',
+    DEMO_DATA_ONLY: 'true',
+    DATA_REPOSITORY: 'postgres'
+  }), /DATA_REPOSITORY/);
+  assert.equal(validateDeploymentEnvironment({DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',DATA_REPOSITORY:'memory_demo'}).anonymousDemoOnly,true);
 });

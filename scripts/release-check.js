@@ -6,6 +6,7 @@ const root = path.join(__dirname, '..');
 const project = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/project.config.json'), 'utf8'));
 const runtimeFiles = ['runtime.js', 'runtime-target.js', 'runtime-profiles.js'];
 const runtimeText = runtimeFiles.map(file => fs.readFileSync(path.join(root, 'miniprogram/config', file), 'utf8')).join('\n');
+const {resolvePersistenceConfig,assertRuntimeRepositoryReady}=require('../server/src/persistence/config');
 const issues = [];
 
 if (!project.appid || project.appid === 'touristappid') issues.push('AppID 仍为游客/占位配置');
@@ -20,6 +21,7 @@ if (process.env.NODE_ENV === 'production') {
   if (process.env.DEMO_DATA_ONLY === 'true') issues.push('生产发布仍限定为匿名演示数据模式');
   if (process.env.ADMIN_AUTH_MODE !== 'external_session') issues.push('生产后台未启用服务端会话/RBAC，禁止使用演示角色头');
   if (!process.env.DATABASE_URL) issues.push('生产数据库未配置');
+  try{const database=resolvePersistenceConfig(process.env);assertRuntimeRepositoryReady(database)}catch(error){issues.push(`生产持久化未就绪：${error.message}`)}
   if (!process.env.PRIVATE_STORAGE_PROVIDER || process.env.PRIVATE_STORAGE_PROVIDER === 'local') issues.push('生产私有对象存储未配置');
   if (!process.env.FIELD_ENCRYPTION_KEY_REF) issues.push('敏感字段加密密钥引用未配置');
   if (!process.env.BACKUP_BUCKET) issues.push('备份存储未配置');

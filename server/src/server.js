@@ -15,8 +15,13 @@ const { MAX_FILE_BYTES, SECTION_TYPES, validateLocalFile, validateMetadata, gene
 const { authorizeAdmin, permissionForRequest, safeSession, requireHighRiskConfirmation } = require('./admin-auth');
 const { TagSuggestionService } = require('./tag-suggestion-provider');
 const { parsePort, validateDeploymentEnvironment } = require('./deployment');
+const { resolvePersistenceConfig, assertRuntimeRepositoryReady } = require('./persistence/config');
+const { createRepository } = require('./persistence/repository');
 const store = require('./store');
 const deployment = validateDeploymentEnvironment();
+const persistenceConfig = resolvePersistenceConfig(process.env);
+assertRuntimeRepositoryReady(persistenceConfig);
+const repository = createRepository({config:persistenceConfig,store});
 const PORT = parsePort(process.env.PORT);
 const publicDir = path.join(__dirname, '..', 'public');
 const feishuClient = new FeishuOpenApiClient({secretProvider:new EnvFeishuSecretProvider()});
@@ -111,7 +116,7 @@ const server = http.createServer(async (req, res) => {
   try {
     let match;
     if(url.pathname.startsWith('/api/admin/'))req.adminContext=authorizeAdmin(req,permissionForRequest(req.method,url.pathname));
-    if (req.method === 'GET' && (url.pathname === '/api/health' || url.pathname === '/healthz')) return json(res, 200, { ok: true, version: '0.1.0', deploymentProfile:deployment.profile, anonymousDemoOnly:deployment.anonymousDemoOnly });
+    if (req.method === 'GET' && (url.pathname === '/api/health' || url.pathname === '/healthz')) return json(res, 200, { ok: true, version: '0.1.0', deploymentProfile:deployment.profile, anonymousDemoOnly:deployment.anonymousDemoOnly, persistence:repository.safeReadiness() });
     if (req.method === 'GET' && url.pathname === '/api/me') return json(res, 200, { id: member.id, nickname: member.nickname, avatarMode:'demo_placeholder',avatarInitial:String(member.nickname||'会').slice(-1),loginProvider:'demo_identity',identityNotice:'演示身份占位；尚未获取微信头像或昵称',membershipStatus: member.status,membershipRole:membershipRole(member), endsAt: member.endsAt, isActive: isMembershipActive(member) });
     if (req.method === 'GET' && url.pathname === '/api/member-capabilities') return json(res,200,{wechatLoginConfigured:false,wechatPaymentConfigured:false,voiceRecordingAvailableInMiniProgram:true,voiceUploadConfigured:false,asrConfigured:false,privateDownloadConfigured:false,notices:{voice:'小程序可调用官方录音能力；上传与语音转写待正式微信和 ASR 配置',payment:'支付能力待配置',download:'私有文件下载能力待配置'}});
     if (req.method === 'GET' && url.pathname === '/api/resources') { requireActiveMember(member);const query=String(url.searchParams.get('query')||'').trim().toLocaleLowerCase('zh-CN').slice(0,80);const resources=store.resources.filter(x=>x.status==='published').filter(x=>!query||`${x.title} ${x.summary} ${(x.tags||[]).join(' ')}`.toLocaleLowerCase('zh-CN').includes(query));return json(res, 200, resources.map(safeMobileResource)); }

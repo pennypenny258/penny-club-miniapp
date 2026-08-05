@@ -10,6 +10,7 @@ server/data/*.log
 server/private-storage/
 !server/data/.gitkeep
 .cloudbase/
+miniprogram/project.private.config.json
 
 # 用户上传、导入导出和临时附件（只保留 templates/ 中的匿名空模板）
 uploads/

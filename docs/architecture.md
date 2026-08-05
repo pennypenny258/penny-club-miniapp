@@ -2,7 +2,7 @@
 
 ## 设计结论
 
-采用原生微信小程序作为会员端，Node.js API 作为统一业务边界，浏览器后台供运营使用。MVP 的数据仓储为内存演示实现；生产环境将同一仓储接口替换为 PostgreSQL/MySQL，不改变页面和核心业务规则。
+采用原生微信小程序作为会员端，Node.js API 作为统一业务边界，浏览器后台供运营使用。MVP 的数据仓储为内存演示实现；PostgreSQL 第一阶段仅交付私有 schema、迁移和失效关闭的仓库边界，真实 API 尚未启用数据库，详见 [PostgreSQL 持久化第一阶段](postgres-persistence-phase1.md)。
 
 ```text
 微信小程序 ─┐

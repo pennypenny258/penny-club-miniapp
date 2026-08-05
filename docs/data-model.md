@@ -11,7 +11,7 @@
 - `internal_member_profile`：公司/城市/需求偏好与手机号登记状态，属于内部域，不自动同步公开名册。
 - `member_connection`：对接申请与被申请者决定；同意只授权受控介绍，不由普通会员接口直接返回联系方式。
 
-正式建表草案见 `server/db/schema.sql`。核心关系如下：
+正式建表准备见 `server/db/migrations/`；旧的 public schema 草案已停用，安全边界与启用条件见 [PostgreSQL 持久化第一阶段](postgres-persistence-phase1.md)。核心关系如下：
 
 | 实体 | 用途 | 关键字段 |
 |---|---|---|

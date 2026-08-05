@@ -26,6 +26,7 @@ function validateDeploymentEnvironment(environment = process.env) {
     'WECHAT_APP_SECRET',
     'PAYMENT_API_KEY'
   ].filter(key => String(environment[key] || '').trim());
+  if (environment.DATA_REPOSITORY && environment.DATA_REPOSITORY !== 'memory_demo') forbidden.push('DATA_REPOSITORY');
   if (forbidden.length) {
     throw new Error(`CloudBase 匿名测试配置禁止注入真实集成或本机存储变量：${forbidden.join(', ')}`);
   }

@@ -9,6 +9,8 @@
     "test": "NODE_ENV=test node --test server/test/*.test.js",
     "staging:check": "node scripts/staging-check.js",
     "miniprogram:staging-check": "node scripts/miniprogram-staging-check.js",
+    "db:preflight": "node scripts/db-preflight.js",
+    "db:migrations:plan": "node scripts/db-migration-plan.js",
     "release:check": "node scripts/release-check.js"
   },
   "engines": { "node": ">=18" }
