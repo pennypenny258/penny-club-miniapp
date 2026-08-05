@@ -9,7 +9,10 @@ ENV NODE_ENV=staging \
 WORKDIR /app
 
 # 只复制浏览器 MVP 运行所需的代码；本机配置、私有附件和原生小程序不进入镜像。
-COPY --chown=node:node package.json ./
+COPY --chown=node:node package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN corepack enable \
+    && corepack prepare pnpm@11.9.0 --activate \
+    && pnpm install --prod --frozen-lockfile
 COPY --chown=node:node server ./server
 COPY --chown=node:node templates ./templates
 

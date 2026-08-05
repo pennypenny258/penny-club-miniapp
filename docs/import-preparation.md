@@ -1,6 +1,6 @@
 # 内部试用与资料迁移准备
 
-飞书弃用前的正式整库迁入使用后台“一次性飞书迁入”任务，可选择自建应用只读授权或用户导出的 HTML/Markdown/PDF/附件包；不做持续同步。完整流程见 `feishu-one-time-migration.md`。本页 CSV 模板保留为离线清单补录与修正工具。
+飞书弃用前的正式整库迁入使用后台“一次性飞书迁入”任务，可选择自建应用只读授权或用户导出的 HTML/Markdown/PDF/附件包；不做持续同步。完整流程见 `feishu-one-time-migration.md`。本页 Excel / CSV 模板保留为离线清单补录与修正工具。
 
 ## 可直接提供给运营的模板
 
@@ -78,7 +78,9 @@
 - `POST /api/admin/imports/knowledge/preview`
 - `POST /api/admin/imports/wechat-shop-orders/preview`
 
-三类付款记录在后台 **会员 → 会员 CRM 库（首选）→ 导入付款记录** 中选择来源并预检。当前不引入 XLSX 解析依赖；运营者需先用 Excel 另存为 UTF-8 CSV。请求以 `paymentSource` 区分 `wechat_shop_order / wechat_merchant_receipt / manual_transfer`，三者都只生成匹配线索。
+三类付款记录在后台 **会员 → 会员 CRM 库（首选）→ 导入付款记录** 中选择来源并预检，可直接上传 `.xlsx` 或 UTF-8 `.csv`。请求以 `paymentSource` 区分 `wechat_shop_order / wechat_merchant_receipt / manual_transfer`，三者都只生成匹配线索。CRM 与自愿公开名册也使用同一套 Excel 安全预检。
+
+Excel 安全边界：单文件最多 2MB、500 行、64 列；默认读取第一个有内容的可见工作表。拒绝旧版 `.xls`、宏文件、加密/密码保护、外部链接、隐藏批注、危险公式和异常解压体积。安全公式只读取工作簿已保存的缓存值，服务端不执行公式。预检响应只返回工作表名、行数、标准字段映射和脱敏状态，不回显手机号、微信、订单号、金额或备注正文。
 - `POST /api/admin/imports/voluntary-directory/preview`
 - `PATCH /api/admin/import-items/:id`
 - `POST /api/admin/import-items/:id/publish`

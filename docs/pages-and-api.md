@@ -45,7 +45,7 @@
 | POST | `/api/admin/payment-evidence/manual` | 受控人工补录付款证据；不接受手机号、订单号或付款凭据 |
 | PATCH | `/api/admin/payment-evidence/:id/review` | 复核有效/退款/排除；不单独改变会籍 |
 | PATCH | `/api/admin/renewal-offers/:id` | 维护标准价、专属价、优惠理由和适用规则 |
-| GET | `/api/admin/import-templates/*.csv` | 下载资料、微信小店、商户号小票和手动转账 CSV 模板 |
+| GET | `/api/admin/import-templates/*.{xlsx,csv}` | 下载 CRM、自愿公开名册、微信小店、商户号小票和手动转账 Excel / CSV 模板 |
 | GET | `/api/admin/local-imports` | 电脑导入能力、批次和安全审核元数据；不返回文件名、路径或存储键 |
 | POST | `/api/admin/local-imports/upload` | 多文件白名单上传并私有保存；全部默认待审核 |
 | POST | `/api/admin/local-imports/metadata` | 创建无文件受控资料条目，下载固定关闭并进入待补附件队列 |
@@ -59,7 +59,7 @@
 | POST | `/api/admin/feishu-migrations/:id/start` | 验证配置与根节点后执行官方只读迁入；所有内容默认待审核 |
 | POST | `/api/admin/feishu-migrations/:id/retry-failures` | 重试失败项 |
 | POST | `/api/admin/feishu-migrations/:id/disconnect` | 清除外部来源引用并保留自有内容 |
-| POST | `/api/admin/imports/:kind/preview` | CSV 解析、映射、安全检查和逐行异常 |
+| POST | `/api/admin/imports/:kind/preview` | `.xlsx` / CSV 工作表、映射、安全检查和逐行异常；不返回原始敏感值 |
 | POST | `/api/admin/imports/internal-crm/preview` | 内部 CRM 模板预检；只创建私有待复核批次，不改变最终会籍 |
 | PATCH | `/api/admin/import-items/:id` | 修正允许字段并重新校验 |
 | POST | `/api/admin/import-items/:id/publish` | 将合格资料上架相应知识库分类 |
