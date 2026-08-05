@@ -1,3 +1,4 @@
 @import "../../member-theme.wxss";
 
 .resource-search{margin:18rpx 24rpx;padding:18rpx 22rpx;background:#fff;border-radius:10rpx;font-size:26rpx}.tabs{white-space:nowrap;background:#fff;border-bottom:1rpx solid #ededed}.tab{display:inline-block;padding:26rpx 28rpx 20rpx;color:#777;font-size:25rpx;border-bottom:4rpx solid transparent}.tab.active{color:#159957;border-color:#07c160;font-weight:600}.resource-tag{display:inline-block;margin-top:14rpx}.download-off{font-size:22rpx;color:#999;margin-top:18rpx}
+.clamp-title{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;line-height:1.45;max-height:2.9em}
