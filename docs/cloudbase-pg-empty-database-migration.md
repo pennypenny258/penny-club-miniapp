@@ -28,7 +28,7 @@ CloudBase 官方说明 PG 模式支持在“数据库 → SQL 编辑器”执行
 
 最后一个文件是只读验证。返回的每一行都必须是 `passed=true`；它只检查表、RLS、授权、视图列、审计触发器和迁移版本，不读取任何业务行。
 
-以上是已经完成并验证的初始空库包，顺序与文件不可改。未来微信身份、私有资料存储以及 CRM/付款/名册导入属于独立后续包；现在都不要执行。完整未来顺序锁定在 `server/db/cloudbase-pg-console/governed-import-manifest.json`，准入条件见 `docs/governed-member-import-persistence.md`。
+以上是已经完成并验证的初始空库包，顺序与文件不可改。未来微信身份、私有资料存储、CRM/付款/名册导入及分域物化属于独立后续包；现在都不要执行。完整未来顺序锁定在 `server/db/cloudbase-pg-console/materialization-manifest.json`，准入条件见 `docs/governed-materialization.md`。
 
 ## 任一步报错时
 

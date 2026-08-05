@@ -36,6 +36,9 @@ function validateDeploymentEnvironment(environment = process.env) {
     'GOVERNED_IMPORT_ADMIN_PROVIDER',
     'GOVERNED_IMPORT_AUDIT_STORE',
     'GOVERNED_IMPORT_IDEMPOTENCY_STORE',
+    'GOVERNED_MATERIALIZATION_ADMIN_PROVIDER',
+    'GOVERNED_MATERIALIZATION_AUDIT_STORE',
+    'GOVERNED_MATERIALIZATION_IDEMPOTENCY_STORE',
     'MEMBER_IDENTITY_PROVIDER',
     'WECHAT_MINIPROGRAM_APP_SECRET',
     'WECHAT_APP_SECRET',
@@ -43,6 +46,7 @@ function validateDeploymentEnvironment(environment = process.env) {
   ].filter(key => String(environment[key] || '').trim());
   if (environment.PRIVATE_STORAGE_PROVIDER && environment.PRIVATE_STORAGE_PROVIDER !== 'disabled') forbidden.push('PRIVATE_STORAGE_PROVIDER');
   if (environment.GOVERNED_MEMBER_IMPORTS_ENABLED && environment.GOVERNED_MEMBER_IMPORTS_ENABLED !== 'false') forbidden.push('GOVERNED_MEMBER_IMPORTS_ENABLED');
+  if (environment.GOVERNED_MATERIALIZATION_ENABLED && environment.GOVERNED_MATERIALIZATION_ENABLED !== 'false') forbidden.push('GOVERNED_MATERIALIZATION_ENABLED');
   if (environment.DATA_REPOSITORY && environment.DATA_REPOSITORY !== 'memory_demo') forbidden.push('DATA_REPOSITORY');
   if (forbidden.length) {
     throw new Error(`CloudBase 匿名测试配置禁止注入真实集成或本机存储变量：${forbidden.join(', ')}`);

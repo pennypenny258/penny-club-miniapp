@@ -32,7 +32,7 @@ CloudBase PostgreSQL Data API 基于 PostgREST，请求格式为 `https://{envId
 - `DATA_REPOSITORY=cloudbase_gateway`
 - `CLOUDBASE_PG_ENV_ID`：环境标识；只在云托管服务端设置。
 - `CLOUDBASE_PG_REGION=ap-shanghai`
-- `CLOUDBASE_PG_MIGRATIONS_APPLIED=006_governed_member_import`（004/005/006 尚未人工执行并验证前不得填写或启用真实网关）
+- `CLOUDBASE_PG_MIGRATIONS_APPLIED=007_governed_materialization`（004/005/006/007 尚未人工执行并验证前不得填写或启用真实网关）
 - `CLOUDBASE_PG_CREDENTIAL_PURPOSE=server_runtime`
 - `CLOUDBASE_PG_SERVER_API_KEY`：敏感的后端 API Key。
 - `CLOUDBASE_PG_TIMEOUT_MS`、`CLOUDBASE_PG_MAX_RESPONSE_BYTES`：出站限制。
