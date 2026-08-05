@@ -35,6 +35,17 @@ test('synthetic XLSX uses the first visible non-empty sheet and matches CSV paym
   for (const field of ['recipient_phone','actual_paid_cents','collected_cents','payment_at','product_name']) assert.equal(field in xlsxPreview.results[0].normalized, false);
 });
 
+test('a regular 5,000-row payment export is accepted without manual splitting', async () => {
+  const headers = ['order_placed_at','order_status','recipient_phone','actual_paid_cents','collected_cents','payment_at','product_name','refund_cents','source_batch'];
+  const phone = ['1','38','0000','8000'].join('');
+  const rows = Array.from({ length: 5000 }, (_, index) => ['2026-07-01','paid',phone,'10000','10000','2026-07-01','匿名会籍产品','0',`匿名批次-${index}`]);
+  const parsed = await parseSpreadsheetUpload(upload(await syntheticWorkbook(headers, rows)));
+  const preview = previewShopOrdersCsv(parsed.csv);
+  assert.equal(parsed.meta.rowCount, 5000);
+  assert.equal(preview.results.length, 5000);
+  assert.equal(preview.results.every(result => result.valid && result.normalized.determinesMembershipAlone === false), true);
+});
+
 test('CRM and voluntary directory XLSX use the same allowlists and human review boundaries', async () => {
   const crmHeaders = ['internal_member_ref','contact_match_token','crm_verification_status','membership_start','membership_end','group_status','evidence_note','migration_status'];
   const crm = await parseSpreadsheetUpload(upload(await syntheticWorkbook(crmHeaders, [['匿名引用','匿名匹配令牌','verified','2026-01-01','2027-01-01','in_group','匿名核验','ready']])));
@@ -69,4 +80,12 @@ test('safe cached formula values are read without evaluating the formula', async
   const parsed = await parseSpreadsheetUpload(upload(workbook));
   assert.equal(parsed.meta.formulaCellsReadAsCachedValues, 1);
   assert.match(parsed.csv, /\n2$/);
+});
+
+test('CSV uses the same 10,000-row hard limit as XLSX', async () => {
+  const accepted = `field\n${Array.from({ length: 5000 }, (_, index) => `匿名-${index}`).join('\n')}`;
+  const parsed = await parseSpreadsheetUpload({ format: 'csv', csv: accepted });
+  assert.equal(parsed.meta.rowCount, 5000);
+  const rejected = `field\n${Array.from({ length: MAX_DATA_ROWS + 1 }, (_, index) => `匿名-${index}`).join('\n')}`;
+  await assert.rejects(() => parseSpreadsheetUpload({ format: 'csv', csv: rejected }), error => error.code === 'SPREADSHEET_TOO_MANY_ROWS' && /月份或时间段/.test(error.message));
 });

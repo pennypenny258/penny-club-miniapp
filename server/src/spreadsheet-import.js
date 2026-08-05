@@ -2,10 +2,11 @@
 
 const ExcelJS = require('exceljs');
 const JSZip = require('jszip');
+const { parseCsv } = require('./imports');
 
-const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-const MAX_UNCOMPRESSED_BYTES = 20 * 1024 * 1024;
-const MAX_DATA_ROWS = 500;
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_UNCOMPRESSED_BYTES = 64 * 1024 * 1024;
+const MAX_DATA_ROWS = 10000;
 const MAX_COLUMNS = 64;
 const DANGEROUS_FORMULA = /(?:\b(?:WEBSERVICE|HYPERLINK|RTD|DDE|CALL|EXEC|IMPORTXML|IMPORTDATA|IMAGE)\s*\(|https?:\/\/|\\\\|\[[^\]]+\]|cmd(?:\.exe)?|powershell)/i;
 
@@ -24,7 +25,7 @@ function decodeBase64(value) {
     throw new SpreadsheetImportError('Excel 文件编码无效', 'SPREADSHEET_ENCODING_INVALID');
   }
   const estimatedBytes = (encoded.length / 4) * 3 - (encoded.endsWith('==') ? 2 : encoded.endsWith('=') ? 1 : 0);
-  if (estimatedBytes > MAX_UPLOAD_BYTES) throw new SpreadsheetImportError('Excel 文件超过 2MB，请拆分批次', 'SPREADSHEET_TOO_LARGE', 413);
+  if (estimatedBytes > MAX_UPLOAD_BYTES) throw new SpreadsheetImportError('文件超过 10MB 安全硬上限。请按导出月份或时间段分成多个文件后重试', 'SPREADSHEET_TOO_LARGE', 413);
   return Buffer.from(encoded, 'base64');
 }
 
@@ -48,7 +49,7 @@ async function inspectArchive(buffer) {
     const size = Number(entry._data?.uncompressedSize || 0);
     if (Number.isFinite(size)) uncompressedBytes += size;
     if (uncompressedBytes > MAX_UNCOMPRESSED_BYTES) {
-      throw new SpreadsheetImportError('Excel 解压后内容过大，请拆分批次', 'SPREADSHEET_EXPANDED_TOO_LARGE', 413);
+      throw new SpreadsheetImportError('Excel 解压后内容超过 64MB 安全硬上限。请删除无关工作表或按导出月份分批后重试', 'SPREADSHEET_EXPANDED_TOO_LARGE', 413);
     }
     if (entry.name.toLowerCase().endsWith('.rels')) {
       const relationshipXml = await entry.async('string');
@@ -110,7 +111,7 @@ function worksheetToCsv(sheet) {
     if (values.some(value => String(value).trim() !== '')) rows.push(values);
   });
   if (!rows.length) throw new SpreadsheetImportError('工作簿没有可导入内容', 'SPREADSHEET_EMPTY');
-  if (rows.length - 1 > MAX_DATA_ROWS) throw new SpreadsheetImportError(`单批最多 ${MAX_DATA_ROWS} 行，请拆分工作簿`, 'SPREADSHEET_TOO_MANY_ROWS', 413);
+  if (rows.length - 1 > MAX_DATA_ROWS) throw new SpreadsheetImportError(`文件超过 ${MAX_DATA_ROWS} 行安全硬上限。请按导出月份或时间段分成多个文件后重试`, 'SPREADSHEET_TOO_MANY_ROWS', 413);
   const width = Math.max(...rows.map(row => row.length));
   const csv = rows.map(row => Array.from({ length: width }, (_, index) => csvCell(row[index] || '')).join(',')).join('\n');
   return { csv, rowCount: rows.length - 1, columnCount: width, formulaCellsReadAsCachedValues };
@@ -120,8 +121,12 @@ async function parseSpreadsheetUpload(input = {}) {
   const format = String(input.format || (typeof input.csv === 'string' ? 'csv' : '')).toLowerCase();
   if (format === 'csv') {
     const csv = String(input.csv || '');
-    if (Buffer.byteLength(csv, 'utf8') > MAX_UPLOAD_BYTES) throw new SpreadsheetImportError('CSV 超过 2MB，请拆分批次', 'SPREADSHEET_TOO_LARGE', 413);
-    return { csv, meta: { format: 'csv', sheetName: 'CSV', formulaCellsReadAsCachedValues: 0 } };
+    if (Buffer.byteLength(csv, 'utf8') > MAX_UPLOAD_BYTES) throw new SpreadsheetImportError('文件超过 10MB 安全硬上限。请按导出月份或时间段分成多个文件后重试', 'SPREADSHEET_TOO_LARGE', 413);
+    let parsed;
+    try { parsed = parseCsv(csv); } catch (error) { throw new SpreadsheetImportError(error.message, 'SPREADSHEET_CSV_INVALID'); }
+    if (parsed.rows.length > MAX_DATA_ROWS) throw new SpreadsheetImportError(`文件超过 ${MAX_DATA_ROWS} 行安全硬上限。请按导出月份或时间段分成多个文件后重试`, 'SPREADSHEET_TOO_MANY_ROWS', 413);
+    if (parsed.headers.length > MAX_COLUMNS) throw new SpreadsheetImportError(`工作表超过 ${MAX_COLUMNS} 列，请只保留模板所需字段后重试`, 'SPREADSHEET_TOO_MANY_COLUMNS', 413);
+    return { csv, meta: { format: 'csv', sheetName: 'CSV', rowCount: parsed.rows.length, columnCount: parsed.headers.length, formulaCellsReadAsCachedValues: 0 } };
   }
   if (format !== 'xlsx') throw new SpreadsheetImportError('仅支持 .xlsx 和 .csv；旧版 .xls 与宏文件不支持', 'SPREADSHEET_FORMAT_UNSUPPORTED', 415);
   const buffer = decodeBase64(input.dataBase64);
