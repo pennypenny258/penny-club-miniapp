@@ -1,5 +1,5 @@
 const {request}=require('../../utils/api');
-const labels={resource:'资料',activity:'活动',opportunity:'机会',meeting_replay:'回放',industry_report:'报告',group_digest:'精华'};
+const labels={resource:'资料',activity:'活动',opportunity:'机会',meeting_replay:'回放',industry_report:'研究报告',group_digest:'群聊精华'};
 Page({
   data:{items:[],favorites:[],query:''},
   onShow(){this.loadFeed()},

@@ -1,6 +1,6 @@
 const views={feed:{label:'动态',subtitle:'会员专区的最新进展',icon:'◷'},library:{label:'资料库',subtitle:'安全可见的内容与工具',icon:'▤'},agents:{label:'Agents',subtitle:'匿名机会与受控撮合',icon:'◇'},mine:{label:'我的',subtitle:'会籍、档案与通知',icon:'○'}};
-const sectionLabels={replays:'线上分享回放',reports_digests:'报告与群聊精华',books:'书籍',files_templates:'常用文件模板',benefits:'福利更新与领取'};
-const typeLabels={meeting_replay:'回放',industry_report:'行业报告',group_digest:'群聊精华',book:'书籍',tool:'文件工具',usage_guide:'使用说明',activity_notice:'活动',investment:'投资',fundraising:'融资',ma:'并购',recruitment:'招聘',business_attraction:'招商'};
+const sectionLabels={replays:'线上分享回放',research_reports:'研究报告',group_digests:'群聊精华',books:'书籍',files_templates:'常用文件模板',benefits:'福利更新与领取'};
+const typeLabels={meeting_replay:'回放',industry_report:'研究报告',group_digest:'群聊精华',book:'书籍',tool:'文件工具',usage_guide:'使用说明',activity_notice:'活动',investment:'投资',fundraising:'融资',ma:'并购',recruitment:'招聘',business_attraction:'招商'};
 const tabs=document.querySelector('#tabs'),content=document.querySelector('#member-content'),identity=document.querySelector('#identity'),title=document.querySelector('#page-title'),subtitle=document.querySelector('#page-subtitle'),toast=document.querySelector('#toast');
 let current='feed',cache={favorites:[]},librarySection='replays',libraryQuery='',opportunityType='all';
 Object.entries(views).forEach(([key,item])=>{const button=document.createElement('button');button.dataset.key=key;button.innerHTML=`<span class="tab-icon">${item.icon}</span><span>${item.label}</span>`;button.onclick=()=>load(key);tabs.appendChild(button)});

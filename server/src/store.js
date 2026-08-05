@@ -82,7 +82,7 @@ const resourceRows = [
   ['industry_report','低空应用场景扫描（待复核）','迁移后待版权与来源复核的演示条目。',['场景','待复核'],'飞书/行业报告','draft','needs_review']
 ];
 const resources = resourceRows.map((r,i)=>({id:`r-demo-${i+1}`,type:r[0],title:r[1],summary:r[2],tags:r[3],accessLevel:i===0?'verified_user':'active_member',sourceCollection:r[4],sourceStatus:i===11?'needs_rights_review':'source_confirmed',migrationStatus:r[6],status:r[5],publishedAt:days(-i*7)}));
-const mobileSectionByType={meeting_replay:'replays',industry_report:'reports_digests',group_digest:'reports_digests',book:'books',data_source:'files_templates',tool:'files_templates',usage_guide:'files_templates',directory_guide:'files_templates',fundraising_guide:'files_templates',recruitment_guide:'files_templates',activity_notice:'benefits'};
+const mobileSectionByType={meeting_replay:'replays',industry_report:'research_reports',group_digest:'group_digests',book:'books',data_source:'files_templates',tool:'files_templates',usage_guide:'files_templates',directory_guide:'files_templates',fundraising_guide:'files_templates',recruitment_guide:'files_templates',activity_notice:'benefits'};
 for(const resource of resources){resource.mobileSection=mobileSectionByType[resource.type]||'files_templates';resource.downloadEnabled=['industry_report','tool'].includes(resource.type)&&resource.status==='published'}
 resources.push({id:'r-demo-benefit',type:'benefit_update',title:'会员福利领取规则更新（演示）',summary:'仅展示虚构福利领取说明，不包含兑换码或外部联系方式。',tags:['福利','规则'],accessLevel:'active_member',sourceStatus:'source_confirmed',migrationStatus:'completed',mobileSection:'benefits',downloadEnabled:false,status:'published',publishedAt:days(-2)});
 

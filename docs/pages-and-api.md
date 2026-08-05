@@ -50,7 +50,7 @@
 | PATCH | `/api/admin/local-import-batches/:id/apply-metadata` | 对同批待审核资料批量应用分类、标签和下载开关；已发布/已跳过项不变 |
 | POST | `/api/admin/local-imports/upload` | 多文件白名单上传并私有保存；全部默认待审核 |
 | POST | `/api/admin/local-imports/metadata` | 创建无文件受控资料条目，下载固定关闭并进入待补附件队列 |
-| PATCH | `/api/admin/local-import-items/:id` | 修改标题、五分栏、来源说明、下载开关和分类确认状态 |
+| PATCH | `/api/admin/local-import-items/:id` | 修改标题、六分栏、来源说明、下载开关和分类确认状态 |
 | POST | `/api/admin/local-import-items/:id/review` | 人工确认版权/安全后发布，或跳过条目 |
 | GET | `/api/admin/feishu-connection/status` | 仅返回未配置/已配置/连接成功/连接失败及安全错误分类 |
 | GET | `/api/admin/feishu-migration-readiness` | 返回迁入前安全检查、下一步与私有存储布尔状态；不返回 Secret、token、根链接或路径 |

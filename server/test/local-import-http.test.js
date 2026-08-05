@@ -13,7 +13,7 @@ function multipart(metadata,filename,mimeType,bytes){const boundary='----venture
 function multipartMany(metadata,files){const boundary='----ventureSyntheticBatchBoundary',chunks=[Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="metadata"\r\n\r\n${JSON.stringify(metadata)}\r\n`)];for(const file of files)chunks.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="${file.filename}"\r\nContent-Type: ${file.mimeType}\r\n\r\n`),file.bytes,Buffer.from('\r\n'));chunks.push(Buffer.from(`--${boundary}--\r\n`));return {body:Buffer.concat(chunks),contentType:`multipart/form-data; boundary=${boundary}`}}
 
 test('computer upload remains pending until confirmed and member responses stay locator-free',async()=>{
-  const uploadBody=multipart([{title:'匿名端到端报告',summary:'仅用于安全回归。',tags:'匿名验收，行业\n匿名验收',section:'reports_digest',sourceNote:'本地迁入',downloadEnabled:true,needsClassification:false}],'synthetic-report.pdf','application/pdf',Buffer.from('%PDF-1.4\nsynthetic fixture'));
+  const uploadBody=multipart([{title:'匿名端到端报告',summary:'仅用于安全回归。',tags:'匿名验收，行业\n匿名验收',section:'research_reports',sourceNote:'本地迁入',downloadEnabled:true,needsClassification:false}],'synthetic-report.pdf','application/pdf',Buffer.from('%PDF-1.4\nsynthetic fixture'));
   const uploaded=await call('/api/admin/local-imports/upload',{method:'POST',...uploadBody});assert.equal(uploaded.status,201);const serialized=JSON.stringify(uploaded.payload);assert.equal(serialized.includes('private:'),false);assert.equal(serialized.includes('synthetic-report.pdf'),false);const item=uploaded.payload.items[0];assert.equal(item.status,'pending_review');assert.equal(item.fileStored,true);
   assert.equal(item.tagSuggestion.aiUsed,false);assert.equal(item.tagSuggestion.source,'metadata_rules');assert.ok(item.tagSuggestion.candidates.length>=3);assert.equal(item.tagStatus,'manual_confirmed');
   const before=await call('/api/resources');assert.equal(before.payload.some(x=>x.title==='匿名端到端报告'),false);
@@ -37,7 +37,7 @@ test('computer upload rejects executable extensions before private storage',asyn
 
 test('report and book batch keeps safe files when one item fails, then supports pending-only bulk metadata',async()=>{
   const metadata=[
-    {title:'匿名行业报告甲',section:'reports_digest',tags:'行业，批量\n行业',downloadEnabled:false},
+    {title:'匿名行业报告甲',section:'research_reports',tags:'行业，批量\n行业',downloadEnabled:false},
     {title:'匿名书籍乙',section:'books',tags:'阅读，批量',downloadEnabled:false},
     {title:'匿名失败项',section:'books',tags:'批量',downloadEnabled:false}
   ];
@@ -53,7 +53,7 @@ test('report and book batch keeps safe files when one item fails, then supports 
   const batchId=uploaded.payload.batch.id;
   const bulk=await call(`/api/admin/local-import-batches/${batchId}/apply-metadata`,{method:'PATCH',body:{section:'books',tags:'批量标签，阅读\n批量标签',downloadEnabled:true}});
   assert.equal(bulk.status,200);assert.equal(bulk.payload.updatedCount,2);assert.equal(bulk.payload.pendingOnly,true);for(const item of bulk.payload.items){assert.equal(item.section,'books');assert.deepEqual(item.tags,['批量标签','阅读']);assert.equal(item.downloadEnabled,true);assert.equal(item.status,'pending_review')}
-  const overridden=await call(`/api/admin/local-import-items/${bulk.payload.items[0].id}`,{method:'PATCH',body:{section:'reports_digest',tags:'行业报告，单项覆盖',downloadEnabled:false}});assert.equal(overridden.status,200);assert.equal(overridden.payload.section,'reports_digest');assert.deepEqual(overridden.payload.tags,['行业报告','单项覆盖']);assert.equal(overridden.payload.downloadEnabled,false);
+  const overridden=await call(`/api/admin/local-import-items/${bulk.payload.items[0].id}`,{method:'PATCH',body:{section:'research_reports',tags:'行业报告，单项覆盖',downloadEnabled:false}});assert.equal(overridden.status,200);assert.equal(overridden.payload.section,'research_reports');assert.deepEqual(overridden.payload.tags,['行业报告','单项覆盖']);assert.equal(overridden.payload.downloadEnabled,false);
   const published=await call(`/api/admin/local-import-items/${bulk.payload.items[1].id}/review`,{method:'POST',body:{decision:'publish',copyrightConfirmed:true,securityConfirmed:true},headers:{'x-admin-confirmation':'resource.publish','idempotency-key':'local-batch-publish-fixture'}});assert.equal(published.status,200);
   const search=await call('/api/feed?query='+encodeURIComponent('批量标签'));assert.equal(search.status,200);const visible=search.payload.items.find(x=>x.targetId===bulk.payload.items[1].resourceId);assert.ok(visible);assert.deepEqual(visible.tags,['批量标签','阅读']);for(const forbidden of ['privateStorageRef','storageKey','privateAttachments','safeFilename','sourceNote'])assert.equal(JSON.stringify(visible).includes(forbidden),false,forbidden);
   const postPublishBulk=await call(`/api/admin/local-import-batches/${batchId}/apply-metadata`,{method:'PATCH',body:{section:'books',tags:'再次批量',downloadEnabled:false}});assert.equal(postPublishBulk.status,200);assert.equal(postPublishBulk.payload.updatedCount,1);assert.equal(postPublishBulk.payload.skippedCount,1);

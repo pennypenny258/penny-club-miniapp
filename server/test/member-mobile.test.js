@@ -27,6 +27,14 @@ test('mobile resources are whitelist-only and a closed download has no locator',
   assert.equal(/url|path|key|ref/i.test(JSON.stringify(download.payload)),false);
 });
 
+test('research reports and group digests have independent member sections while ambiguous legacy rows stay private',async()=>{
+  const resources=(await call('/api/resources')).payload;
+  assert.ok(resources.some(x=>x.type==='industry_report'&&x.mobileSection==='research_reports'));
+  assert.ok(resources.some(x=>x.type==='group_digest'&&x.mobileSection==='group_digests'));
+  const ambiguous={id:'r-legacy-ambiguous',title:'匿名历史资料',summary:'无法安全判断类别',tags:['历史'],type:'tool',mobileSection:'reports_digests',status:'published',downloadEnabled:true,publishedAt:new Date().toISOString()};store.resources.push(ambiguous);
+  try{const hidden=await call('/api/resources?query='+encodeURIComponent('匿名历史资料'));assert.equal(hidden.payload.some(x=>x.id===ambiguous.id),false);const view=await call(`/api/resources/${ambiguous.id}/view`);assert.equal(view.status,404)}finally{store.resources.splice(store.resources.indexOf(ambiguous),1)}
+});
+
 test('published tags are searchable while draft tags remain private',async()=>{
   const published=store.resources.find(x=>x.status==='published'&&(x.tags||[]).length);assert.ok(published);
   const tag=published.tags[0],resourceSearch=await call(`/api/resources?query=${encodeURIComponent(tag)}`),feedSearch=await call(`/api/feed?query=${encodeURIComponent(tag)}`);

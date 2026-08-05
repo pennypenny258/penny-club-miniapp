@@ -2,7 +2,7 @@
 
 ## 会员移动体验补充实体
 
-- `resource.mobileSection`：将既有资料类型映射到 `replays`、`reports_digest`、`books`、`files_templates`、`benefits` 五个移动分栏，不替代后台原始分类。
+- `resource.mobileSection`：将既有资料类型映射到 `replays`、`research_reports`、`group_digests`、`books`、`files_templates`、`benefits` 六个移动分栏，不替代后台原始分类。旧合并值仅在类型或标题/标签的安全元数据可明确判断时兼容；无法判断的项标为 `unclassified`、退回待分类且不对会员展示。
 - `resource.downloadEnabled`：运营逐项控制下载入口；开启后仍必须经过有效会籍与私有文件签名校验。
 - `resource.tags`：最多 10 个规范化关键词；只有 `published` 资料的标签可进入会员端资料库和动态搜索。
 - `resource.viewEnabled`：已发布资料默认可打开受控阅读入口；与下载开关分离。`preview_not_configured` 表示可查看安全元数据，但文件在线预览/转码尚未接入。
@@ -27,7 +27,7 @@
 | membership_decisions | 最终会籍判定 | CRM、付款、到期日、群状态、理由码与审核人 |
 | import_batches | 资料/订单导入批次 | 类型、字段映射、有效/异常行、结果摘要、回滚标识 |
 | import_items | 逐行迁移工作项 | CSV 行号、规范化数据、错误/警告、修正与上架状态 |
-| local_import_batches / local_import_items | 电脑资料导入 | 批次摘要、五分栏、标题、来源说明、下载开关、分类确认、附件是否已私有保存、安全复核与待审核状态；路径和存储键不进入安全响应 |
+| local_import_batches / local_import_items | 电脑资料导入 | 批次摘要、六分栏、标题、来源说明、下载开关、分类确认、附件是否已私有保存、安全复核与待审核状态；路径和存储键不进入安全响应 |
 | one_time_source_migrations | 一次性来源迁入任务 | 来源方式、范围、分类策略、连接安全状态、等待授权/导出包、报告、断开状态；持续同步固定为否；不保存凭据或根链接 |
 | one_time_source_migration_items | 逐项迁入状态 | 自有内容目标、私有附件不透明引用、待审核/跳过/异常/分类/重试；临时来源定位符只在私有执行边界使用并在断开后清除 |
 | resources | 知识库 | 类型、权限级别、存储键、发布状态 |

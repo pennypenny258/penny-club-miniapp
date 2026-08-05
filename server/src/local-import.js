@@ -1,13 +1,14 @@
 'use strict';
 
 const path=require('node:path');
+const {PUBLIC_RESOURCE_SECTIONS,LEGACY_COMBINED_SECTIONS,resolveResourceSection}=require('./resource-sections');
 
 const MAX_FILE_BYTES=25*1024*1024;
 const MAX_TOTAL_BYTES=100*1024*1024;
 const MAX_FILES=20;
-const SECTIONS=new Set(['replays','reports_digest','books','files_templates','benefits']);
-const SECTION_TYPES={replays:'meeting_replay',reports_digest:'industry_report',books:'book',files_templates:'tool',benefits:'benefit_update'};
-const SECTION_SUGGESTIONS={replays:['回放','线上分享','活动资料'],reports_digest:['行业报告','投研','行业研究'],books:['书目','阅读','学习资料'],files_templates:['工具','文件模板','实用资料'],benefits:['会员福利','规则','福利更新']};
+const SECTIONS=new Set([...PUBLIC_RESOURCE_SECTIONS,'unclassified']);
+const SECTION_TYPES={replays:'meeting_replay',research_reports:'industry_report',group_digests:'group_digest',books:'book',files_templates:'tool',benefits:'benefit_update',unclassified:'unclassified_resource'};
+const SECTION_SUGGESTIONS={replays:['回放','线上分享','活动资料'],research_reports:['研究报告','投研','行业研究'],group_digests:['群聊精华','讨论整理','社群知识'],books:['书目','阅读','学习资料'],files_templates:['工具','文件模板','实用资料'],benefits:['会员福利','规则','福利更新'],unclassified:['待分类','资料整理','人工复核']};
 const TOPIC_RULES=[
   [/(?:人工智能|生成式\s*ai|\bai\b)/i,'AI'],[/(?:软件|software)/i,'软件'],[/(?:saas|企业服务)/i,'企业服务'],[/(?:机器人|robot)/i,'机器人'],[/(?:半导体|芯片)/i,'半导体'],[/(?:新能源|光伏|储能)/i,'新能源'],[/(?:医疗|生物医药)/i,'医疗健康'],[/(?:消费|品牌)/i,'消费'],[/(?:出海|海外)/i,'出海'],[/(?:融资|融资额)/i,'融资'],[/(?:并购|m&a)/i,'并购'],[/(?:招聘|岗位)/i,'招聘'],[/(?:投资|创投|一级市场)/i,'投资'],[/(?:尽调|尽职调查)/i,'尽调'],[/(?:增长|growth)/i,'增长'],[/(?:商业化)/i,'商业化'],[/(?:行业|产业)/i,'行业研究'],[/(?:赛道)/i,'赛道'],[/(?:报告|report)/i,'报告'],[/(?:回放|复盘)/i,'回放'],[/(?:群聊精华|群聊)/i,'群聊精华']
 ];
@@ -65,8 +66,11 @@ function validateLocalFile({filename,mimeType,bytes,maxBytes=MAX_FILE_BYTES}){
 }
 
 function validateMetadata(input,{fileRequired=false}={}){
-  const section=String(input.section||'');if(!SECTIONS.has(section))throw Object.assign(new Error('资料分类无效'),{statusCode:400,code:'LOCAL_IMPORT_SECTION_INVALID'});
-  return {title:safeText(input.title,{required:true,max:120,label:'标题'}),summary:safeText(input.summary,{max:300,label:'摘要'}),tags:normalizeTags(input.tags),sourceNote:safeText(input.sourceNote||'本地迁入',{max:120,label:'来源说明'})||'本地迁入',section,type:SECTION_TYPES[section],downloadEnabled:fileRequired?Boolean(input.downloadEnabled):false,needsClassification:Boolean(input.needsClassification)};
+  const title=safeText(input.title,{required:true,max:120,label:'标题'}),tags=normalizeTags(input.tags),requested=String(input.section||'');
+  const resolved=LEGACY_COMBINED_SECTIONS.has(requested)?resolveResourceSection({section:requested,type:input.type,title,tags}):{section:requested,needsClassification:requested==='unclassified'};
+  const section=resolved.section;if(!SECTIONS.has(section))throw Object.assign(new Error('资料分类无效'),{statusCode:400,code:'LOCAL_IMPORT_SECTION_INVALID'});
+  const needsClassification=Boolean(input.needsClassification)||resolved.needsClassification||section==='unclassified';
+  return {title,summary:safeText(input.summary,{max:300,label:'摘要'}),tags,sourceNote:safeText(input.sourceNote||'本地迁入',{max:120,label:'来源说明'})||'本地迁入',section,type:SECTION_TYPES[section],downloadEnabled:fileRequired?Boolean(input.downloadEnabled):false,needsClassification};
 }
 
 function normalizeTags(value){
@@ -84,7 +88,7 @@ function contentGenerationBoundary({extension='',mimeType=''}){
   if(['.pdf','.docx','.md','.txt'].includes(ext))return {contentStatus:'text_extraction_not_configured',contentNotice:ext==='.pdf'?'尚未配置稳健的 PDF 文本提取；若为扫描 PDF 还需 OCR。当前仅使用标题、分类和文件名。':'尚未配置稳健的文本提取；当前仅使用标题、分类和文件名。'};
   return {contentStatus:'metadata_only',contentNotice:'当前仅使用标题、分类和文件名生成规则建议，未读取文件内容。'};
 }
-function generateTagSuggestions({title='',section='reports_digest',filename='',extension='',mimeType='',extractedText='',textExtractionConfigured=false,aiConfigured=false}={}){
+function generateTagSuggestions({title='',section='research_reports',filename='',extension='',mimeType='',extractedText='',textExtractionConfigured=false,aiConfigured=false}={}){
   const hasExtractedText=textExtractionConfigured&&String(extractedText||'').trim(),basis=`${title} ${filename} ${hasExtractedText?extractedText:''}`,candidates=[];
   for(const [pattern,tag] of TOPIC_RULES)if(pattern.test(basis))candidates.push(tag);
   candidates.push(...(SECTION_SUGGESTIONS[section]||['资料']));

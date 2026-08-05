@@ -12,5 +12,6 @@
 - `007_governed_materialization` 为匹配复核后的 CRM、付款、名册建立职责分离、幂等事务、显式补偿和脱敏审计；名册先隐藏物化，只有独立审批才可见。它仍不启用真实后台/API，未来只按 `cloudbase-pg-console/materialization-manifest.json` 人工执行。
 - `008_admin_session_rbac` 准备正式后台的外部身份哈希绑定、随机 Bearer 会话、服务端 RBAC、近期再认证与高风险操作幂等授权。它不创建身份绑定、不分配角色、不接浏览器路由，未来只按 `cloudbase-pg-console/admin-auth-manifest.json` 人工执行。
 - `009_admin_governance` 准备默认空的一次性首位系统管理员引导、双人角色授予/撤销、撤销后的会话与未用授权即时失效，以及固定白名单脱敏审计查询。它不预置管理员、不启用路由，未来只按 `cloudbase-pg-console/admin-governance-manifest.json` 人工执行。
+- `010_split_resource_sections` 是尚未执行的前向兼容迁移：明确的行业报告映射为“研究报告”，明确的群聊整理映射为“群聊精华”；无法凭既有类型判断的旧合并项会回到待分类草稿、关闭下载且清空发布时间，不会继续对会员公开。运行前仍需单独审核 CloudBase Console 执行包。
 - 不要把 `venture_private` 加入 PostgREST 暴露列表。前端和小程序只能调用经过会籍门禁、RBAC 和字段白名单的 Node API；CloudBase 网关凭据只存在 Node 服务端。
 - CloudBase PG 不使用标准私网直连角色时，空库控制台执行顺序与 `002` 安全执行变体见 `server/db/cloudbase-pg-console/manifest.json`。canonical `001/002/003` 校验和必须保持不变。
