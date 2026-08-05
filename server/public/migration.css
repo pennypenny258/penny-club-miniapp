@@ -1,0 +1,70 @@
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.form-input {
+  display: block;
+  width: 100%;
+  margin: 7px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: white;
+}
+.tree-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 10px 0 18px;
+}
+.tree-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f5f7f4;
+  padding: 11px;
+  border-radius: 8px;
+}
+.tree-list span { color: var(--muted); white-space: nowrap; }
+.feishu-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.feishu-step {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fafafa;
+}
+.step-index {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #ececec;
+  color: #555;
+  font-weight: 700;
+}
+.feishu-step.complete .step-index,
+.feishu-step.ready .step-index { background: #e6f3eb; color: #176b4b; }
+.feishu-step.blocked .step-index,
+.feishu-step.failed .step-index { background: #fff0ed; color: #9b3326; }
+.feishu-step b { display: inline-block; margin-right: 8px; }
+.step-status { color: var(--muted); font-size: 12px; }
+.feishu-step p { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.security-line { padding: 11px 13px; border-left: 3px solid #176b4b; background: #f5f7f4; color: #526158; font-size: 13px; }
+.task-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.task-actions button { margin: 0; }
+button:disabled { cursor: not-allowed; opacity: .48; }
+@media (max-width: 760px) {
+  .form-grid, .tree-list { grid-template-columns: 1fr; }
+  .feishu-steps { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,28 @@
+:host {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: block;
+}
+
+.member-brand {
+  padding: 16rpx 28rpx 14rpx;
+  border-bottom: 1rpx solid #ededed;
+  border-left: 6rpx solid #bca7d3;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+
+.member-brand-main {
+  font-size: 29rpx;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: .2rpx;
+  color: #191919;
+}
+
+.member-brand-sub {
+  margin-top: 5rpx;
+  color: #777777;
+  font-size: 19rpx;
+}

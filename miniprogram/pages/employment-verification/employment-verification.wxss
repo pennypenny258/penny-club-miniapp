@@ -1,0 +1,1 @@
+.actions{display:flex;gap:20rpx;margin:20rpx 0}.actions button{margin:0}.note{width:100%;box-sizing:border-box;background:#f5f7f4;border-radius:12rpx;padding:18rpx;min-height:140rpx;margin-top:22rpx}.status{display:flex;justify-content:space-between;padding:14rpx 0;border-bottom:1rpx solid #edf0ed;font-size:24rpx}

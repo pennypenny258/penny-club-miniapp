@@ -1,0 +1,14 @@
+{
+  "name": "venture-club-miniapp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "创投会员社群微信小程序 MVP",
+  "scripts": {
+    "start": "node server/src/server.js",
+    "dev": "node server/src/server.js",
+    "test": "NODE_ENV=test node --test server/test/*.test.js",
+    "staging:check": "node scripts/staging-check.js",
+    "release:check": "node scripts/release-check.js"
+  },
+  "engines": { "node": ">=18" }
+}

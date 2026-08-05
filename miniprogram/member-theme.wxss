@@ -1,0 +1,46 @@
+.page .tag-green {
+  background: #f1ecf7;
+  color: #664783;
+}
+
+.page .button,
+.page .submit {
+  background: #725292;
+  color: #ffffff;
+}
+
+.page .button-secondary {
+  background: #f1f1f1;
+  color: #444444;
+}
+
+.page .notice-safe {
+  background: #f4f0f8;
+  color: #5f4a73;
+}
+
+.page .text-button,
+.page .tab.active {
+  color: #664783;
+}
+
+.page .feed-mark,
+.page .membership button {
+  background: #f1ecf7;
+  color: #664783;
+}
+
+.page .tab.active {
+  border-color: #725292;
+}
+
+.page .chip.active {
+  border-color: #cbb9dc;
+  background: #f3eef8;
+  color: #664783;
+}
+
+.page .avatar {
+  background: #eee9f3;
+  color: #5e4a70;
+}

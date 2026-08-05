@@ -1,0 +1,33 @@
+'use strict';
+
+const fs = require('node:fs');
+const path = require('node:path');
+const root = path.join(__dirname, '..');
+const project = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/project.config.json'), 'utf8'));
+const runtimeText = fs.readFileSync(path.join(root, 'miniprogram/config/runtime.js'), 'utf8');
+const issues = [];
+
+if (!project.appid || project.appid === 'touristappid') issues.push('AppID 仍为游客/占位配置');
+if (project.setting?.urlCheck === false) issues.push('项目仍关闭服务器域名校验');
+if (/environment:\s*['"]development['"]/.test(runtimeText)) issues.push('运行环境仍为 development');
+if (/demoMode:\s*true/.test(runtimeText)) issues.push('演示身份模式仍开启');
+if (/http:\/\//.test(runtimeText)) issues.push('API 仍包含非 HTTPS 地址');
+
+if (process.env.NODE_ENV === 'production') {
+  if (process.env.DEPLOYMENT_PROFILE === 'cloudbase_staging_demo') issues.push('生产发布仍使用 CloudBase 匿名测试配置');
+  if (process.env.DEMO_DATA_ONLY === 'true') issues.push('生产发布仍限定为匿名演示数据模式');
+  if (process.env.ADMIN_AUTH_MODE !== 'external_session') issues.push('生产后台未启用服务端会话/RBAC，禁止使用演示角色头');
+  if (!process.env.DATABASE_URL) issues.push('生产数据库未配置');
+  if (!process.env.PRIVATE_STORAGE_PROVIDER || process.env.PRIVATE_STORAGE_PROVIDER === 'local') issues.push('生产私有对象存储未配置');
+  if (!process.env.FIELD_ENCRYPTION_KEY_REF) issues.push('敏感字段加密密钥引用未配置');
+  if (!process.env.BACKUP_BUCKET) issues.push('备份存储未配置');
+  if (!process.env.MONITORING_DSN) issues.push('错误监控未配置');
+}
+
+if (issues.length) {
+  console.error('发布预检未通过：\n- ' + issues.join('\n- '));
+  console.error('请完成 docs/development-and-release-standards.md 的真实账号验收清单。');
+  process.exitCode = 1;
+} else {
+  console.log('静态发布预检通过；仍须在微信开发者工具和真机完成官方能力验收。');
+}

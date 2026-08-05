@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>创投会员社群 · 会员端</title>
+  <link rel="stylesheet" href="/member/member.css">
+  <link rel="stylesheet" href="/member/member-brand.css">
+  <link rel="stylesheet" href="/member/member-theme.css">
+  <link rel="stylesheet" href="/member/member-resource.css">
+</head>
+<body>
+  <div class="preview-note">会员端移动预览 · 全部为虚构演示数据</div>
+  <div class="phone-shell">
+    <header class="app-header">
+      <div class="brand-lockup"><strong>Penny’s Club</strong><span>佩妮创投会员服务</span></div>
+      <div class="header-tools"><strong id="page-title">动态</strong><span id="page-subtitle" hidden>会员专区的最新进展</span><label class="identity-switch"><span>演示身份</span><select id="identity"><option value="active">有效会员</option><option value="near_expiry">临期会员</option><option value="expired">过期会员</option><option value="guest">待核验</option><option value="frozen">冻结会员</option></select></label></div>
+    </header>
+    <main id="member-content"><div class="loading">正在载入…</div></main>
+    <nav id="tabs" class="tabbar" aria-label="主导航"></nav>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/member/member.js"></script>
+</body>
+</html>

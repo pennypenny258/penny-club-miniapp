@@ -1,0 +1,34 @@
+:root {
+  --green: #725292;
+  --green-dark: #664783;
+}
+
+.brand-lockup {
+  padding-left: 9px;
+  border-left: 3px solid #bca7d3;
+}
+
+.timeline-mark,
+.tag.green,
+.membership-strip button {
+  background: #f1ecf7;
+}
+
+.notice.safe {
+  background: #f4f0f8;
+  color: #5f4a73;
+}
+
+.filter-chips button.active {
+  border-color: #cbb9dc;
+  background: #f3eef8;
+}
+
+.primary:disabled {
+  background: #cbbddd;
+}
+
+.avatar {
+  background: #eee9f3;
+  color: #5e4a70;
+}

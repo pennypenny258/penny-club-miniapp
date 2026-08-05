@@ -1,0 +1,11 @@
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { isMembershipActive, evaluateMembership, canViewMeetingLink, renewalBaseDate } = require('../src/domain');
+const now = new Date('2026-08-04T10:00:00Z');
+const active = { userStatus: 'active', status: 'active', startsAt: '2026-01-01T00:00:00Z', endsAt: '2027-01-01T00:00:00Z', crmVerificationStatus: 'verified', latestPaymentEvidenceStatus: 'verified', latestValidPaymentAt: '2026-01-01T00:00:00Z', groupStatus: 'in_group' };
+test('active membership requires status and date window', () => { assert.equal(isMembershipActive(active, now), true); assert.equal(isMembershipActive({ ...active, status: 'expired' }, now), false); });
+test('meeting link requires active membership, registration and time window', () => { const activity = { meetingLinkOpensAt: '2026-08-04T09:00:00Z', meetingLinkClosesAt: '2026-08-04T11:00:00Z' }; assert.equal(canViewMeetingLink({ member: active, registration: { status: 'registered' }, activity, now }), true); assert.equal(canViewMeetingLink({ member: active, registration: null, activity, now }), false); });
+test('renewal extends from later of expiry and payment', () => { assert.equal(renewalBaseDate(active, now).toISOString(), '2027-01-01T00:00:00.000Z'); assert.equal(renewalBaseDate({ ...active, endsAt: '2025-01-01T00:00:00Z' }, now).toISOString(), now.toISOString()); });
+test('payment evidence cannot activate membership by itself', () => { const result = evaluateMembership({ ...active, crmVerificationStatus: 'needs_review' }, now); assert.equal(result.active, false); assert.ok(result.reasons.includes('CRM_NOT_VERIFIED')); });
+test('current group status participates in final membership decision', () => { assert.equal(isMembershipActive({ ...active, groupStatus: 'left' }, now), false); });

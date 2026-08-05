@@ -1,0 +1,3 @@
+@import "../../member-theme.wxss";
+
+.compose{background:#fff;padding:30rpx}.compose-title{font-size:35rpx;font-weight:600;margin-bottom:10rpx}.textarea{margin-top:22rpx}.compose-actions{display:flex;align-items:center;justify-content:space-between;margin-top:18rpx}.voice,.submit{margin:0;font-size:25rpx;border-radius:10rpx}.voice{background:#f2f2f2;color:#555}.submit{background:#07c160;color:#fff}.voice-hint{font-size:21rpx;color:#999;margin-top:14rpx}.chips{white-space:nowrap;background:#fff;border-bottom:1rpx solid #ededed}.chip{display:inline-block;border:1rpx solid #ddd;border-radius:32rpx;padding:10rpx 22rpx;margin:18rpx 8rpx;font-size:24rpx;color:#666}.chip:first-child{margin-left:28rpx}.chip.active{border-color:#a8ddbd;background:#eef8f2;color:#159957}

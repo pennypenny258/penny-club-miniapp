@@ -1,0 +1,11 @@
+title,summary,source_directory,type,tags,access_level,source_url,attachment_ref,published_at,migration_status
+会员平台使用说明（示例）,介绍身份核验和使用规则,usage_guide,usage_guide,新会员|规则,active_member,https://example.invalid/feishu/guide,,2026-07-01,ready
+会员名册迁移项（示例）,只进入会员模块且不公开联系方式,member_directory,member_directory,会员,admin_only,,ATTACHMENT-DEMO-001,2026-07-01,pending
+融资资源对接（示例）,进入融资需求审核而非公开知识库,fundraising_connections,fundraising,融资|先进制造,admin_only,https://example.invalid/feishu/fundraising,,2026-06-20,pending
+招聘专区条目（示例）,进入招聘需求审核而非公开知识库,recruitment,recruitment,招聘|投资经理,admin_only,https://example.invalid/feishu/recruitment,,2026-06-22,pending
+活动发布通知（示例）,进入活动中心并重新核验时间与权限,activity_notices,activity_center,活动|城市沙龙,admin_only,https://example.invalid/feishu/activity,,2026-06-25,pending
+历史线上讨论回放（示例）,回放与纪要索引,meeting_replays,meeting_replay,线上活动|回放,active_member,,ATTACHMENT-DEMO-002,2026-06-15,pending
+群聊精华（示例）,运营整理的主题讨论摘要,group_digests,group_digest,群聊|精选,active_member,,ATTACHMENT-DEMO-003,2026-06-18,ready
+行业报告（示例）,公开来源与授权附件索引,industry_reports,industry_report,行业|研究,active_member,https://example.invalid/feishu/report,,2026-06-10,ready
+书籍资源（示例）,仅迁移已确认分享权限的资源,books,book,书籍|阅读,selected_member,,ATTACHMENT-DEMO-004,2026-05-01,pending
+常用数据源与工具（示例）,投研数据源和文件工具说明,data_files_tools,tool,数据源|工具,active_member,https://example.invalid/feishu/tools,,2026-06-01,ready

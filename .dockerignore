@@ -1,0 +1,32 @@
+.git
+.github
+.cloudbase
+node_modules
+npm-debug.log*
+*.log
+.DS_Store
+
+# 本地配置和任何私密凭据绝不能进入镜像构建上下文
+.env
+.env.*
+*.env.private
+!config/*.env.example
+
+# 本机运行数据、真实上传附件、临时文件和截图绝不能进入镜像
+server/private-storage
+server/data
+tmp
+coverage
+*.pid
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.mp4
+*.mov
