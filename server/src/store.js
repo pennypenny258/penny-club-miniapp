@@ -147,6 +147,7 @@ const renewalOffers = [
 const aiReviews = demands.map((d,i)=>({id:`ai-demo-${i+1}`,subjectType:'demand',subjectId:d.id,provider:'demo-adapter-no-external-call',recommendation:d.aiReviewStatus,riskFlags:d.aiReviewStatus==='flagged'?['信息完整性待人工确认']:[],humanDecision:d.humanReviewStatus,rawContentStored:false}));
 
 const importBatches = [
+  {id:'batch-crm-rehearsal',kind:'crm_verification',source:'synthetic_csv',status:'needs_correction',totalRows:3,validRows:1,reviewRows:1,excludedRows:1,errorRows:1,createdAt:days(-7)},
   {id:'batch-knowledge-ready',kind:'knowledge',source:'synthetic_csv',status:'ready_for_human_review',totalRows:10,validRows:9,reviewRows:1,excludedRows:0,errorRows:0,createdAt:days(-6)},
   {id:'batch-directory-review',kind:'voluntary_directory',source:'synthetic_csv',status:'needs_correction',totalRows:5,validRows:3,reviewRows:3,excludedRows:1,errorRows:1,createdAt:days(-5)},
   {id:'batch-payment-reviewed',kind:'shop_order_evidence',source:'synthetic_csv',status:'ready_for_human_review',totalRows:6,validRows:4,reviewRows:2,excludedRows:2,errorRows:0,createdAt:days(-4)},
@@ -154,6 +155,8 @@ const importBatches = [
   {id:'batch-manual-entry',kind:'manual_payment',source:'controlled_manual_entry',status:'completed_demo',totalRows:2,validRows:2,reviewRows:0,excludedRows:0,errorRows:0,createdAt:days(-2)}
 ];
 const importItems = [
+  {id:'item-crm-review',batchId:'batch-crm-rehearsal',kind:'crm_verification',rowNumber:2,status:'needs_human_review',data:{internal_member_ref:'anonymous-member-ref',crm_verification_status:'verified',membership_start:'2026-01-01',membership_end:'2027-01-01',group_status:'in_group',migration_status:'ready'},errors:[],warnings:['匿名演练：仍需核对会员匹配与付款证据，不能仅凭 CRM 激活会籍']},
+  {id:'item-crm-conflict',batchId:'batch-crm-rehearsal',kind:'crm_verification',rowNumber:3,status:'error',data:{internal_member_ref:'anonymous-conflict-ref',crm_verification_status:'needs_review',group_status:'unknown',migration_status:'needs_review'},errors:['匿名演练：会员匹配冲突且会籍窗口不完整'],warnings:['保持待复核，不写入最终会籍判定']},
   {id:'item-knowledge-ready',batchId:'batch-knowledge-ready',kind:'knowledge',rowNumber:2,status:'ready',data:{source_directory:'行业报告',title:'演示行业观察条目',summary:'可上架的虚构资料摘要',type:'industry_report',tags:['演示','行业'],access_level:'active_member',migration_status:'ready',destination:'knowledge_base'},errors:[],warnings:[]},
   {id:'item-knowledge-review',batchId:'batch-knowledge-ready',kind:'knowledge',rowNumber:6,status:'needs_human_review',data:{source_directory:'书籍资源',title:'待确认授权的演示书目',summary:'只保留书目信息',type:'book',tags:['书目'],access_level:'active_member',migration_status:'needs_review',destination:'knowledge_base'},errors:[],warnings:['需人工确认版权与来源状态']},
   {id:'item-directory-consent',batchId:'batch-directory-review',kind:'voluntary_directory',rowNumber:3,status:'needs_human_review',data:{member_reference:'demo-ref-only',public_display_name:'候审代号（演示）',organization:'虚构协作组',industry:'企业服务',interests:'研究交流',investment_stage:'成长期',city:'示例城',expertise:'行业研究',bio:'自愿公开名册候审演示',source_sheet:'演示空模板',eligibleForReview:true},errors:[],warnings:['联系方式不会导入公开名册']},

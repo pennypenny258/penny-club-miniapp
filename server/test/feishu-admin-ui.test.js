@@ -15,8 +15,9 @@ test('Feishu admin UI presents ordered prerequisites and never collects secrets'
   assert.equal(app.includes('无需重填 Secret'),true);
 });
 
-test('computer import is the primary materials view and supports files plus metadata-only entries',()=>{
-  assert.ok(app.indexOf("['local-materials','从电脑导入资料（首选）']")<app.indexOf("['feishu-onetime','飞书迁入（可选）']"));
+test('unified migration is primary, while computer import stays ahead of optional Feishu',()=>{
+  assert.ok(app.indexOf("['migration-center','迁移总览（首选）']")<app.indexOf("['local-materials','从电脑导入资料']"));
+  assert.ok(app.indexOf("['local-materials','从电脑导入资料']")<app.indexOf("['feishu-onetime','飞书迁入（可选）']"));
   for(const text of ['拖拽文件到这里','上传到待审核区','先建条目，稍后补文件','允许会员下载','需要人工确认分类','关键词标签','在线预览能力待配置','自动建议标签（可修改）','规则建议，待确认','一键采用剩余建议','本页不接收 AI API Key'])assert.equal(app.includes(text),true,text);
   assert.equal(app.includes('accept=".pdf,.docx,.xlsx,.pptx,.mp4,.mp3,.m4a,.png,.jpg,.jpeg,.md,.txt,.zip"'),true);
 });

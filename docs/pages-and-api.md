@@ -60,6 +60,7 @@
 | POST | `/api/admin/feishu-migrations/:id/retry-failures` | 重试失败项 |
 | POST | `/api/admin/feishu-migrations/:id/disconnect` | 清除外部来源引用并保留自有内容 |
 | POST | `/api/admin/imports/:kind/preview` | CSV 解析、映射、安全检查和逐行异常 |
+| POST | `/api/admin/imports/internal-crm/preview` | 内部 CRM 模板预检；只创建私有待复核批次，不改变最终会籍 |
 | PATCH | `/api/admin/import-items/:id` | 修正允许字段并重新校验 |
 | POST | `/api/admin/import-items/:id/publish` | 将合格资料上架相应知识库分类 |
 | POST | `/api/admin/imports/wechat-shop-orders/preview` | 小店订单付款证据预检；敏感值不回显 |

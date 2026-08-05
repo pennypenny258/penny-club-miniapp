@@ -48,5 +48,6 @@ test('admin navigation is grouped into six business modules and keeps queue entr
   const source = fs.readFileSync(path.join(__dirname,'..','public','app.js'),'utf8');
   for (const key of ['workbench','members','materials','activities','matching','settings']) assert.match(source,new RegExp(`key:'${key}'`));
   for (const queue of ['public-profile-updates','employment-verifications','import-items','notification-jobs','applications','audit-logs']) assert.match(source,new RegExp(queue));
-  assert.equal((source.match(/\{key:'/g)||[]).length,6);
+  const navigation=source.slice(0,source.indexOf('const nav='));
+  assert.equal((navigation.match(/\{key:'/g)||[]).length,6);
 });
