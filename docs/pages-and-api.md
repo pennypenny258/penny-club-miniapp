@@ -45,6 +45,7 @@
 | POST | `/api/admin/payment-evidence/manual` | 受控人工补录付款证据；不接受手机号、订单号或付款凭据 |
 | PATCH | `/api/admin/payment-evidence/:id/review` | 复核有效/退款/排除；不单独改变会籍 |
 | PATCH | `/api/admin/renewal-offers/:id` | 维护标准价、专属价、优惠理由和适用规则 |
+| PATCH | `/api/admin/members/:id/group-status` | 同一运营确认动作维护大群状态、会员档位和内部原因码；付款或档位均不单独放行会籍 |
 | GET | `/api/admin/import-templates/*.{xlsx,csv}` | 下载 CRM、自愿公开名册、微信小店、商户号小票和手动转账 Excel / CSV 模板 |
 | GET | `/api/admin/local-imports` | 电脑导入能力、批次和安全审核元数据；不返回文件名、路径或存储键 |
 | PATCH | `/api/admin/local-import-batches/:id/apply-metadata` | 对同批待审核资料批量应用分类、标签和下载开关；已发布/已跳过项不变 |

@@ -1,6 +1,7 @@
 'use strict';
 
 const { parseCsv } = require('./imports');
+const { membershipTierCandidateForPrice, safeMembershipTierRules } = require('./membership-tiers');
 
 const WECHAT_SHOP_TEMPLATE_HEADERS = ['收件人姓名','订单发货时间','收件人手机号','商品价格(单件)'];
 const MERCHANT_RECEIPT_TEMPLATE_HEADERS = ['付款人姓名','支付时间','付款人手机号','支付金额'];
@@ -54,19 +55,6 @@ function priceCents(value) {
   return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) : null;
 }
 
-function parseRuleList(value) {
-  const parts = Array.isArray(value) ? value : String(value || '').split(/[，,\n]/);
-  const values = new Set();
-  for (const part of parts) {
-    if (!String(part).trim()) continue;
-    const cents = priceCents(part);
-    if (cents === null) continue;
-    values.add(cents);
-    if (values.size >= 20) break;
-  }
-  return values;
-}
-
 function refundHeaders(headers) { return headers.filter(header => /退款|退货|售后/.test(String(header))); }
 function possibleRefund(row, headers) {
   return headers.some(header => {
@@ -76,44 +64,44 @@ function possibleRefund(row, headers) {
   });
 }
 
-function previewPaymentClueCsv(csv, { source = 'wechat_shop_order', priceRoleRules = {} } = {}) {
+function previewPaymentClueCsv(csv, { source = 'wechat_shop_order' } = {}) {
   const parsed = parseCsv(csv);
   const aliases = ALIASES[source];
   if (!aliases) throw Object.assign(new Error('付款来源不受支持'), { statusCode:400, code:'PAYMENT_SOURCE_UNSUPPORTED' });
   const selected = Object.fromEntries(Object.entries(aliases).map(([key,candidates]) => [key, findHeader(parsed.headers,candidates)]));
   const refundFields = refundHeaders(parsed.headers);
-  const a1Prices = parseRuleList(priceRoleRules.a1);
-  const a2Prices = parseRuleList(priceRoleRules.a2);
-  const configured = a1Prices.size > 0 || a2Prices.size > 0;
-  const counts = { totalRows:parsed.rows.length, matchingCandidateRows:0, needsManualRows:0, groupEntryClueRows:0, phoneClueRows:0, nameClueRows:0, priceClueRows:0, priceUnclassifiedRows:0, possibleRefundRows:0, a1CandidateRows:0, a2CandidateRows:0 };
+  const counts = { totalRows:parsed.rows.length, matchingCandidateRows:0, needsManualRows:0, groupEntryClueRows:0, phoneClueRows:0, nameClueRows:0, priceClueRows:0, priceUnclassifiedRows:0, possibleRefundRows:0, angelCandidateRows:0, a1CandidateRows:0, a2CandidateRows:0, honoraryDirectorRenewalCandidateRows:0 };
   for (const row of parsed.rows) {
     const namePresent = hasValue(valueAt(row,selected.recipientName));
     const phonePresent = validPhone(valueAt(row,selected.phone));
     const occurredAtPresent = validDate(valueAt(row,selected.occurredAt));
     const cents = priceCents(valueAt(row,selected.amount));
     const refund = possibleRefund(row,refundFields);
-    const role = cents !== null && a1Prices.has(cents) ? 'a1' : cents !== null && a2Prices.has(cents) ? 'a2' : null;
+    const candidate = cents === null ? null : membershipTierCandidateForPrice(cents);
     if (namePresent) counts.nameClueRows += 1;
     if (phonePresent) counts.phoneClueRows += 1;
     if (occurredAtPresent) counts.groupEntryClueRows += 1;
     if (cents !== null) counts.priceClueRows += 1;
     if (refund) counts.possibleRefundRows += 1;
-    if (role === 'a1') counts.a1CandidateRows += 1;
-    if (role === 'a2') counts.a2CandidateRows += 1;
-    if (cents === null || !role) counts.priceUnclassifiedRows += 1;
+    if (candidate?.tierKey === 'angel_shareholder') counts.angelCandidateRows += 1;
+    if (candidate?.tierKey === 'a1_shareholder') counts.a1CandidateRows += 1;
+    if (candidate?.tierKey === 'a2_shareholder') counts.a2CandidateRows += 1;
+    if (candidate?.tierKey === 'honorary_director') counts.honoraryDirectorRenewalCandidateRows += 1;
+    if (cents === null || !candidate) counts.priceUnclassifiedRows += 1;
     const matchable = namePresent || phonePresent;
     if (matchable) counts.matchingCandidateRows += 1;
-    const amountReady = source === 'wechat_shop_order' ? Boolean(role) : cents !== null;
-    if (!matchable || !occurredAtPresent || !phonePresent || !namePresent || !amountReady || refund) counts.needsManualRows += 1;
+    const amountReady = Boolean(candidate);
+    if (!matchable || !occurredAtPresent || !phonePresent || !namePresent || !amountReady || candidate?.requiresManualQualification || refund) counts.needsManualRows += 1;
   }
   const recognizedFields = Object.entries(selected).filter(([,header])=>Boolean(header)).map(([key])=>SAFE_LABELS[source][key]);
   if (refundFields.length) recognizedFields.push('退款/售后提示');
   return {
     kind: 'payment_clue_summary', source, recognizedFields,
     ignoredColumnCount: Math.max(0,parsed.headers.length-new Set(Object.values(selected).filter(Boolean)).size-refundFields.length),
-    pricingRulesConfigured: configured,
+    pricingRulesConfigured: true,
+    membershipTierRules: safeMembershipTierRules(),
     counts,
-    safeguards: { rawValuesReturned:false, rawHeadersReturned:false, rowsReturned:false, determinesMembershipAlone:false, publicDirectoryMutationAllowed:false }
+    safeguards: { rawValuesReturned:false, rawHeadersReturned:false, rowsReturned:false, determinesMembershipAlone:false, publicDirectoryMutationAllowed:false,honoraryDirectorRequiresOperatorConfirmation:true,groupStatusRemainsFinalGate:true }
   };
 }
 

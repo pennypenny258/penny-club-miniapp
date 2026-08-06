@@ -107,24 +107,28 @@ function previewMemberOrdersCsv(csv, mapping = {}) {
   return { kind: 'member_order', headers, headerErrors: [...new Set(headerErrors)], results: mapped.map(validateMemberOrderRow) };
 }
 
-const crmVerificationFields = ['internal_member_ref','contact_match_token','crm_verification_status','membership_start','membership_end','group_status','evidence_note','migration_status'];
+const crmVerificationFields = ['internal_member_ref','contact_match_token','wechat_group_nickname','wechat_id','phone','real_name','remark_name','crm_verification_status','membership_start','membership_end','membership_expiry_month','renewal_price_cents','notice_status','latest_notice_month','payment_status','payment_month','group_status','evidence_note','migration_status'];
+const CRM_SOURCE_ALIASES={昵称:'wechat_group_nickname',微信群昵称:'wechat_group_nickname',备注名:'remark_name',微信号:'wechat_id',手机号:'phone',真实姓名:'real_name',到期月份:'membership_expiry_month',会籍到期月:'membership_expiry_month',续费价格:'renewal_price_cents',通知状态:'notice_status',最近通知月份:'latest_notice_month',付款状态:'payment_status',付款日期:'payment_month',群状态:'group_status'};
 function validateCrmVerificationRow(row, index) {
   const errors = []; const warnings = [];
-  for (const field of ['internal_member_ref','contact_match_token','crm_verification_status','membership_start','membership_end','group_status','migration_status']) if (!row[field]) errors.push(`${field} 不能为空`);
+  if(!['internal_member_ref','contact_match_token','wechat_group_nickname','remark_name','wechat_id','phone','real_name'].some(field=>row[field]))errors.push('至少需要昵称、备注名、微信号、手机号、真实姓名或内部引用之一作为匹配线索');
   if (row.crm_verification_status && !CRM_VERIFICATION_STATUSES.includes(row.crm_verification_status)) errors.push('crm_verification_status 无效');
   if (row.membership_start && !isIsoDate(row.membership_start)) errors.push('membership_start 必须是有效日期');
   if (row.membership_end && !isIsoDate(row.membership_end)) errors.push('membership_end 必须是有效日期');
+  for(const field of ['membership_expiry_month','latest_notice_month','payment_month'])if(row[field]&&!/^\d{4}-(0[1-9]|1[0-2])$/.test(row[field]))errors.push(`${field} 必须为 YYYY-MM`);
+  if(row.renewal_price_cents&&!/^\d+$/.test(row.renewal_price_cents))errors.push('renewal_price_cents 必须是非负整数分');
   if (isIsoDate(row.membership_start) && isIsoDate(row.membership_end) && new Date(row.membership_end) <= new Date(row.membership_start)) errors.push('membership_end 必须晚于 membership_start');
   if (row.group_status && !GROUP_STATUSES.includes(row.group_status)) errors.push('group_status 无效');
   if (row.migration_status && !MIGRATION_STATUSES.includes(row.migration_status)) errors.push('migration_status 无效');
   if (row.evidence_note?.length > 500) errors.push('evidence_note 超过 500 字');
   for (const [key, value] of Object.entries(row)) if (isUnsafeCell(value)) errors.push(`${key} 疑似 CSV 公式，已拒绝`);
-  if (row.group_status === 'unknown' || row.crm_verification_status !== 'verified') warnings.push('该行只能进入人工复核，不能自动激活会籍');
-  const { internal_member_ref, contact_match_token, evidence_note, ...safe } = row;
-  return { index, valid: errors.length === 0, disposition: errors.length ? 'error' : 'needs_human_review', errors, warnings, normalized: { ...safe, memberReferencePresent:Boolean(internal_member_ref), contactMatchPresent:Boolean(contact_match_token), evidenceNotePresent:Boolean(evidence_note), determinesMembershipAlone:false }, protected: { internal_member_ref, contact_match_token, evidence_note } };
+  const missing=['wechat_group_nickname','wechat_id','phone','real_name'].filter(field=>!row[field]);if(missing.length)warnings.push(`会员主档案待补全 ${missing.length} 项；允许导入后逐项核对`);
+  if (row.group_status !== 'in_group' || row.crm_verification_status !== 'verified') warnings.push('该行只能进入人工复核，不能自动激活会籍；未付款也不直接判无效');
+  const { internal_member_ref, contact_match_token,wechat_group_nickname,wechat_id,phone,real_name,remark_name,evidence_note, ...safe } = row;
+  return { index, valid: errors.length === 0, disposition: errors.length ? 'error' : 'needs_human_review', errors, warnings, normalized: { ...safe, memberReferencePresent:Boolean(internal_member_ref), contactMatchPresent:Boolean(contact_match_token),wechatGroupNicknamePresent:Boolean(wechat_group_nickname),wechatIdPresent:Boolean(wechat_id),phonePresent:Boolean(phone),realNamePresent:Boolean(real_name),remarkNamePresent:Boolean(remark_name),missingCoreFieldCount:missing.length,evidenceNotePresent:Boolean(evidence_note), determinesMembershipAlone:false }, protected: { internal_member_ref, contact_match_token,wechat_group_nickname,wechat_id,phone,real_name,remark_name,evidence_note } };
 }
 function previewCrmVerificationCsv(csv, mapping = {}) {
-  const parsed = parseCsv(csv); const mapped = mappedRows(parsed, mapping); const headers = parsed.headers.map(h => mapping[h] || h);
+  const parsed = parseCsv(csv); const combinedMapping=Object.fromEntries(parsed.headers.map(header=>[header,mapping[header]||CRM_SOURCE_ALIASES[header]||header]));const mapped = mappedRows(parsed, combinedMapping); const headers = parsed.headers.map(h => combinedMapping[h]);
   const dangerous = parsed.headers.filter(h => DANGEROUS_HEADERS.test(h) && h!=='contact_match_token');
   const headerErrors = [...(dangerous.length ? [`原始表头包含禁止导入的敏感字段：${dangerous.join('、')}`] : []), ...baseHeaderErrors(headers, crmVerificationFields,['contact_match_token'])];
   return { kind:'crm_verification', headers, headerErrors:[...new Set(headerErrors)], results:mapped.map(validateCrmVerificationRow) };

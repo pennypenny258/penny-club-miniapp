@@ -71,6 +71,8 @@ test('voice and payment clearly remain unconfigured and never fake success',asyn
   const capabilities=await call('/api/member-capabilities');assert.equal(capabilities.payload.wechatPaymentConfigured,false);assert.equal(capabilities.payload.asrConfigured,false);
   const voice=await call('/api/agent-voice-sessions',{method:'POST',body:{durationMs:1000}});assert.equal(voice.status,503);assert.equal(voice.payload.code,'VOICE_ASR_NOT_CONFIGURED');
   const offer=await call('/api/my/renewal-offer');assert.equal(offer.payload.paymentConfigured,false);assert.match(offer.payload.paymentNotice,/待配置/);
+  assert.equal(offer.payload.membershipTier.label,'天使轮股东');assert.equal(offer.payload.membershipTier.standardPriceCents,20000);assert.equal(offer.payload.offer.offeredPriceCents,20000);
+  for(const field of ['paymentSources','crmVerificationStatus','groupStatus','membershipTierReasonCode','honoraryDirectorReasonCode'])assert.equal(JSON.stringify(offer.payload).includes(field),false,field);
 });
 
 test('public profile edits remain pending instead of changing the published directory',async()=>{

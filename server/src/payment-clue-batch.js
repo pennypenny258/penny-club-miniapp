@@ -2,6 +2,7 @@
 
 const { parseSpreadsheetUpload } = require('./spreadsheet-import');
 const { previewPaymentClueCsv } = require('./payment-clue-import');
+const { safeMembershipTierRules } = require('./membership-tiers');
 
 const MAX_PAYMENT_BATCH_FILES = 10;
 const MAX_PAYMENT_BATCH_BYTES = 30 * 1024 * 1024;
@@ -17,7 +18,7 @@ function encodedUploadBytes(input = {}) {
 }
 
 function blankCounts() {
-  return { totalRows:0, matchingCandidateRows:0, needsManualRows:0, groupEntryClueRows:0, phoneClueRows:0, nameClueRows:0, priceClueRows:0, priceUnclassifiedRows:0, possibleRefundRows:0, a1CandidateRows:0, a2CandidateRows:0 };
+  return { totalRows:0, matchingCandidateRows:0, needsManualRows:0, groupEntryClueRows:0, phoneClueRows:0, nameClueRows:0, priceClueRows:0, priceUnclassifiedRows:0, possibleRefundRows:0, angelCandidateRows:0, a1CandidateRows:0, a2CandidateRows:0, honoraryDirectorRenewalCandidateRows:0 };
 }
 
 function addCounts(target, source) {
@@ -48,7 +49,7 @@ async function previewPaymentClueBatch(input = {}, dependencies = {}) {
   for (let index = 0; index < files.length; index += 1) {
     try {
       const upload = await parseUpload(files[index]);
-      const preview = previewPaymentClueCsv(upload.csv, { source, priceRoleRules:input.priceRoleRules });
+      const preview = previewPaymentClueCsv(upload.csv, { source });
       addCounts(aggregate, preview.counts);
       preview.recognizedFields.forEach(field => recognized.add(field));
       ignoredColumnCount += preview.ignoredColumnCount;
@@ -74,8 +75,8 @@ async function previewPaymentClueBatch(input = {}, dependencies = {}) {
     selectedFileCount:files.length, validFileCount, errorFileCount,
     totalUploadBytes, totalRows:aggregate.totalRows,
     files:fileResults, summary:aggregate,
-    recognizedFields:[...recognized], ignoredColumnCount, pricingRulesConfigured,
-    safeguards:{ rawValuesReturned:false, rawHeadersReturned:false, filenamesReturned:false, rowsReturned:false, determinesMembershipAlone:false, publicDirectoryMutationAllowed:false }
+    recognizedFields:[...recognized], ignoredColumnCount, pricingRulesConfigured,membershipTierRules:safeMembershipTierRules(),
+    safeguards:{ rawValuesReturned:false, rawHeadersReturned:false, filenamesReturned:false, rowsReturned:false, determinesMembershipAlone:false, publicDirectoryMutationAllowed:false,honoraryDirectorRequiresOperatorConfirmation:true,groupStatusRemainsFinalGate:true }
   };
   if (aggregate.totalRows > MAX_PAYMENT_BATCH_ROWS) {
     const error = Object.assign(new Error(`整批共 ${aggregate.totalRows} 行，超过 ${MAX_PAYMENT_BATCH_ROWS} 行安全硬上限，请分成两个批次`), { statusCode:413, code:'PAYMENT_BATCH_TOO_MANY_ROWS', safeBatch:result });

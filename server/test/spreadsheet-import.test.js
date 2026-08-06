@@ -39,9 +39,9 @@ test('synthetic XLSX uses the first visible non-empty sheet and matches CSV paym
 test('a regular 5,000-row payment export is accepted without manual splitting', async () => {
   const headers = ['订单编号','收件人姓名','收件人手机','订单发货时间','商品实际价格(总共)','订单状态','收货地址'];
   const phone = ['1','38','0000','8000'].join('');
-  const rows = Array.from({ length: 5000 }, (_, index) => [`匿名订单-${index}`,'匿名收件人',phone,'2026-07-01','1999','已完成','匿名地址']);
+  const rows = Array.from({ length: 5000 }, (_, index) => [`匿名订单-${index}`,'匿名收件人',phone,'2026-07-01','666','已完成','匿名地址']);
   const parsed = await parseSpreadsheetUpload(upload(await syntheticWorkbook(headers, rows)));
-  const preview = previewPaymentClueCsv(parsed.csv,{source:'wechat_shop_order',priceRoleRules:{a1:'1999',a2:'2999'}});
+  const preview = previewPaymentClueCsv(parsed.csv,{source:'wechat_shop_order'});
   assert.equal(parsed.meta.rowCount, 5000);
   assert.equal(preview.counts.totalRows, 5000);
   assert.equal(preview.counts.a1CandidateRows, 5000);

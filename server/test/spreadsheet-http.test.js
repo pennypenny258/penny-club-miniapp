@@ -43,10 +43,9 @@ async function xlsxPayload(headers, row) {
 
 test('payment XLSX preview accepts realistic shop columns, ignores extras and returns aggregate metadata only', async () => {
   const headers = ['订单编号','收件人姓名','收件人手机','订单发货时间','商品实际价格(单件)','商品实际价格(总共)','买家留言','收货地址','退款状态'];
-  const row = ['匿名订单号','匿名收件人',['1','38','0000','8000'].join(''),'2026-07-01','1999','1999','匿名备注','匿名地址','未退款'];
+  const row = ['匿名订单号','匿名收件人',['1','38','0000','8000'].join(''),'2026-07-01','666','666','匿名备注','匿名地址','未退款'];
   const payload = await xlsxPayload(headers, row);
   payload.paymentSource = 'wechat_shop_order';
-  payload.priceRoleRules = { a1:'1999',a2:'2999' };
   const response = await call('/api/admin/imports/wechat-shop-orders/preview', payload);
   assert.equal(response.status, 200);
   assert.equal(response.payload.persisted, false);

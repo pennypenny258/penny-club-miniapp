@@ -6,16 +6,30 @@ const now = Date.now();
 const days = n => new Date(now + n * 86400000).toISOString();
 
 const users = {
-  active: { id:'u-active', nickname:'演示会员·青岚', userStatus:'active', status:'active', startsAt:days(-40), endsAt:days(325), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-40),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'年费会员',groupLabelExpiry:days(325) },
-  peer: { id:'u-peer', nickname:'演示会员·远汀', userStatus:'active', status:'active', startsAt:days(-150), endsAt:days(215), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-150),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'续费已确认',groupLabelExpiry:days(215) },
-  near_expiry: { id:'u-near-expiry', nickname:'演示会员·星野', userStatus:'active', status:'active', startsAt:days(-350), endsAt:days(15), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-350),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'本月到期',groupLabelExpiry:days(15) },
-  active_private: { id:'u-active-private', nickname:'演示会员·白榆', userStatus:'active', status:'active', startsAt:days(-90), endsAt:days(275), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-90) },
-  expired: { id:'u-expired', nickname:'演示会员·旧页', userStatus:'active', status:'expired', startsAt:days(-520), endsAt:days(-155), groupStatus:'left', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-520) },
+  active: { id:'u-active', nickname:'演示会员·青岚', userStatus:'active', status:'active', startsAt:days(-40), endsAt:days(325), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-40),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'年费会员',groupLabelExpiry:days(325),membershipTier:'angel_shareholder',membershipTierReasonCode:'payment_amount_candidate',honoraryDirectorStatus:'not_applicable',honoraryDirectorReasonCode:null },
+  peer: { id:'u-peer', nickname:'演示会员·远汀', userStatus:'active', status:'active', startsAt:days(-150), endsAt:days(215), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-150),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'续费已确认',groupLabelExpiry:days(215),membershipTier:'honorary_director',membershipTierReasonCode:'payment_amount_candidate',honoraryDirectorStatus:'confirmed',honoraryDirectorReasonCode:'payment_amount_candidate' },
+  near_expiry: { id:'u-near-expiry', nickname:'演示会员·星野', userStatus:'active', status:'active', startsAt:days(-350), endsAt:days(15), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-350),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'本月到期',groupLabelExpiry:days(15),membershipTier:'a2_shareholder',membershipTierReasonCode:'payment_amount_candidate',honoraryDirectorStatus:'not_applicable',honoraryDirectorReasonCode:null },
+  active_private: { id:'u-active-private', nickname:'演示会员·白榆', userStatus:'active', status:'active', startsAt:days(-90), endsAt:days(275), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-90),membershipTier:'a1_shareholder',membershipTierReasonCode:'historical_record',honoraryDirectorStatus:'not_applicable',honoraryDirectorReasonCode:null },
+  expired: { id:'u-expired', nickname:'演示会员·旧页', userStatus:'active', status:'expired', startsAt:days(-520), endsAt:days(-155), groupStatus:'left', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-520),membershipTier:'angel_shareholder',membershipTierReasonCode:'historical_record',honoraryDirectorStatus:'not_applicable',honoraryDirectorReasonCode:null },
   guest: { id:'u-guest', nickname:'演示用户·待核验', userStatus:'active', status:'pending_verification', startsAt:days(-2), endsAt:days(2), groupStatus:'unknown', crmVerificationStatus:'needs_review', latestPaymentEvidenceStatus:'unverified' },
   frozen: { id:'u-frozen', nickname:'演示会员·冻结', userStatus:'suspended', status:'suspended', startsAt:days(-100), endsAt:days(265), groupStatus:'removed', crmVerificationStatus:'suspended', latestPaymentEvidenceStatus:'verified', latestValidPaymentAt:days(-100) },
   refund_review: { id:'u-refund-review', nickname:'演示会员·退款复核', userStatus:'active', status:'pending_verification', startsAt:days(-20), endsAt:days(345), groupStatus:'in_group', crmVerificationStatus:'needs_review', latestPaymentEvidenceStatus:'needs_review', latestValidPaymentAt:days(-20),matchStatus:'conflict',renewalNoticeStatus:'not_notified',groupLabel:'待核对',groupLabelExpiry:null },
   renewal_followup: { id:'u-renewal-followup', nickname:'演示会员·南枝', userStatus:'active', status:'expired', startsAt:days(-390), endsAt:days(-25), groupStatus:'in_group', crmVerificationStatus:'verified', latestPaymentEvidenceStatus:'needs_review', latestValidPaymentAt:days(-390),matchStatus:'matched',renewalNoticeStatus:'not_notified',groupLabel:'已到期',groupLabelExpiry:days(-25) }
 };
+
+// Private CRM master records. Values are synthetic and never leave admin APIs.
+const memberCrmProfiles = new Map([
+  ['u-active',{wechatGroupNickname:'青岚（群昵称演示）',wechatId:'demo_wechat_registered',phone:'demo_phone_registered',realName:'匿名甲',firstPaymentCents:20000,renewalPriceCents:20000,membershipExpiryMonth:'2027-06',firstGroupEntryMonth:'2025-06',currentGroupEntryMonth:'2025-06',accumulatedGroupMonths:0,noticeStatus:'not_notified',latestNoticeMonth:null,paymentClueStatus:'verified',paymentDateMonth:'2025-06',currentCompany:'微澜价值实验室（虚构）',currentTitle:'投研顾问',pastExperience:'虚构产业研究经历',institutionType:'咨询',focusTracks:['医疗科技','数据工具'],residentCities:['示例城·北屿'],personalIntroduction:'匿名内部档案演示',needsPreference:'报告共创',resourcesOffered:'行业研究方法',operatorOwner:'运营甲',nextFollowUpMonth:'2026-09',internalNotes:'只用于匿名演示',cardArtifactStatus:'submitted'}],
+  ['u-peer',{wechatGroupNickname:'远汀（群昵称演示）',wechatId:'',phone:'demo_phone_registered',realName:'匿名乙',firstPaymentCents:49900,renewalPriceCents:49900,membershipExpiryMonth:'2027-02',firstGroupEntryMonth:'2024-10',currentGroupEntryMonth:'2024-10',accumulatedGroupMonths:0,noticeStatus:'not_notified',paymentClueStatus:'verified',paymentDateMonth:'2025-10',currentCompany:'折光产业研究社（虚构）',currentTitle:'产业研究负责人',institutionType:'投资机构',focusTracks:['先进制造','机器人'],residentCities:['示例城·东岸'],operatorOwner:'运营乙',nextFollowUpMonth:'2026-10',cardArtifactStatus:'not_submitted'}],
+  ['u-near-expiry',{wechatGroupNickname:'星野（群昵称演示）',wechatId:'demo_wechat_registered',phone:'',realName:'匿名丙',firstPaymentCents:79900,renewalPriceCents:69900,membershipExpiryMonth:'2026-08',firstGroupEntryMonth:'2024-08',currentGroupEntryMonth:'2024-08',accumulatedGroupMonths:0,noticeStatus:'follow_up_pending',latestNoticeMonth:null,paymentClueStatus:'verified',paymentDateMonth:'2025-08',institutionType:'产业方',focusTracks:['企业服务','人工智能'],residentCities:['示例城·南港'],operatorOwner:'运营甲',nextFollowUpMonth:'2026-08',cardArtifactStatus:'pending_review'}],
+  ['u-renewal-followup',{wechatGroupNickname:'南枝（群昵称演示）',wechatId:'',phone:'',realName:'',renewalPriceCents:20000,membershipExpiryMonth:'2026-07',firstGroupEntryMonth:'2025-07',currentGroupEntryMonth:'2025-07',accumulatedGroupMonths:0,noticeStatus:'not_notified',paymentClueStatus:'needs_review',operatorOwner:'运营乙',nextFollowUpMonth:'2026-08',cardArtifactStatus:'not_submitted'}]
+]);
+
+const agentInternalTags = [
+  {id:'tag-demo-1',userId:'u-active',label:'报告共创',source:'agent',updatedAt:days(-3),visibility:'internal_only'},
+  {id:'tag-demo-2',userId:'u-active',label:'医疗科技研究',source:'operator',updatedAt:days(-2),visibility:'internal_only'},
+  {id:'tag-demo-3',userId:'u-peer',label:'先进制造连接',source:'agent',updatedAt:days(-5),visibility:'internal_only'}
+];
 
 const crmVerifications = Object.values(users).map((user, index) => ({
   id:`crm-demo-${index + 1}`, userId:user.id, verificationStatus:user.crmVerificationStatus,
@@ -53,9 +67,9 @@ const employmentVerifications = [
 ];
 
 const paymentEvidence = [
-  {id:'pay-demo-1',userId:'u-active',source:'manual_transfer',evidenceStatus:'verified',occurredAt:days(-40),amountBand:'standard',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-payment-reviewed'},
-  {id:'pay-demo-2',userId:'u-peer',source:'wechat_merchant_receipt',evidenceStatus:'verified',occurredAt:days(-150),amountBand:'standard',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-manual-entry'},
-  {id:'pay-demo-3',userId:'u-near-expiry',source:'wechat_shop_order',evidenceStatus:'verified',occurredAt:days(-350),amountBand:'legacy_offer',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-payment-reviewed'},
+  {id:'pay-demo-1',userId:'u-active',source:'manual_transfer',evidenceStatus:'verified',occurredAt:days(-40),amountBand:'angel_shareholder_candidate',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-payment-reviewed'},
+  {id:'pay-demo-2',userId:'u-peer',source:'wechat_merchant_receipt',evidenceStatus:'verified',occurredAt:days(-150),amountBand:'honorary_renewal_candidate',refundStatus:'none',productRuleStatus:'manual_qualification_confirmed',importBatchId:'batch-manual-entry'},
+  {id:'pay-demo-3',userId:'u-near-expiry',source:'wechat_shop_order',evidenceStatus:'verified',occurredAt:days(-350),amountBand:'a2_shareholder_candidate',refundStatus:'none',productRuleStatus:'matched',importBatchId:'batch-payment-reviewed'},
   {id:'pay-demo-4',userId:'u-refund-review',source:'shop_evidence',evidenceStatus:'needs_review',occurredAt:days(-20),amountBand:'standard',refundStatus:'partial',productRuleStatus:'manual_review',importBatchId:'batch-payment-errors'},
   {id:'pay-demo-5',userId:null,source:'shop_evidence',evidenceStatus:'excluded',occurredAt:days(-8),amountBand:'unknown',refundStatus:'full',productRuleStatus:'excluded_refund',importBatchId:'batch-payment-errors'},
   {id:'pay-demo-6',userId:null,source:'shop_evidence',evidenceStatus:'excluded',occurredAt:days(-6),amountBand:'unknown',refundStatus:'none',productRuleStatus:'excluded_unpaid',importBatchId:'batch-payment-errors'}
@@ -110,6 +124,15 @@ demands.push(
   {id:'d-attraction-published',ownerUserId:'u-peer',type:'business_attraction',anonymousTitle:'产业园区招商合作机会（演示）',anonymousSummary:'面向先进制造服务团队的虚构招商场景，需运营筛选后对接。',publicTags:['招商','先进制造'],disclosurePolicy:{company:'owner_confirm',contact:'never_public'},disclosureLevel:'anonymous',aiReviewStatus:'passed',humanReviewStatus:'approved_with_notes',status:'published'}
 );
 demands.filter(x=>x.status==='published').forEach((item,index)=>{item.publishedAt=days(-3-index*2)});
+for(const demand of demands){
+  demand.reviewAction=demand.humanReviewStatus==='pending'?'awaiting_human_review':'reviewed';
+  demand.publicFields=['anonymousTitle','anonymousSummary','publicTags'];
+  demand.anonymityLevel=demand.type==='recruitment'?'company_approved_fields_only':'strict_anonymous';
+  demand.expiresAt=days(45);
+  demand.directionalCriteria=demand.type==='fundraising'?{person:'产业投资人',organization:'产业基金',role:'投资负责人',matter:'A轮融资'}:demand.type==='recruitment'?{person:'候选人',organization:'内部群友背书机构',role:'产业研究',matter:'招聘'}:{};
+  demand.directionalReminder={status:'candidate_only',humanSendRequired:true,frequencyCap:'同一机会 14 天内不重复提醒',nonResponsePolicy:'未回复不反复催促'};
+  if(demand.type==='recruitment')demand.recruitmentPolicy={internalSponsorRequired:true,internalSponsorConfirmed:true,publicApplicationChannel:'https://example.invalid/jobs/demo',directPublicApplicationAllowed:true,referralRequiresControlledApplication:true,referrerContactPublic:false};
+}
 
 const registrations = new Map([
   ['a-online-open:u-active',{activityId:'a-online-open',userId:'u-active',status:'registered'}],
@@ -147,8 +170,9 @@ const orders = [
   {id:'evidence-record-demo-4',userId:null,type:'payment_evidence',status:'excluded',source:'shop_evidence',amountBand:'unknown',refundStatus:'full',importBatchId:'batch-payment-errors',determinesMembershipAlone:false}
 ];
 const renewalOffers = [
-  {id:'offer-demo-1',userId:'u-near-expiry',standardPriceCents:199900,offeredPriceCents:169900,discountReason:'演示：早期会员续费规则',eligibilityRule:{membershipStatus:'active',daysToExpiryMax:30},validUntil:days(20)},
-  {id:'offer-demo-2',userId:'u-expired',standardPriceCents:199900,offeredPriceCents:199900,discountReason:'标准续费价',eligibilityRule:{membershipStatus:'expired',manualReviewRequired:true},validUntil:days(30)}
+  {id:'offer-demo-1',userId:'u-near-expiry',standardPriceCents:79900,offeredPriceCents:69900,discountReason:'匿名演示：历史专属续费价',priceSource:'individual_override',eligibilityRule:{membershipTier:'a2_shareholder',membershipStatus:'active',daysToExpiryMax:30},validUntil:days(20)},
+  {id:'offer-demo-2',userId:'u-expired',standardPriceCents:20000,offeredPriceCents:20000,discountReason:'天使轮股东标准价',priceSource:'tier_standard',eligibilityRule:{membershipTier:'angel_shareholder',membershipStatus:'expired',manualReviewRequired:true},validUntil:days(30)},
+  {id:'offer-demo-3',userId:'u-peer',standardPriceCents:49900,offeredPriceCents:49900,discountReason:'荣誉董事标准续费价',priceSource:'tier_standard',eligibilityRule:{membershipTier:'honorary_director',honoraryDirectorStatus:'confirmed',reasonCode:'payment_amount_candidate'},validUntil:days(45)}
 ];
 const aiReviews = demands.map((d,i)=>({id:`ai-demo-${i+1}`,subjectType:'demand',subjectId:d.id,provider:'demo-adapter-no-external-call',recommendation:d.aiReviewStatus,riskFlags:d.aiReviewStatus==='flagged'?['信息完整性待人工确认']:[],humanDecision:d.humanReviewStatus,rawContentStored:false}));
 
@@ -243,4 +267,4 @@ function audit(actor, action, subjectType, subjectId, summary = {}) {
   audits.unshift({id:`log-${Date.now()}-${audits.length}`,actor,action,subjectType,subjectId,summary,createdAt:new Date().toISOString()});
 }
 
-module.exports = {users,crmVerifications,directoryProfiles,publicProfileUpdates,employmentVerifications,paymentEvidence,groupLabelOcrResults,membershipDecisions,resources,activities,demands,registrations,applications,memberConnections,agentMatchRequests,memberFavorites,internalMemberProfiles,orders,renewalOffers,aiReviews,importBatches,importItems,feishuMigrationTasks,feishuMigrationItems,feishuOwnedContents,localImportBatches,localImportItems,notificationJobs,requirementCoverage,operationsReadiness,audits,audit};
+module.exports = {users,memberCrmProfiles,agentInternalTags,crmVerifications,directoryProfiles,publicProfileUpdates,employmentVerifications,paymentEvidence,groupLabelOcrResults,membershipDecisions,resources,activities,demands,registrations,applications,memberConnections,agentMatchRequests,memberFavorites,internalMemberProfiles,orders,renewalOffers,aiReviews,importBatches,importItems,feishuMigrationTasks,feishuMigrationItems,feishuOwnedContents,localImportBatches,localImportItems,notificationJobs,requirementCoverage,operationsReadiness,audits,audit};
