@@ -24,12 +24,14 @@ const { parsePort, validateDeploymentEnvironment } = require('./deployment');
 const { resolvePersistenceConfig, assertRuntimeRepositoryReady } = require('./persistence/config');
 const { createRepository } = require('./persistence/repository');
 const { buildCrmSpreadsheetPreview, resolveCrmPersistentImportConfig } = require('./persistence/crm-import-pipeline');
+const { CrmImportRehearsalStore, buildSourceOverview } = require('./crm-import-rehearsal');
 const store = require('./store');
 const deployment = validateDeploymentEnvironment();
 const persistenceConfig = resolvePersistenceConfig(process.env);
 assertRuntimeRepositoryReady(persistenceConfig);
 const repository = createRepository({config:persistenceConfig,store});
 const crmPersistentImportConfig = resolveCrmPersistentImportConfig(process.env);
+const crmImportRehearsals = new CrmImportRehearsalStore();
 const PORT = parsePort(process.env.PORT);
 const publicDir = path.join(__dirname, '..', 'public');
 const feishuClient = new FeishuOpenApiClient({secretProvider:new EnvFeishuSecretProvider()});
@@ -245,6 +247,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && match) { requireHighRiskConfirmation(req,'feishu.disconnect');rememberIdempotency(req);const task=store.feishuMigrationTasks.find(x=>x.id===match[1]); if(!task)return json(res,404,{error:'一次性迁入任务不存在'});const items=store.feishuMigrationItems.filter(x=>x.taskId===task.id);disconnectSource(task,items);feishuPrivateRoots.delete(task.id);store.audit(adminActor(req),'feishu_migration.disconnect_source','feishu_migration',task.id,{externalRefsCleared:true,credentialStored:false,ownedContentRetained:true,continuousSync:false});return json(res,200,safeTask(task,items)); }
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/knowledge/preview') { const input = await body(req); return json(res, 200, savePreview(previewKnowledgeCsv(input.csv, input.mapping))); }
     if (req.method === 'GET' && url.pathname === '/api/admin/imports/internal-crm/readiness') return json(res,200,{...crmPersistentImportConfig.safeSummary,realDataAllowed:false,notice:crmPersistentImportConfig.enabled?'持久化服务配置已通过预检，但标准业务路由仍需完成真实后台身份联调后单独放行。':'当前为本地演练：只允许匿名预检，不能作为正式入库。'});
+    if (req.method === 'GET' && url.pathname === '/api/admin/imports/internal-crm/rehearsals') return json(res,200,{batches:crmImportRehearsals.list(),sourceOverview:buildSourceOverview(store),capabilities:{safeRowReview:true,missingFieldChecklist:true,conflictResolutionRehearsal:true,formalWriteEnabled:false,persistent:false,memoryBusinessFactsWritten:false}});
+    if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/rehearsals') { const input=await body(req);return json(res,201,crmImportRehearsals.create(input)); }
+    match=url.pathname.match(/^\/api\/admin\/imports\/internal-crm\/rehearsals\/([^/]+)\/rows\/([^/]+)$/);
+    if (req.method === 'PATCH' && match) { const input=await body(req);return json(res,200,crmImportRehearsals.updateRow(match[1],match[2],input)); }
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/preview') { const input = await body(req, 15*1024*1024);return json(res,200,await buildCrmSpreadsheetPreview(input)); }
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/confirm') return json(res,503,{error:'CRM 正式写入尚未激活；必须先完成 CloudBase 迁移、服务端网关配置与真实后台会话验收',code:'CRM_PERSISTENCE_NOT_ACTIVATED',persisted:false,memoryFallback:false});
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/member-orders/preview') return json(res, 410, { error: '旧历史订单预检已停用；小店记录请使用付款证据预检，非小店续费需进入受控人工补录流程' });
