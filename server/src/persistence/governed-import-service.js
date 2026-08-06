@@ -3,7 +3,7 @@
 const crypto=require('node:crypto');
 const {previewCrmVerificationCsv,previewShopOrdersCsv,previewVoluntaryDirectoryCsv}=require('../imports');
 
-const MAX_CSV_BYTES=2*1024*1024,MAX_ROWS=500;
+const MAX_CSV_BYTES=10*1024*1024,MAX_ROWS=10000;
 const PREVIEWERS=Object.freeze({crm:previewCrmVerificationCsv,payment:previewShopOrdersCsv,directory:previewVoluntaryDirectoryCsv});
 const SAFE_CODE=/^[a-z][a-z0-9_]{1,47}$/;
 
@@ -22,8 +22,8 @@ class GovernedImportService{
   constructor({repository,protector,adminResolver,uuid=crypto.randomUUID}){if(repository?.kind!=='cloudbase_gateway'||typeof repository.beginBatch!=='function')throw new Error('持久化导入必须使用 CloudBase 后端网关仓库');if(!(protector instanceof GovernedImportProtector))throw new Error('持久化导入需要服务端敏感字段保护器');if(typeof adminResolver!=='function')throw new Error('持久化导入需要真实后台身份解析器');this.repository=repository;this.protector=protector;this.adminResolver=adminResolver;this.uuid=uuid}
   async stageCsv({adminSession,domain,csv,mapping={},options={},idempotencyKey}){
     const admin=await this.adminResolver(adminSession);requireAdmin(admin,'member_import.stage');const previewer=PREVIEWERS[domain];if(!previewer)throw new Error('导入域不在白名单');
-    const text=String(csv||''),bytes=Buffer.byteLength(text,'utf8');if(!bytes||bytes>MAX_CSV_BYTES)throw new Error('CSV 大小必须在 1 字节到 2MB 之间');if(!/^[A-Za-z0-9._:-]{8,128}$/.test(String(idempotencyKey||'')))throw new Error('导入幂等键格式无效');
-    const preview=previewer(text,mapping,options);if(preview.headerErrors.length)throw Object.assign(new Error('CSV 表头未通过安全校验'),{code:'CSV_HEADER_REJECTED',safeErrors:safeCodes(preview.headerErrors,'header')});if(!preview.results.length)throw new Error('CSV 至少需要一行数据');if(preview.results.length>MAX_ROWS)throw new Error('单批最多 500 行');
+    const text=String(csv||''),bytes=Buffer.byteLength(text,'utf8');if(!bytes||bytes>MAX_CSV_BYTES)throw new Error('CSV 大小必须在 1 字节到 10MB 之间');if(!/^[A-Za-z0-9._:-]{8,128}$/.test(String(idempotencyKey||'')))throw new Error('导入幂等键格式无效');
+    const preview=previewer(text,mapping,options);if(preview.headerErrors.length)throw Object.assign(new Error('CSV 表头未通过安全校验'),{code:'CSV_HEADER_REJECTED',safeErrors:safeCodes(preview.headerErrors,'header')});if(!preview.results.length)throw new Error('CSV 至少需要一行数据');if(preview.results.length>MAX_ROWS)throw new Error('单批最多 10,000 行');
     const proposedBatchId=`gib-${this.uuid()}`,csvSha256=crypto.createHash('sha256').update(text).digest('hex'),idempotencyKeyHash=this.protector.matchHash(`${admin.userId}:${idempotencyKey}`);
     const begun=await this.repository.beginBatch({batchId:proposedBatchId,domain,actorId:admin.userId,idempotencyKeyHash,csvSha256,totalRows:preview.results.length,headerCodes:[]}),batchId=begun?.batch_id||proposedBatchId;
     const rows=preview.results.map((result,index)=>{const rowId=`gir-${this.uuid()}`;return {row_id:rowId,row_number:index+2,row_fingerprint:crypto.createHash('sha256').update(`${csvSha256}:${index+2}`).digest('hex'),match_key_kind:domain==='directory'?'member_reference':'contact',match_key_hash:this.matchKeyHash(domain,result.protected),safe_projection:result.normalized,protected_payload_ciphertext:this.protector.protect(result.protected||{},`${batchId}:${rowId}:${domain}`),row_status:result.errors.length?'error':(result.disposition||'needs_human_review'),validation_codes:safeCodes(result.errors,'validation'),warning_codes:safeCodes(result.warnings,'warning')}});

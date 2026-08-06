@@ -1,0 +1,12 @@
+'use strict';
+const crypto=require('node:crypto'),fs=require('node:fs'),path=require('node:path');
+const root=path.join(__dirname,'..'),manifest=JSON.parse(fs.readFileSync(path.join(root,'server/db/cloudbase-pg-console/crm-master-import-manifest.json'),'utf8')),issues=[];
+const read=file=>fs.readFileSync(path.join(root,file),'utf8'),hash=text=>crypto.createHash('sha256').update(text).digest('hex'),strip=text=>text.replace(/--.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,'');
+for(const [file,expected] of Object.entries(manifest.checksums))if(hash(read(file))!==expected)issues.push(`${file} 校验和不匹配`);
+const migration=strip(read(manifest.executionOrder[0])),recorder=strip(read(manifest.executionOrder[1])),verify=strip(read(manifest.executionOrder[2]));
+for(const required of ['member_crm_master_profiles','venture_stage_governed_import_chunk','venture_finalize_governed_import_batch','BETWEEN 0 AND 10000','identity_profile_ciphertext','renewal_terms_ciphertext'])if(!migration.includes(required))issues.push(`011 缺少 ${required}`);
+if(/GRANT (?:SELECT|INSERT|UPDATE|DELETE|EXECUTE)[\s\S]{0,180} TO (anon|authenticated)/i.test(migration))issues.push('011 不得向客户端角色授权 CRM 或写入 RPC');
+if(/\b(phone|wechat_id|real_name|payment_name|operator_note)\s+(text|varchar|jsonb)/i.test(migration))issues.push('011 不得保存明文联系方式、姓名或备注');
+if(!/009_admin_governance/.test(recorder)||!/INSERT INTO venture_private\.schema_migrations/.test(recorder))issues.push('740 必须校验前置版本并只登记 011');
+if(/\b(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|GRANT|REVOKE|TRUNCATE|DO|CALL|EXECUTE)\b/i.test(verify))issues.push('790 必须保持只读');
+if(issues.length){console.error('CloudBase CRM 首批导入包检查失败：\n- '+issues.join('\n- '));process.exitCode=1}else console.log('CloudBase CRM 首批导入包离线检查通过；未连接数据库、未读取真实表格、未写入云端。');

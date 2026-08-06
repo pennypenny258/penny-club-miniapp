@@ -1,0 +1,13 @@
+{
+  "purpose": "future CRM master and 10,000-row governed import preparation; requires verified 004-009 and must not run in anonymous staging",
+  "executionOrder": [
+    "server/db/migrations/011_crm_master_import.sql",
+    "server/db/cloudbase-pg-console/740_record_crm_master_import_version.sql",
+    "server/db/cloudbase-pg-console/790_verify_crm_master_import_readonly.sql"
+  ],
+  "checksums": {
+    "server/db/migrations/011_crm_master_import.sql": "9df984774e201d200a5c03b622ba277f2e2911da745d0e997713fd5cea0c92da",
+    "server/db/cloudbase-pg-console/740_record_crm_master_import_version.sql": "65b1e4c8798503564d97939d3e3567055fc3dfe0567041d09407898227111183",
+    "server/db/cloudbase-pg-console/790_verify_crm_master_import_readonly.sql": "5a1ed7a2b62da54cd58bdd96070ac28457429f352e6fedd62412d66327c44d17"
+  }
+}

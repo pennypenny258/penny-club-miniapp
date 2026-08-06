@@ -18,6 +18,7 @@
     "db:cloudbase-materialization:check": "node scripts/cloudbase-materialization-check.js",
     "db:cloudbase-admin-auth:check": "node scripts/cloudbase-admin-auth-check.js",
     "db:cloudbase-admin-governance:check": "node scripts/cloudbase-admin-governance-check.js",
+    "db:cloudbase-crm-master-import:check": "node scripts/cloudbase-crm-master-import-check.js",
     "release:check": "node scripts/release-check.js"
   },
   "engines": {

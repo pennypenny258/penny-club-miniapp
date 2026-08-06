@@ -23,11 +23,13 @@ const { TagSuggestionService } = require('./tag-suggestion-provider');
 const { parsePort, validateDeploymentEnvironment } = require('./deployment');
 const { resolvePersistenceConfig, assertRuntimeRepositoryReady } = require('./persistence/config');
 const { createRepository } = require('./persistence/repository');
+const { buildCrmSpreadsheetPreview, resolveCrmPersistentImportConfig } = require('./persistence/crm-import-pipeline');
 const store = require('./store');
 const deployment = validateDeploymentEnvironment();
 const persistenceConfig = resolvePersistenceConfig(process.env);
 assertRuntimeRepositoryReady(persistenceConfig);
 const repository = createRepository({config:persistenceConfig,store});
+const crmPersistentImportConfig = resolveCrmPersistentImportConfig(process.env);
 const PORT = parsePort(process.env.PORT);
 const publicDir = path.join(__dirname, '..', 'public');
 const feishuClient = new FeishuOpenApiClient({secretProvider:new EnvFeishuSecretProvider()});
@@ -242,7 +244,9 @@ const server = http.createServer(async (req, res) => {
     match = url.pathname.match(/^\/api\/admin\/feishu-migrations\/([^/]+)\/disconnect$/);
     if (req.method === 'POST' && match) { requireHighRiskConfirmation(req,'feishu.disconnect');rememberIdempotency(req);const task=store.feishuMigrationTasks.find(x=>x.id===match[1]); if(!task)return json(res,404,{error:'一次性迁入任务不存在'});const items=store.feishuMigrationItems.filter(x=>x.taskId===task.id);disconnectSource(task,items);feishuPrivateRoots.delete(task.id);store.audit(adminActor(req),'feishu_migration.disconnect_source','feishu_migration',task.id,{externalRefsCleared:true,credentialStored:false,ownedContentRetained:true,continuousSync:false});return json(res,200,safeTask(task,items)); }
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/knowledge/preview') { const input = await body(req); return json(res, 200, savePreview(previewKnowledgeCsv(input.csv, input.mapping))); }
-    if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/preview') { const input = await body(req, 15*1024*1024),upload=await parseSpreadsheetUpload(input),preview=previewCrmVerificationCsv(upload.csv, input.mapping),result=savePreview(preview);result.batch.source=`${upload.meta.format}_preview`;result.spreadsheet={...upload.meta,detectedStandardFields:preview.headers.filter(field=>crmVerificationFields.includes(field)),needsMapping:preview.headerErrors.length>0};result.persisted=false;return json(res, 200, result); }
+    if (req.method === 'GET' && url.pathname === '/api/admin/imports/internal-crm/readiness') return json(res,200,{...crmPersistentImportConfig.safeSummary,realDataAllowed:false,notice:crmPersistentImportConfig.enabled?'持久化服务配置已通过预检，但标准业务路由仍需完成真实后台身份联调后单独放行。':'当前为本地演练：只允许匿名预检，不能作为正式入库。'});
+    if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/preview') { const input = await body(req, 15*1024*1024);return json(res,200,await buildCrmSpreadsheetPreview(input)); }
+    if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/confirm') return json(res,503,{error:'CRM 正式写入尚未激活；必须先完成 CloudBase 迁移、服务端网关配置与真实后台会话验收',code:'CRM_PERSISTENCE_NOT_ACTIVATED',persisted:false,memoryFallback:false});
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/member-orders/preview') return json(res, 410, { error: '旧历史订单预检已停用；小店记录请使用付款证据预检，非小店续费需进入受控人工补录流程' });
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/wechat-shop-orders/preview') { const input = await body(req, 45*1024*1024);if(Array.isArray(input.files)){try{return json(res,200,savePaymentClueBatchSummary(await previewPaymentClueBatch(input)))}catch(error){if(error.safeBatch)return json(res,error.statusCode||413,{error:error.message,code:error.code,...error.safeBatch,persisted:false});throw error}}const upload=await parseSpreadsheetUpload(input),paymentSource=['wechat_shop_order','wechat_merchant_receipt','manual_transfer'].includes(input.paymentSource)?input.paymentSource:'wechat_shop_order',preview=previewPaymentClueCsv(upload.csv,{source:paymentSource});return json(res,200,{...savePaymentClueSummary(preview,upload.meta),paymentSource}); }
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/voluntary-directory/preview') { const input = await body(req, 15*1024*1024),upload=await parseSpreadsheetUpload(input),preview=previewVoluntaryDirectoryCsv(upload.csv, input.mapping),result=savePreview(preview);result.batch.source=`${upload.meta.format}_preview`;result.spreadsheet={...upload.meta,detectedStandardFields:preview.headers.filter(field=>voluntaryDirectoryFields.includes(field)),needsMapping:preview.headerErrors.length>0};result.persisted=false;return json(res, 200, result); }
