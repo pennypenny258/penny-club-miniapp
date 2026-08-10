@@ -6,10 +6,13 @@
 
 1. 小程序将 `wx.login` 得到的一次性 `code` 交给 Node 服务；小程序永远不持有 AppSecret。
 2. Node 通过微信官方 `code2Session` 交换 `code`。`session_key` 不进入会话、不写数据库、不记录日志。
-3. Node 对外部 subject 做带服务端密钥、带 AppID 域隔离的 HMAC，只用 64 位伪名哈希查询绑定。数据库不存原始微信标识。
-4. CloudBase 后端网关只查询 `venture_member_access_entitlement`，返回内部会员 ID 和门禁必需字段；不返回 CRM/付款记录、原因码、群资料、手机号或联系人信息。
-5. Node 重新计算账号、会籍窗口、CRM 核验、最近付款证据复核、当前在群和最终判定；任一项不满足即拒绝。
-6. 通过后签发短期 AES-256-GCM 不透明会话。每个请求先验证会话及撤销状态，再重新查询会籍；网关异常统一 503，绝不回落匿名内存数据。
+3. `wx.login` / `code2Session` 只建立小程序域身份 subject；它不会返回可直接用于 CRM 的微信昵称、微信号、群昵称或群成员状态。即使上游/客户端夹带这些字段，服务端也必须忽略。
+4. 手机号只允许在用户明确点击 `getPhoneNumber` 能力后，由 Node 使用一次性 code 向微信服务端验证；手机号不是登录默认返回值，也不是必须绑定条件。
+5. 微信号、微信群昵称由会员主动填写或运营导入，作为 CRM 匹配线索；匹配结果必须由运营确认。个人微信群是否仍在大群没有可依赖的小程序 API，继续由 CRM 人工维护，并作为最终硬门禁。
+6. Node 对外部 subject 做带服务端密钥、带 AppID 域隔离的 HMAC，只用 64 位伪名哈希查询已经由运营确认的绑定。数据库不存原始 openid。
+7. CloudBase 后端网关只查询 `venture_member_access_entitlement`，返回内部会员 ID 和门禁必需字段；不返回 CRM/付款记录、原因码、群资料、手机号或联系人信息。
+8. Node 重新计算账号、会籍窗口、CRM 核验、最近付款证据复核、人工确认的当前在群状态和最终判定；任一项不满足即拒绝。
+9. 通过后签发短期 AES-256-GCM 不透明会话。每个请求先验证会话及撤销状态，再重新查询会籍；网关异常统一 503，绝不回落匿名内存数据。
 
 `x-demo-user` 和 cookie 只属于当前匿名演示机制。真实身份服务明确拒绝这两种来源，只接受服务端验证的 Bearer 会话。现有标准 API 尚未接线，避免混用演示和真实事实域。
 
@@ -29,7 +32,7 @@
 现在不需要生成、填写或发送任何凭据。真正准备生产时，顺序如下：
 
 1. 完成 004 代码评审、测试环境人工迁移和 190 验证。
-2. 建立管理员受控的身份绑定/解绑与审计流程；不得把原始 openid 复制到普通表格。
+2. 建立 `openid 哈希 → CRM 候选 → 运营确认` 的身份绑定/解绑与审计流程；不得把原始 openid 复制到普通表格。微信号、群昵称和群状态不能标记为“微信 API 已验证”。
 3. 建立服务端持久化会话撤销存储，支持单会话撤销、账号停用和密钥轮换；内存存储不满足生产要求。
 4. 到首次真实联调时，才在微信公众平台确认正式 AppID 并生成/查看 AppSecret。AppSecret 只由有权限管理员放入云托管服务端 Secret/环境变量，不能放进小程序、GitHub、Dockerfile、截图或聊天。
 5. 在 CloudBase 云托管服务端配置变量类别：
@@ -44,6 +47,8 @@
 
 - 微信小程序登录流程：https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/login.html
 - 微信服务端 `code2Session`：https://developers.weixin.qq.com/miniprogram/dev/OpenApiDoc/user-login/code2Session.html
+- 微信手机号快速验证组件（必须由用户触发）：https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html
+- 微信头像昵称填写能力：https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/userProfile.html
 - CloudBase PostgreSQL HTTP API：https://docs.cloudbase.net/http-api/pgdb/postgresql-restful-api
 - CloudBase PostgreSQL 身份认证角色：https://docs.cloudbase.net/authentication-v2/auth/auth-pg
 - CloudBase 服务端认证配置：https://docs.cloudbase.net/service/authentication

@@ -44,6 +44,7 @@ DATA_REPOSITORY=production_bootstrap_disabled
 PORT=3000
 WECHAT_LOGIN_ENABLED=false
 FORMAL_ADMIN_AUTH_ENABLED=false
+FORMAL_AGENT_ROUTES_ENABLED=false
 ADMIN_GOVERNANCE_ENABLED=false
 CLOUDBASE_CATALOG_READS_ENABLED=false
 CLOUDBASE_STORAGE_ENABLED=false
@@ -132,11 +133,13 @@ staging 服务如需继续展示匿名演示，必须在它自己的服务配置
 ### 7. 启用微信登录与会籍门禁（用户配置 AppSecret，开发方验收）
 
 1. 配置 AppID、AppSecret、subject HMAC、会员会话加密/发行方/受众和撤销存储。
-2. 先用匿名测试微信账号完成 code 交换、subject 绑定、会话过期和撤销测试。
+2. 先用匿名测试微信账号完成 code 交换、CRM 候选匹配、运营确认 subject 绑定、会话过期和撤销测试。`wx.login` 不返回昵称、微信号或群状态；手机号只能由用户主动授权后单独验证。
 3. 每次会员访问都重新读取最小会籍投影；大群状态、CRM、付款复核和运营结论缺一不可。
 4. 验收通过后才设置 `WECHAT_LOGIN_ENABLED=true` 和会员身份提供方。
 
 完成标志：小程序不持有 AppSecret，未绑定或无有效会籍无法读取会员内容。
+
+正式 Agent HTTP 边界虽然已挂载，但此时仍保持 `FORMAL_AGENT_ROUTES_ENABLED=false`。只有 004 会员门禁、`MEMBER_BINDING_MODE=operator_confirmed_crm`、008 后台会话、五个固定 Agent 网关操作及故障演练全部验收后，才能由开发方逐路由启用；用户当前不要打开该开关。
 
 ### 8. 建立私有对象存储（用户在 CloudBase 存储控制台操作）
 

@@ -4,7 +4,7 @@ const {validateDemandSubmission}=require('./demand-submission-policy');
 const {validateConnectionApplication}=require('./member-crm-mvp');
 const {AgentRepositoryUnavailableError}=require('./persistence/agent-mvp-repository');
 
-const DEMAND_TYPES=new Set(['investment','financing','ma','recruiting','招商']);
+const DEMAND_TYPES=new Set(['investment','fundraising','ma','recruitment','business_attraction']);
 const REVIEW_DECISIONS=new Set(['needs_more_information','rejected','archived','approved']);
 const DISPATCH_DECISIONS=new Set(['shortlisted','declined']);
 function safe(value,max){return String(value||'').trim().replace(/[\u0000-\u001f\u007f]/g,' ').slice(0,max)}
