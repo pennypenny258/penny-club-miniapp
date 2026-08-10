@@ -1,6 +1,6 @@
 -- Run only after 009 completes without error. This writes migration metadata only.
 DO $record_admin_governance_version$
-DECLARE expected_checksum text := '7fb966be4ed9a8209fd551967b2bb0109d5ff9a2abdc509ff6b4d032fc8921c5';existing_checksum text;
+DECLARE expected_checksum text := 'f769f07942bffd7b7b90c9d436defeebef7e21d70800684a1c9d963f2e9a8bc6';existing_checksum text;
 BEGIN
  IF to_regclass('venture_private.admin_bootstrap_authorizations') IS NULL OR to_regclass('venture_private.admin_role_change_requests') IS NULL THEN RAISE EXCEPTION '009 admin governance objects are incomplete';END IF;
  IF to_regprocedure('public.venture_bootstrap_system_admin(text,text)') IS NULL OR to_regprocedure('public.venture_request_admin_role_change(text,text,text,text,text,text)') IS NULL OR to_regprocedure('public.venture_approve_admin_role_change(text,text,text)') IS NULL OR to_regprocedure('public.venture_read_redacted_admin_audit(text,timestamp with time zone,integer)') IS NULL THEN RAISE EXCEPTION '009 admin governance RPCs are incomplete';END IF;
