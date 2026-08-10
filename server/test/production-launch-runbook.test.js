@@ -10,3 +10,7 @@ test('production runbook states current boundary and strict migration order',()=
 test('production runbook keeps secrets server-only and cloud actions user-owned',()=>{
   for(const text of ['用户在 CloudBase 操作','用户在微信公众平台操作','不要开启数据库外网 IPv4','浏览器和小程序绝不能获得','需要用户再次明确批准','不让规则或模型自动发布需求'])assert.equal(doc.includes(text),true,text);
 });
+
+test('production runbook provides an exact non-sensitive locked bootstrap deployment',()=>{
+  for(const text of ['penny-club-prod','pennypenny258/penny-club-miniapp','penny-club-prod-api','cloudbase_production_bootstrap','production_bootstrap_disabled','服务端口 / 容器端口','`3000`','GET /healthz','businessApisEnabled','业务 API 返回 503','不要填写生产环境 ID'])assert.equal(doc.includes(text),true,text);
+});

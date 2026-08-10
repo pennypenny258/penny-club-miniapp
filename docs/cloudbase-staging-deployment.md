@@ -34,7 +34,7 @@
 
 ## 测试环境变量与安全默认
 
-`Dockerfile` 已内置以下三个非敏感默认值。即使首次部署时漏填控制台环境变量，新构建的镜像也会进入匿名测试模式，不会回落到 `local_development`：
+镜像现在默认进入“生产初始化锁定态”，不会自动展示任何匿名演示数据。要继续运行 staging 演示，必须在测试服务中显式填写以下三个非敏感值：
 
 ```text
 NODE_ENV=staging
@@ -42,9 +42,9 @@ DEPLOYMENT_PROFILE=cloudbase_staging_demo
 DEMO_DATA_ONLY=true
 ```
 
-CloudBase 服务页面配置的同名变量优先于镜像默认值。建议仍在控制台显式填写这三个值，便于运营人员辨认配置，但匿名测试的安全性不再依赖手工填写。端口已在服务设置中填写 3000 时，可以不另填 `PORT`；如页面明确要求环境变量，则填写 `PORT=3000`。完整模板见 `config/cloudbase-staging.env.example`。
+CloudBase 服务页面配置的同名变量优先于镜像默认值。若漏填，服务会保持健康但锁住 `/admin/`、`/member/` 和业务 API，不会回落到本地开发或匿名演示。端口已在服务设置中填写 3000 时，可以不另填 `PORT`；如页面明确要求环境变量，则填写 `PORT=3000`。完整模板见 `config/cloudbase-staging.env.example`。
 
-本机直接运行 `npm run dev` 不读取 Dockerfile，仍显示 `local_development`。这份 Dockerfile 专用于测试部署；即使在本机主动构建它，也会保守进入匿名测试模式，而不会冒充具备持久存储的本地开发服务。
+本机直接运行 `npm run dev` 不读取 Dockerfile，仍显示 `local_development`。主动构建镜像但未提供服务环境变量时会保守进入生产初始化锁定态。staging 必须显式配置模板中的测试变量后才会展示匿名演示。
 
 首次部署不要填写 `FEISHU_APP_ID`、`FEISHU_APP_SECRET`、`PRIVATE_STORAGE_DIR`、`DATABASE_URL`、微信密钥、支付密钥或其他真实系统凭据。测试配置在检测到本机私有目录或已知真实集成变量时会拒绝启动，避免误把本地能力当作云端持久能力。
 

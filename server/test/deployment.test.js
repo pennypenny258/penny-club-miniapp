@@ -30,11 +30,21 @@ test('direct local development keeps its existing default', () => {
   });
 });
 
-test('CloudBase image defaults to safe anonymous staging without console variables', () => {
+test('CloudBase image defaults to locked production bootstrap without console variables', () => {
   const dockerfile = fs.readFileSync(path.join(__dirname, '..', '..', 'Dockerfile'), 'utf8');
-  assert.match(dockerfile, /NODE_ENV=staging/);
-  assert.match(dockerfile, /DEPLOYMENT_PROFILE=cloudbase_staging_demo/);
-  assert.match(dockerfile, /DEMO_DATA_ONLY=true/);
+  assert.match(dockerfile, /NODE_ENV=production/);
+  assert.match(dockerfile, /DEPLOYMENT_PROFILE=cloudbase_production_bootstrap/);
+  assert.match(dockerfile, /DEMO_DATA_ONLY=false/);
+  assert.match(dockerfile, /DATA_REPOSITORY=production_bootstrap_disabled/);
+});
+
+test('production bootstrap requires an explicit locked non-demo configuration',()=>{
+  const environment={NODE_ENV:'production',DEPLOYMENT_PROFILE:'cloudbase_production_bootstrap',DEMO_DATA_ONLY:'false',DATA_REPOSITORY:'production_bootstrap_disabled'};
+  assert.deepEqual(validateDeploymentEnvironment(environment),{profile:'cloudbase_production_bootstrap',anonymousDemoOnly:false,bootstrapOnly:true,businessApisEnabled:false});
+  for(const key of ['NODE_ENV','DEMO_DATA_ONLY','DATA_REPOSITORY']){const invalid={...environment};delete invalid[key];assert.throws(()=>validateDeploymentEnvironment(invalid),new RegExp(key));}
+  assert.throws(()=>validateDeploymentEnvironment({...environment,CLOUDBASE_PG_ENV_ID:'fixture-env'}),/CLOUDBASE_PG_ENV_ID/);
+  assert.throws(()=>validateDeploymentEnvironment({...environment,WECHAT_LOGIN_ENABLED:'true'}),/WECHAT_LOGIN_ENABLED/);
+  assert.throws(()=>validateDeploymentEnvironment({...environment,DATABASE_URL:'postgresql:\/\/fixture'}),/DATABASE_URL/);
 });
 
 test('CloudBase staging profile rejects local storage and real integrations', () => {

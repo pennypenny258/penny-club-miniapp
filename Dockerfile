@@ -1,10 +1,11 @@
 FROM node:22-bookworm-slim
 
-# 这份镜像专用于 CloudBase 测试部署。即使控制台漏填环境变量，也必须安全降级为匿名演示。
-# CloudBase 服务级同名变量优先于镜像默认值；正式环境必须使用独立配置并通过 release:check。
-ENV NODE_ENV=staging \
-    DEPLOYMENT_PROFILE=cloudbase_staging_demo \
-    DEMO_DATA_ONLY=true \
+# 镜像缺少控制台变量时只能进入生产初始化锁定态：健康检查可用，但不开放任何演示或业务接口。
+# 匿名 staging 必须在测试服务中显式覆盖为 cloudbase_staging_demo；正式能力也必须逐项完成后再启用。
+ENV NODE_ENV=production \
+    DEPLOYMENT_PROFILE=cloudbase_production_bootstrap \
+    DEMO_DATA_ONLY=false \
+    DATA_REPOSITORY=production_bootstrap_disabled \
     PORT=3000
 WORKDIR /app
 

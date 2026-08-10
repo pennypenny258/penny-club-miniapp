@@ -1,6 +1,22 @@
 'use strict';
 
 const CLOUDBASE_STAGING_PROFILE = 'cloudbase_staging_demo';
+const CLOUDBASE_PRODUCTION_BOOTSTRAP_PROFILE = 'cloudbase_production_bootstrap';
+
+const PRODUCTION_BOOTSTRAP_FORBIDDEN_VALUES = Object.freeze([
+  'DATABASE_URL','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_ENV_ID',
+  'CLOUDBASE_STORAGE_BUCKET_ID','OBJECT_LOCATOR_ENCRYPTION_KEY',
+  'GOVERNED_IMPORT_ENCRYPTION_KEY','MEMBER_MATCH_HMAC_KEY',
+  'ADMIN_SESSION_HASH_KEY','ADMIN_SUBJECT_HMAC_KEY','WECHAT_MINIPROGRAM_APP_SECRET',
+  'WECHAT_APP_SECRET','PAYMENT_API_KEY','FEISHU_APP_ID','FEISHU_APP_SECRET',
+  'PRIVATE_STORAGE_DIR'
+]);
+
+const PRODUCTION_BOOTSTRAP_DISABLED_FLAGS = Object.freeze([
+  'CLOUDBASE_CATALOG_READS_ENABLED','CLOUDBASE_STORAGE_ENABLED',
+  'GOVERNED_MEMBER_IMPORTS_ENABLED','GOVERNED_MATERIALIZATION_ENABLED',
+  'FORMAL_ADMIN_AUTH_ENABLED','ADMIN_GOVERNANCE_ENABLED','WECHAT_LOGIN_ENABLED'
+]);
 
 function parsePort(value) {
   const raw = value === undefined || value === null || value === '' ? '3000' : String(value).trim();
@@ -12,6 +28,17 @@ function parsePort(value) {
 
 function validateDeploymentEnvironment(environment = process.env) {
   const profile = String(environment.DEPLOYMENT_PROFILE || 'local_development').trim();
+  if (profile === CLOUDBASE_PRODUCTION_BOOTSTRAP_PROFILE) {
+    if (environment.NODE_ENV !== 'production') throw new Error('生产初始化档必须设置 NODE_ENV=production');
+    if (environment.DEMO_DATA_ONLY !== 'false') throw new Error('生产初始化档必须显式设置 DEMO_DATA_ONLY=false');
+    if (environment.DATA_REPOSITORY !== 'production_bootstrap_disabled') throw new Error('生产初始化档必须设置 DATA_REPOSITORY=production_bootstrap_disabled');
+    const populated = PRODUCTION_BOOTSTRAP_FORBIDDEN_VALUES.filter(key => String(environment[key] || '').trim());
+    const enabled = PRODUCTION_BOOTSTRAP_DISABLED_FLAGS.filter(key => String(environment[key] || '').trim() !== '' && environment[key] !== 'false');
+    if (populated.length || enabled.length) {
+      throw new Error(`生产初始化档禁止提前注入真实集成或启用业务能力：${[...populated, ...enabled].join(', ')}`);
+    }
+    return { profile, anonymousDemoOnly:false, bootstrapOnly:true, businessApisEnabled:false };
+  }
   if (profile !== CLOUDBASE_STAGING_PROFILE) return { profile, anonymousDemoOnly: false };
 
   if (environment.DEMO_DATA_ONLY !== 'true') {
@@ -65,4 +92,4 @@ function validateDeploymentEnvironment(environment = process.env) {
   return { profile, anonymousDemoOnly: true };
 }
 
-module.exports = { CLOUDBASE_STAGING_PROFILE, parsePort, validateDeploymentEnvironment };
+module.exports = { CLOUDBASE_STAGING_PROFILE, CLOUDBASE_PRODUCTION_BOOTSTRAP_PROFILE, parsePort, validateDeploymentEnvironment };

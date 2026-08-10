@@ -6,6 +6,12 @@ class MemoryDemoRepository{
   safeReadiness(){return {kind:this.kind,persistent:false,anonymousDemoOnly:true}}
 }
 
+class ProductionBootstrapRepository{
+  constructor(){this.kind='production_bootstrap_disabled'}
+  getDomainStore(){throw new Error('生产初始化锁定态不提供业务数据仓库')}
+  safeReadiness(){return {kind:this.kind,persistent:false,anonymousDemoOnly:false,businessApisEnabled:false,configurationState:'not_configured'}}
+}
+
 class PostgresRepository{
   constructor({config,clientFactory}){if(!config?.enabled||config.mode!=='postgres')throw new Error('PostgresRepository 需要已通过预检的 postgres 配置');if(typeof clientFactory!=='function')throw new Error('PostgresRepository 需要服务端 PostgreSQL clientFactory');this.kind='postgres';this.config=config;this.clientFactory=clientFactory}
   async withTransaction(work){const client=await this.clientFactory();try{await client.query('BEGIN');await client.query(`SET LOCAL search_path TO ${this.config.schema}, pg_catalog`);await client.query(`SET LOCAL statement_timeout TO '${this.config.statementTimeoutMs}ms'`);const result=await work(client);await client.query('COMMIT');return result}catch(error){try{await client.query('ROLLBACK')}catch{void 0}throw error}finally{if(typeof client.release==='function')client.release()}}
@@ -55,6 +61,6 @@ class CloudBaseGatewayRepository{
 }
 
 function boundedLimit(value){const parsed=Number(value);if(!Number.isInteger(parsed)||parsed<1||parsed>100)throw new Error('CloudBase 网关分页上限必须为 1–100 的整数');return parsed}
-function createRepository({config,store,clientFactory,fetchImpl}){if(config.mode==='memory_demo')return new MemoryDemoRepository(store);if(config.mode==='postgres')return new PostgresRepository({config,clientFactory});return new CloudBaseGatewayRepository({config,fetchImpl})}
+function createRepository({config,store,clientFactory,fetchImpl}){if(config.mode==='memory_demo')return new MemoryDemoRepository(store);if(config.mode==='production_bootstrap_disabled')return new ProductionBootstrapRepository();if(config.mode==='postgres')return new PostgresRepository({config,clientFactory});return new CloudBaseGatewayRepository({config,fetchImpl})}
 
-module.exports={CLOUDBASE_READ_VIEWS,CloudBaseGatewayError,CloudBaseGatewayTransport,CloudBaseGatewayRepository,MemoryDemoRepository,PostgresRepository,createRepository};
+module.exports={CLOUDBASE_READ_VIEWS,CloudBaseGatewayError,CloudBaseGatewayTransport,CloudBaseGatewayRepository,MemoryDemoRepository,ProductionBootstrapRepository,PostgresRepository,createRepository};

@@ -9,8 +9,58 @@
 - 私有 GitHub 仓库与 CloudBase 云托管匿名 staging，可访问健康检查、会员端和后台。
 - CloudBase PG 空测试库已人工执行 001、CloudBase 002 安全变体、003、040，并通过 090 只读终检。
 - 本地完成 CRM Excel 脱敏预检、导入审阅工作台、微信身份/后台会话/私有存储/受控导入等代码边界。
+- 已创建独立 CloudBase 标准版生产环境 `penny-club-prod`；尚未部署正式业务，也未配置任何生产 Secret。
+- 生产镜像默认采用 `cloudbase_production_bootstrap` 锁定档：只提供健康检查和未配置说明，不加载匿名演示页面，不启用 CRM 或数据库。
 
-目前仍未完成：正式自有域名、正式微信 AppID 登录、真实后台身份、004—011 后续迁移、私有对象存储、生产服务端变量、真实 CRM 写入。当前页面中的“正式写入”必须继续禁用。
+目前仍未完成：正式自有域名、正式微信 AppID 登录、真实后台身份、004—011 后续迁移、私有对象存储、生产服务端 Secret、真实 CRM 写入。当前页面中的“正式写入”必须继续禁用。
+
+## 现在可做：部署生产初始化锁定服务
+
+这一步不需要数据库、环境 ID、API Key、AppSecret 或真实数据。它只用于确认 Git 构建、容器端口和 HTTPS 健康检查正常。
+
+在 `penny-club-prod` 的“云托管 → 新建服务 / Git 平台部署”页面逐项填写：
+
+| 页面字段 | 填写值 |
+| --- | --- |
+| Git 平台 | GitHub（使用已授权账号） |
+| 仓库 | 私有仓库 `pennypenny258/penny-club-miniapp` |
+| 分支 | `main` |
+| 服务名 | `penny-club-prod-api` |
+| 构建目录 | 仓库根目录 `.`；页面留空代表根目录时可留空 |
+| 构建方式 | Dockerfile / 自动识别 Dockerfile |
+| Dockerfile 路径 | `Dockerfile`；已自动识别时无需另填构建命令 |
+| 自定义构建命令 | 留空 |
+| 启动命令 | 留空，使用镜像内的 `npm start` |
+| 服务端口 / 容器端口 | `3000` |
+| 健康检查 | HTTP `GET /healthz` |
+
+首次只填写 `config/cloudbase-production-bootstrap.env.example` 中的非敏感变量：
+
+```text
+NODE_ENV=production
+DEPLOYMENT_PROFILE=cloudbase_production_bootstrap
+DEMO_DATA_ONLY=false
+DATA_REPOSITORY=production_bootstrap_disabled
+PORT=3000
+WECHAT_LOGIN_ENABLED=false
+FORMAL_ADMIN_AUTH_ENABLED=false
+ADMIN_GOVERNANCE_ENABLED=false
+CLOUDBASE_CATALOG_READS_ENABLED=false
+CLOUDBASE_STORAGE_ENABLED=false
+GOVERNED_MEMBER_IMPORTS_ENABLED=false
+GOVERNED_MATERIALIZATION_ENABLED=false
+```
+
+此时不要填写生产环境 ID、PG gateway API Key、`DATABASE_URL`、微信 AppSecret、会话/加密/HMAC 密钥、Bucket、飞书或支付凭据。CloudBase 平台自身可能自动注入的系统变量无需复制进仓库，也不要发送到聊天。
+
+部署完成后的正确验收结果：
+
+- `/healthz` 返回 HTTP 200，`deploymentProfile` 是 `cloudbase_production_bootstrap`，`anonymousDemoOnly` 与 `businessApisEnabled` 都是 `false`，`serviceState` 是 `production_bootstrap_not_configured`。
+- `/` 显示“生产初始化服务已启动”，并明确业务尚未配置。
+- `/admin/`、`/member/` 和业务 API 返回 503；这是正确的安全锁定结果，不是部署故障。
+- 若看到匿名会员、匿名 CRM 或演示后台，立即停止，不录入任何数据，并核对部署分支、镜像版本及以上变量。
+
+staging 服务如需继续展示匿名演示，必须在它自己的服务配置中显式保留 `NODE_ENV=staging`、`DEPLOYMENT_PROFILE=cloudbase_staging_demo`、`DEMO_DATA_ONLY=true`；生产与 staging 不得共用服务或变量组。
 
 ## 严格上线顺序
 

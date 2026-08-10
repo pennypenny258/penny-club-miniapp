@@ -19,9 +19,9 @@ if (!issues.length) {
   if (!/CMD \["npm", "start"\]/.test(dockerfile)) issues.push('Dockerfile 未使用 npm start');
   if (!/EXPOSE 3000/.test(dockerfile)) issues.push('Dockerfile 未声明 3000 端口');
   if (!/\/healthz/.test(dockerfile)) issues.push('Dockerfile 未配置健康检查');
-  if (!/NODE_ENV=staging/.test(dockerfile)) issues.push('Dockerfile 未默认使用 staging 环境');
-  if (!/DEPLOYMENT_PROFILE=cloudbase_staging_demo/.test(dockerfile)) issues.push('Dockerfile 未默认使用 CloudBase 匿名测试配置');
-  if (!/DEMO_DATA_ONLY=true/.test(dockerfile)) issues.push('Dockerfile 未默认限制为匿名演示数据');
+  if (!/NODE_ENV=production/.test(dockerfile)) issues.push('Dockerfile 未默认使用生产初始化锁定环境');
+  if (!/DEPLOYMENT_PROFILE=cloudbase_production_bootstrap/.test(dockerfile)) issues.push('Dockerfile 未默认使用生产初始化锁定档');
+  if (!/DATA_REPOSITORY=production_bootstrap_disabled/.test(dockerfile)) issues.push('Dockerfile 未默认关闭业务数据仓库');
   for (const pattern of ['.env.*', 'server/private-storage', 'server/data']) {
     if (!dockerignore.includes(pattern)) issues.push(`.dockerignore 未排除 ${pattern}`);
   }
@@ -34,6 +34,7 @@ try {
     DEPLOYMENT_PROFILE: 'cloudbase_staging_demo',
     DEMO_DATA_ONLY: 'true'
   });
+  validateDeploymentEnvironment({NODE_ENV:'production',DEPLOYMENT_PROFILE:'cloudbase_production_bootstrap',DEMO_DATA_ONLY:'false',DATA_REPOSITORY:'production_bootstrap_disabled'});
   const identity=resolveWechatIdentityConfig({NODE_ENV:'staging',WECHAT_LOGIN_ENABLED:'false'});
   if(identity.enabled)issues.push('CloudBase 匿名测试环境不得启用真实微信身份');
 } catch (error) {

@@ -25,6 +25,7 @@ const { TagSuggestionService } = require('./tag-suggestion-provider');
 const { parsePort, validateDeploymentEnvironment } = require('./deployment');
 const { resolvePersistenceConfig, assertRuntimeRepositoryReady } = require('./persistence/config');
 const { createRepository } = require('./persistence/repository');
+const { handleProductionBootstrap } = require('./production-bootstrap');
 const { buildCrmSpreadsheetPreview, resolveCrmPersistentImportConfig } = require('./persistence/crm-import-pipeline');
 const { CrmImportRehearsalStore, buildSourceOverview } = require('./crm-import-rehearsal');
 const store = require('./store');
@@ -155,6 +156,7 @@ function serveStatic(req, res) {
 }
 
 const server = http.createServer(async (req, res) => {
+  if (handleProductionBootstrap(req,res,{deployment,repository})) return;
   if (req.method === 'OPTIONS') return json(res, 204, {});
   if ((req.url.startsWith('/admin/') || req.url.startsWith('/member/')) && serveStatic(req, res)) return;
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
@@ -308,7 +310,9 @@ const server = http.createServer(async (req, res) => {
 });
 
 if (require.main === module) {
-  const listener = server.listen(PORT, '0.0.0.0', () => console.log(`Venture Club MVP: member http://localhost:${PORT}/member/ | admin http://localhost:${PORT}/admin/`));
+  const listener = server.listen(PORT, '0.0.0.0', () => console.log(deployment.bootstrapOnly
+    ? `Venture Club production bootstrap: health http://localhost:${PORT}/healthz | business APIs locked`
+    : `Venture Club MVP: member http://localhost:${PORT}/member/ | admin http://localhost:${PORT}/admin/`));
   const shutdown = signal => {
     console.log(`${signal} received; stopping HTTP server`);
     listener.close(error => {

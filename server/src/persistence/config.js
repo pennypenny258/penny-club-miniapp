@@ -14,7 +14,12 @@ function resolvePersistenceConfig(environment=process.env){
   const mode=String(environment.DATA_REPOSITORY||'memory_demo').trim();
   const databaseUrlPresent=hasValue(environment.DATABASE_URL);
   const cloudbaseConfigPresent=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE','CLOUDBASE_CATALOG_READS_ENABLED'].some(key=>hasValue(environment[key]));
-  if(!['memory_demo','postgres','cloudbase_gateway'].includes(mode))throw new Error('DATA_REPOSITORY 只允许 memory_demo、postgres 或 cloudbase_gateway');
+  if(!['memory_demo','postgres','cloudbase_gateway','production_bootstrap_disabled'].includes(mode))throw new Error('DATA_REPOSITORY 只允许 memory_demo、postgres、cloudbase_gateway 或 production_bootstrap_disabled');
+  if(mode==='production_bootstrap_disabled'){
+    if(environment.NODE_ENV!=='production'||environment.DEPLOYMENT_PROFILE!=='cloudbase_production_bootstrap'||environment.DEMO_DATA_ONLY!=='false')throw new Error('production_bootstrap_disabled 只允许用于显式生产初始化锁定档');
+    if(databaseUrlPresent||cloudbaseConfigPresent)throw new Error('生产初始化锁定档禁止提前提供数据库或 CloudBase 网关配置');
+    return {mode,enabled:false,safeSummary:{mode,persistent:false,anonymousDemoOnly:false,businessApisEnabled:false}};
+  }
   if(mode==='memory_demo'){
     if(environment.NODE_ENV==='production')throw new Error('生产环境禁止使用 memory_demo 数据仓库');
     if(databaseUrlPresent)throw new Error('已提供 DATABASE_URL 但未显式启用 postgres；拒绝静默忽略数据库配置');
@@ -60,7 +65,7 @@ function resolveCloudBaseGatewayConfig(environment){
 }
 
 function assertRuntimeRepositoryReady(config){
-  if(config.mode==='memory_demo')return true;
+  if(config.mode==='memory_demo'||config.mode==='production_bootstrap_disabled')return true;
   const error=new Error('PostgreSQL 持久化仅完成仓库契约与离线验证；业务 API 尚未逐域接线，拒绝以真实数据模式启动');
   error.code=config.mode==='cloudbase_gateway'?'CLOUDBASE_GATEWAY_RUNTIME_NOT_ACTIVATED':'POSTGRES_RUNTIME_PHASE1_NOT_ACTIVATED';throw error;
 }
