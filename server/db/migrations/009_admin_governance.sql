@@ -74,11 +74,23 @@ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=venture_private,pg_cata
  RETURN QUERY SELECT jsonb_strip_nulls(jsonb_build_object('occurred_at',log.created_at,'actor_reference',md5('admin-audit-v1:'||coalesce(log.actor_user_id,'system')),'action',log.action,'subject_type',log.subject_type,'subject_reference',md5('admin-audit-v1:'||coalesce(log.subject_id,'none')),'status',log.safe_change_summary->>'status','reason_code',log.safe_change_summary->>'reason_code','role_code',log.safe_change_summary->>'role_code','change_action',log.safe_change_summary->>'change_action','domain',log.safe_change_summary->>'domain','sensitive_data_included',false)) FROM venture_private.audit_logs log WHERE (p_before IS NULL OR log.created_at<p_before) ORDER BY log.created_at DESC LIMIT p_limit;
 END $$;
 
-REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) FROM PUBLIC;
-DO $admin_governance_grants$ BEGIN
- IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='anon') THEN EXECUTE 'REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) FROM anon';END IF;
- IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN EXECUTE 'REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) FROM authenticated';END IF;
- IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN EXECUTE 'GRANT EXECUTE ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) TO service_role';END IF;
-END $admin_governance_grants$;
+-- 008/CloudBase security prerequisites guarantee these roles exist. Keep each privilege statement
+-- separate: CloudBase ExecutePGSql rejects the otherwise-valid comma-separated function list.
+REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.venture_request_admin_role_change(text,text,text,text,text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.venture_approve_admin_role_change(text,text,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.venture_read_redacted_admin_audit(text,timestamp with time zone,integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text) FROM anon;
+REVOKE ALL ON FUNCTION public.venture_request_admin_role_change(text,text,text,text,text,text) FROM anon;
+REVOKE ALL ON FUNCTION public.venture_approve_admin_role_change(text,text,text) FROM anon;
+REVOKE ALL ON FUNCTION public.venture_read_redacted_admin_audit(text,timestamp with time zone,integer) FROM anon;
+REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text) FROM authenticated;
+REVOKE ALL ON FUNCTION public.venture_request_admin_role_change(text,text,text,text,text,text) FROM authenticated;
+REVOKE ALL ON FUNCTION public.venture_approve_admin_role_change(text,text,text) FROM authenticated;
+REVOKE ALL ON FUNCTION public.venture_read_redacted_admin_audit(text,timestamp with time zone,integer) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.venture_bootstrap_system_admin(text,text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.venture_request_admin_role_change(text,text,text,text,text,text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.venture_approve_admin_role_change(text,text,text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.venture_read_redacted_admin_audit(text,timestamp with time zone,integer) TO service_role;
 
 COMMIT;
