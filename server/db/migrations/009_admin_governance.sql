@@ -1,5 +1,7 @@
 -- Forward-only preparation for one-time system-admin bootstrap, two-person role governance and redacted audit reads.
 -- Depends on 008. Tables start empty; no identity, role assignment or route is activated by this migration.
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS venture_private.admin_bootstrap_authorizations (
  id text PRIMARY KEY,user_id text NOT NULL REFERENCES venture_private.users(id),subject_hash char(64) NOT NULL UNIQUE CHECK(subject_hash ~ '^[0-9a-f]{64}$'),
  ticket_hash char(64) NOT NULL UNIQUE CHECK(ticket_hash ~ '^[0-9a-f]{64}$'),status text NOT NULL DEFAULT 'ready' CHECK(status IN ('ready','used','expired','revoked')),
@@ -74,7 +76,9 @@ END $$;
 
 REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) FROM PUBLIC;
 DO $admin_governance_grants$ BEGIN
- IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='anon') THEN REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) FROM anon;END IF;
- IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) FROM authenticated;END IF;
- IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN GRANT EXECUTE ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) TO service_role;END IF;
+ IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='anon') THEN EXECUTE 'REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) FROM anon';END IF;
+ IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='authenticated') THEN EXECUTE 'REVOKE ALL ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) FROM authenticated';END IF;
+ IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='service_role') THEN EXECUTE 'GRANT EXECUTE ON FUNCTION public.venture_bootstrap_system_admin(text,text),public.venture_request_admin_role_change(text,text,text,text,text,text),public.venture_approve_admin_role_change(text,text,text),public.venture_read_redacted_admin_audit(text,timestamptz,integer) TO service_role';END IF;
 END $admin_governance_grants$;
+
+COMMIT;

@@ -6,8 +6,8 @@
     "server/db/cloudbase-pg-console/690_verify_admin_governance_readonly.sql"
   ],
   "checksums":{
-    "server/db/migrations/009_admin_governance.sql":"55524d21eb70c820e90bd0429486f259f6d4b795f7607f47c87ccdd95849caf3",
-    "server/db/cloudbase-pg-console/640_record_admin_governance_version.sql":"31e50837f860deac8b31e84c0f1a3c3850352284fac9fbb1773b8d41a46f09b9",
+    "server/db/migrations/009_admin_governance.sql":"23e9bbf69d4d15dc7276f934051a4a692ae174c1c7118c93bdafeff4a79b5b17",
+    "server/db/cloudbase-pg-console/640_record_admin_governance_version.sql":"cc4cfc6e7c8a2076664a9b066d0d139ee169b10cb9c11b078ec255c357719384",
     "server/db/cloudbase-pg-console/690_verify_admin_governance_readonly.sql":"8629d9b552a89c63d29bb7b623e92f58b448b41574a7381582f83bca999dae52"
   }
 }
