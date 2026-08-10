@@ -8,16 +8,17 @@ async function fixturePayload(){
   sheet.addRow(['昵称','备注名','到期月份','续费价格','通知状态','通知日期','付款状态','付款日期','手机号','付款姓名','操作备注','群状态','微信号','真实姓名','会员等级','首次入群月份','累计在群月数']);
   sheet.addRow(['匿名甲','示例备注名','2026-08','499','待续费跟进','2026-08','未付','','','','仅匿名测试','在群','','','荣誉董事','2025-01','19']);
   sheet.addRow(['匿名乙','','2026-09','666','未通知','','已付','2026-08','','','','未知','','','','','']);
+  sheet.addRow(['匿名丙','','待确认','666','未通知','','未付','','','','','未知','','','','','']);
   return {format:'xlsx',dataBase64:Buffer.from(await workbook.xlsx.writeBuffer()).toString('base64')};
 }
 
 test('historical renewal XLSX produces only a redacted, zero-write CRM preview',async()=>{
   const payload=await fixturePayload(),preview=await buildCrmSpreadsheetPreview(payload);
   assert.equal(preview.status,'preview_complete');assert.equal(preview.persisted,false);assert.equal(preview.writeAttempted,false);
-  assert.equal(preview.summary.totalRows,2);assert.equal(preview.summary.unpaidRows,1);assert.equal(preview.summary.honoraryDirectorCandidateRows,1);
-  assert.equal(preview.summary.missingPhoneRows,2);assert.equal(preview.summary.missingWechatRows,2);assert.equal(preview.summary.unknownGroupRows,1);
+  assert.equal(preview.summary.totalRows,3);assert.equal(preview.summary.unpaidRows,2);assert.equal(preview.summary.honoraryDirectorCandidateRows,1);
+  assert.equal(preview.summary.missingPhoneRows,3);assert.equal(preview.summary.missingWechatRows,3);assert.equal(preview.summary.unknownGroupRows,2);assert.equal(preview.summary.expiryNeedsReviewRows,1);assert.equal(preview.summary.errorRows,0);
   assert.equal(preview.safeguards.unpaidMeansInactive,false);assert.equal(preview.safeguards.membershipActivated,false);assert.equal(preview.safeguards.publicDirectoryMutationAllowed,false);
-  const serialized=JSON.stringify(preview);for(const forbidden of ['匿名甲','示例备注名','仅匿名测试','499','666'])assert.equal(serialized.includes(forbidden),false,forbidden);
+  const serialized=JSON.stringify(preview);for(const forbidden of ['匿名甲','匿名丙','示例备注名','仅匿名测试','待确认','499','666'])assert.equal(serialized.includes(forbidden),false,forbidden);
 });
 
 test('CRM persistence activation is exact, server-only and fail closed',()=>{

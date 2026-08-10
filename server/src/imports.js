@@ -115,7 +115,12 @@ const CRM_GROUP_ALIASES={在群:'in_group',仍在群:'in_group',已退群:'left'
 const CRM_TIER_ALIASES={'天使轮股东':'angel_shareholder','A1轮股东':'a1_shareholder','A1 轮股东':'a1_shareholder','A2轮股东':'a2_shareholder','A2 轮股东':'a2_shareholder','荣誉董事':'honorary_director'};
 function validateCrmVerificationRow(row, index) {
   row={...row};const errors = []; const warnings = [];
+  let membershipExpiryNeedsReview=false,membershipExpiryRaw;
   for(const field of ['membership_expiry_month','first_group_entry_month','latest_notice_month','payment_month'])if(/^\d{4}-\d{2}-\d{2}/.test(row[field]||''))row[field]=row[field].slice(0,7);
+  if(row.membership_expiry_month==='待确认'){
+    membershipExpiryNeedsReview=true;membershipExpiryRaw=row.membership_expiry_month;row.membership_expiry_month='';
+    warnings.push('到期月份待人工确认；未猜测日期，也不据此改变会籍');
+  }
   if(CRM_NOTICE_ALIASES[row.notice_status])row.notice_status=CRM_NOTICE_ALIASES[row.notice_status];
   if(CRM_PAYMENT_ALIASES[row.payment_status])row.payment_status=CRM_PAYMENT_ALIASES[row.payment_status];
   if(CRM_GROUP_ALIASES[row.group_status])row.group_status=CRM_GROUP_ALIASES[row.group_status];
@@ -139,7 +144,7 @@ function validateCrmVerificationRow(row, index) {
   if (row.group_status !== 'in_group' || row.crm_verification_status !== 'verified') warnings.push('该行只能进入人工复核，不能自动激活会籍；未付款也不直接判无效');
   const { internal_member_ref, contact_match_token,wechat_group_nickname,wechat_id,phone,real_name,remark_name,payment_name,evidence_note,operator_note,renewal_price_cents,...safe } = row;
   const honoraryCandidate=row.membership_tier==='honorary_director'||renewal_price_cents==='49900'||renewal_price_cents==='499';
-  return { index, valid: errors.length === 0, disposition: errors.length ? 'error' : 'needs_human_review', errors, warnings, normalized: { ...safe, memberReferencePresent:Boolean(internal_member_ref), contactMatchPresent:Boolean(contact_match_token),wechatGroupNicknamePresent:Boolean(wechat_group_nickname),wechatIdPresent:Boolean(wechat_id),phonePresent:Boolean(phone),realNamePresent:Boolean(real_name),remarkNamePresent:Boolean(remark_name),paymentNamePresent:Boolean(payment_name),renewalPricePresent:Boolean(renewal_price_cents),honoraryDirectorCandidate:honoraryCandidate,missingCoreFieldCount:missing.length,evidenceNotePresent:Boolean(evidence_note),operatorNotePresent:Boolean(operator_note), determinesMembershipAlone:false,publicDirectoryMutationAllowed:false }, protected: { internal_member_ref, contact_match_token,wechat_group_nickname,wechat_id,phone,real_name,remark_name,payment_name,evidence_note,operator_note,renewal_price_cents } };
+  return { index, valid: errors.length === 0, disposition: errors.length ? 'error' : 'needs_human_review', errors, warnings, normalized: { ...safe, membershipExpiryNeedsReview,memberReferencePresent:Boolean(internal_member_ref), contactMatchPresent:Boolean(contact_match_token),wechatGroupNicknamePresent:Boolean(wechat_group_nickname),wechatIdPresent:Boolean(wechat_id),phonePresent:Boolean(phone),realNamePresent:Boolean(real_name),remarkNamePresent:Boolean(remark_name),paymentNamePresent:Boolean(payment_name),renewalPricePresent:Boolean(renewal_price_cents),honoraryDirectorCandidate:honoraryCandidate,missingCoreFieldCount:missing.length,evidenceNotePresent:Boolean(evidence_note),operatorNotePresent:Boolean(operator_note), determinesMembershipAlone:false,publicDirectoryMutationAllowed:false }, protected: { internal_member_ref, contact_match_token,wechat_group_nickname,wechat_id,phone,real_name,remark_name,payment_name,evidence_note,operator_note,renewal_price_cents,membership_expiry_raw:membershipExpiryRaw } };
 }
 function previewCrmVerificationCsv(csv, mapping = {}) {
   const parsed = parseCsv(csv); const combinedMapping=Object.fromEntries(parsed.headers.map(header=>[header,mapping[header]||CRM_SOURCE_ALIASES[header]||header]));const mapped = mappedRows(parsed, combinedMapping); const headers = parsed.headers.map(h => combinedMapping[h]);
