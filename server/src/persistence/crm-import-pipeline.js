@@ -12,7 +12,8 @@ function resolveCrmPersistentImportConfig(environment=process.env){
   const requested=environment.CRM_PERSISTENT_IMPORTS_ENABLED==='true';
   const keys=['CRM_PERSISTENT_IMPORTS_ENABLED','CRM_PERSISTENCE_MIGRATION_APPLIED','GOVERNED_MEMBER_IMPORTS_ENABLED','GOVERNED_MATERIALIZATION_ENABLED','GOVERNED_IMPORT_ENCRYPTION_KEY','MEMBER_MATCH_HMAC_KEY','GOVERNED_IMPORT_ADMIN_PROVIDER','GOVERNED_IMPORT_AUDIT_STORE','GOVERNED_IMPORT_IDEMPOTENCY_STORE'];
   if(!requested){
-    const partial=keys.filter(key=>key!=='CRM_PERSISTENT_IMPORTS_ENABLED').some(key=>present(environment[key]));
+    const disabledFlags=new Set(['GOVERNED_MEMBER_IMPORTS_ENABLED','GOVERNED_MATERIALIZATION_ENABLED']);
+    const partial=keys.filter(key=>key!=='CRM_PERSISTENT_IMPORTS_ENABLED').some(key=>present(environment[key])&&!(disabledFlags.has(key)&&environment[key]==='false'));
     if(partial)throw new Error('CRM 持久化导入配置不完整：禁止在未显式启用时保留部分真实写入配置');
     return {enabled:false,safeSummary:{enabled:false,persistent:false,previewOnly:true,memoryFallback:false,reason:'server_configuration_not_enabled'}};
   }

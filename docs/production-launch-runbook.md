@@ -51,6 +51,8 @@ GOVERNED_MEMBER_IMPORTS_ENABLED=false
 GOVERNED_MATERIALIZATION_ENABLED=false
 ```
 
+如果部署日志在 `server.js` 初始化阶段退出，先确认运行版本已包含生产 bootstrap 修复提交，且每个值都没有引号、反引号或首尾空格。临时排障时可以仅保留 `NODE_ENV`、`DEPLOYMENT_PROFILE`、`DEMO_DATA_ONLY`、`DATA_REPOSITORY` 和 `PORT`；其余能力开关缺省也是关闭，不能改为 `true`。
+
 此时不要填写生产环境 ID、PG gateway API Key、`DATABASE_URL`、微信 AppSecret、会话/加密/HMAC 密钥、Bucket、飞书或支付凭据。CloudBase 平台自身可能自动注入的系统变量无需复制进仓库，也不要发送到聊天。
 
 部署完成后的正确验收结果：

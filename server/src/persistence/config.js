@@ -13,7 +13,8 @@ function booleanFlag(value,fallback,name){if(value===undefined||value===null||va
 function resolvePersistenceConfig(environment=process.env){
   const mode=String(environment.DATA_REPOSITORY||'memory_demo').trim();
   const databaseUrlPresent=hasValue(environment.DATABASE_URL);
-  const cloudbaseConfigPresent=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE','CLOUDBASE_CATALOG_READS_ENABLED'].some(key=>hasValue(environment[key]));
+  const cloudbaseConfigPresent=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE'].some(key=>hasValue(environment[key]))
+    || (hasValue(environment.CLOUDBASE_CATALOG_READS_ENABLED)&&environment.CLOUDBASE_CATALOG_READS_ENABLED!=='false');
   if(!['memory_demo','postgres','cloudbase_gateway','production_bootstrap_disabled'].includes(mode))throw new Error('DATA_REPOSITORY 只允许 memory_demo、postgres、cloudbase_gateway 或 production_bootstrap_disabled');
   if(mode==='production_bootstrap_disabled'){
     if(environment.NODE_ENV!=='production'||environment.DEPLOYMENT_PROFILE!=='cloudbase_production_bootstrap'||environment.DEMO_DATA_ONLY!=='false')throw new Error('production_bootstrap_disabled 只允许用于显式生产初始化锁定档');
