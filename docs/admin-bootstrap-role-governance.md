@@ -41,7 +41,7 @@
 2. `server/db/cloudbase-pg-console/640_record_admin_governance_version.sql`
 3. `server/db/cloudbase-pg-console/690_verify_admin_governance_readonly.sql`，所有结果必须为 true，且 `no_bootstrap_authorization_seeded` 必须为 true
 
-009 使用显式 `BEGIN` / `COMMIT`。CloudBase ExecutePGSql 对逗号连接的多函数授权兼容性不稳定，因此最新版不再在 `DO` 中做条件授权，而是依赖已验证的 008 角色前置条件，为每个函数分别执行一条静态 `REVOKE` / `GRANT`。若旧版 009 在最后授权块报错，先不要执行 640；直接用最新版 009 整段重试。即使控制台曾逐句提交了前面的建表/函数，`IF NOT EXISTS` 与 `CREATE OR REPLACE` 也允许安全重跑，最新版重试本身会作为一个事务完成或整体回滚。
+009 使用显式 `BEGIN` / `COMMIT`。CloudBase ExecutePGSql 不接受带 `schema.name(signature)` 的函数权限对象语法，因此最新版使用更严格的 schema 级边界：撤销 `public` schema 全部函数对 PUBLIC、anon、authenticated 的执行权，只授予 service_role，并继续要求每个治理 RPC 在函数体内通过 `assert_cloudbase_service_role()`。690 会独立验证四个 RPC 的实际 ACL。若旧版 009 在最后授权段报错，先不要执行 640；直接用最新版 009 整段重试。即使控制台曾逐句提交了前面的建表/函数，`IF NOT EXISTS` 与 `CREATE OR REPLACE` 也允许安全重跑，最新版重试本身会作为一个事务完成或整体回滚。
 
 之后仍不能立刻开放后台。还需要独立完成：首次引导授权的安全生成/销毁流程、真实外部身份验证、受保护路由接线、应急恢复演练和至少两位系统管理员的职责安排。
 

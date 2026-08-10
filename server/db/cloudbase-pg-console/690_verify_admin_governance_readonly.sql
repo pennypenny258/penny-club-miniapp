@@ -11,4 +11,16 @@ SELECT
  NOT has_table_privilege('authenticated','venture_private.admin_bootstrap_authorizations','SELECT') AS authenticated_cannot_read_bootstrap,
  NOT has_table_privilege('anon','venture_private.admin_role_change_requests','SELECT') AS anon_cannot_read_role_changes,
  NOT has_table_privilege('authenticated','venture_private.admin_role_change_requests','SELECT') AS authenticated_cannot_read_role_changes,
+ NOT has_function_privilege('anon','public.venture_bootstrap_system_admin(text,text)','EXECUTE')
+ AND NOT has_function_privilege('anon','public.venture_request_admin_role_change(text,text,text,text,text,text)','EXECUTE')
+ AND NOT has_function_privilege('anon','public.venture_approve_admin_role_change(text,text,text)','EXECUTE')
+ AND NOT has_function_privilege('anon','public.venture_read_redacted_admin_audit(text,timestamp with time zone,integer)','EXECUTE') AS anon_cannot_execute_governance,
+ NOT has_function_privilege('authenticated','public.venture_bootstrap_system_admin(text,text)','EXECUTE')
+ AND NOT has_function_privilege('authenticated','public.venture_request_admin_role_change(text,text,text,text,text,text)','EXECUTE')
+ AND NOT has_function_privilege('authenticated','public.venture_approve_admin_role_change(text,text,text)','EXECUTE')
+ AND NOT has_function_privilege('authenticated','public.venture_read_redacted_admin_audit(text,timestamp with time zone,integer)','EXECUTE') AS authenticated_cannot_execute_governance,
+ has_function_privilege('service_role','public.venture_bootstrap_system_admin(text,text)','EXECUTE')
+ AND has_function_privilege('service_role','public.venture_request_admin_role_change(text,text,text,text,text,text)','EXECUTE')
+ AND has_function_privilege('service_role','public.venture_approve_admin_role_change(text,text,text)','EXECUTE')
+ AND has_function_privilege('service_role','public.venture_read_redacted_admin_audit(text,timestamp with time zone,integer)','EXECUTE') AS service_role_can_execute_governance,
  NOT EXISTS(SELECT 1 FROM venture_private.admin_bootstrap_authorizations) AS no_bootstrap_authorization_seeded;
