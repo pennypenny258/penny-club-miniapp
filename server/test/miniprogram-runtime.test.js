@@ -32,3 +32,9 @@ test('mini-program request layer has no cookie, custom demo identity header or f
 test('unknown runtime targets fail closed', () => {
   assert.throws(() => resolveRuntime('production'), /未知的小程序运行目标/);
 });
+
+test('mini-program Agent form uses three fields and all distribution modes',()=>{
+  const root=path.join(__dirname,'..','..'),js=fs.readFileSync(path.join(root,'miniprogram/pages/demands/demands.js'),'utf8'),wxml=fs.readFileSync(path.join(root,'miniprogram/pages/demands/demands.wxml'),'utf8');
+  for(const value of ['who','why','target','full_public','redacted_public','private_match'])assert.equal((js+wxml).includes(value),true,value);
+  assert.match(wxml,/提交人工审核/);assert.match(wxml,/模型未配置/);
+});

@@ -24,7 +24,7 @@ test('synthetic fixtures cover operational states without protected values', () 
 
 test('member response serializers keep CRM, payment, artifact and demand-sensitive data private', () => {
   const members = store.directoryProfiles.filter(x=>x.consentStatus==='granted'&&x.reviewStatus==='approved'&&x.visibility!=='hidden').map(sanitizers.safeDirectoryProfile);
-  const demands = store.demands.filter(x=>x.status==='published').map(sanitizers.safeDemand);
+  const demands = store.demands.map(sanitizers.safeDemand).filter(Boolean);
   const employment = store.employmentVerifications.filter(x=>x.userId==='u-active').map(sanitizers.safeEmploymentSummary);
   const publicPayload = JSON.stringify({members,demands,employment});
   for (const forbidden of ['companyName','transactionDetails','crmVerificationStatus','latestPaymentEvidenceStatus','storageKey','fileName','mimeType','sizeBytes']) assert.equal(publicPayload.includes(`"${forbidden}"`), false, forbidden);
@@ -38,6 +38,7 @@ test('admin list serializers expose workflow state but not protected source or d
   for(const forbidden of ['sourceCollection','sourceUrl','attachmentRef','storageKey','privateAttachments','companyName','transactionDetails','sensitiveMaterialKey','rawResult','rawContent','prompt'])assert.equal(payload.includes(`"${forbidden}"`),false,forbidden);
   assert.equal(resources.some(x=>'sourceStatus' in x),true);
   assert.equal(demands.some(x=>'humanReviewStatus' in x),true);
+  assert.equal(store.demands.some(x=>x.distributionMode==='private_match'&&x.status==='private_match_approved'),true);
 });
 
 test('inactive identities remain ineligible for controlled member data', () => {

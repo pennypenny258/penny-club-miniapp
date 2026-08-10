@@ -35,7 +35,8 @@
 | POST | `/api/activities/:id/register` | 报名 |
 | GET | `/api/activities/:id/meeting-link` | 服务端门禁后返回特邀链接 |
 | GET | `/api/demands` | 已发布匿名需求 |
-| POST | `/api/demands/:id/apply` | 申请对接 |
+| POST | `/api/demands/:id/apply` | 三段式申请对接；同意后仍由运营代转 |
+| POST | `/api/agent-match-requests` | 三要素需求提交；选择完整公开、脱敏公开或仅私密匹配，统一人工审核 |
 | GET | `/api/admin/dashboard` | 后台总览（演示管理员） |
 | GET | `/api/admin/session` | 当前后台角色、权限说明及演示认证状态；不返回凭据 |
 | GET | `/api/admin/operations-readiness` | 上线准备矩阵与演示/生产环境边界 |

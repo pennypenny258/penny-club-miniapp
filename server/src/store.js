@@ -121,15 +121,19 @@ const demands = [
 ];
 demands.push(
   {id:'d-investment-published',ownerUserId:'u-active-private',type:'investment',anonymousTitle:'早期科技项目投资机会（演示）',anonymousSummary:'关注完成产品验证的技术项目，仅接受平台内匿名申请。',publicTags:['投资','早期'],disclosurePolicy:{company:'owner_confirm',contact:'never_public'},disclosureLevel:'anonymous',aiReviewStatus:'passed',humanReviewStatus:'approved',status:'published'},
-  {id:'d-attraction-published',ownerUserId:'u-peer',type:'business_attraction',anonymousTitle:'产业园区招商合作机会（演示）',anonymousSummary:'面向先进制造服务团队的虚构招商场景，需运营筛选后对接。',publicTags:['招商','先进制造'],disclosurePolicy:{company:'owner_confirm',contact:'never_public'},disclosureLevel:'anonymous',aiReviewStatus:'passed',humanReviewStatus:'approved_with_notes',status:'published'}
+  {id:'d-attraction-published',ownerUserId:'u-peer',type:'business_attraction',anonymousTitle:'产业园区招商合作机会（演示）',anonymousSummary:'面向先进制造服务团队的虚构招商场景，需运营筛选后对接。',publicTags:['招商','先进制造'],disclosurePolicy:{company:'owner_confirm',contact:'never_public'},disclosureLevel:'anonymous',aiReviewStatus:'passed',humanReviewStatus:'approved_with_notes',status:'published'},
+  {id:'d-private-match-demo',ownerUserId:'u-active',type:'investment',anonymousTitle:'私密产业合作需求（演示）',anonymousSummary:'只供后台人工定向匹配，不进入会员信息流。',publicTags:['私密匹配'],requestedDistributionMode:'private_match',distributionMode:'private_match',reviewElements:{who:'产业运营负责人',why:'希望验证合作方向',target:'寻找相关产业合作方'},directionalCriteria:{person:'产业负责人',organization:'产业方',role:'业务负责人',matter:'合作验证'},aiReviewStatus:'manual_review',modelStatus:'not_configured',humanReviewStatus:'approved_with_notes',status:'private_match_approved'}
 );
 demands.filter(x=>x.status==='published').forEach((item,index)=>{item.publishedAt=days(-3-index*2)});
 for(const demand of demands){
+  if(!demand.distributionMode&&demand.status==='published')demand.distributionMode=['d-job-published','d-investment-published'].includes(demand.id)?'full_public':'redacted_public';
+  if(!demand.requestedDistributionMode)demand.requestedDistributionMode=demand.distributionMode||(demand.disclosureLevel==='internal_only'?'private_match':'redacted_public');
+  if(demand.distributionMode==='full_public')demand.fullPublicDetails={organization:'已获授权的虚构公开机构',role:demand.type==='recruitment'?'招聘岗位发布方':'合作机会发布方',opportunity:demand.anonymousSummary};
   demand.reviewAction=demand.humanReviewStatus==='pending'?'awaiting_human_review':'reviewed';
   demand.publicFields=['anonymousTitle','anonymousSummary','publicTags'];
   demand.anonymityLevel=demand.type==='recruitment'?'company_approved_fields_only':'strict_anonymous';
   demand.expiresAt=days(45);
-  demand.directionalCriteria=demand.type==='fundraising'?{person:'产业投资人',organization:'产业基金',role:'投资负责人',matter:'A轮融资'}:demand.type==='recruitment'?{person:'候选人',organization:'内部群友背书机构',role:'产业研究',matter:'招聘'}:{};
+  demand.directionalCriteria=demand.directionalCriteria||(demand.type==='fundraising'?{person:'产业投资人',organization:'产业基金',role:'投资负责人',matter:'A轮融资'}:demand.type==='recruitment'?{person:'候选人',organization:'内部群友背书机构',role:'产业研究',matter:'招聘'}:{});
   demand.directionalReminder={status:'candidate_only',humanSendRequired:true,frequencyCap:'同一机会 14 天内不重复提醒',nonResponsePolicy:'未回复不反复催促'};
   if(demand.type==='recruitment')demand.recruitmentPolicy={internalSponsorRequired:true,internalSponsorConfirmed:true,publicApplicationChannel:'https://example.invalid/jobs/demo',directPublicApplicationAllowed:true,referralRequiresControlledApplication:true,referrerContactPublic:false};
 }
@@ -152,7 +156,7 @@ const memberConnections = [
   {id:'mc-demo-3',requesterUserId:'u-peer',targetUserId:'u-active',reason:'希望交流产业研究共创方法（演示）。',status:'submitted',createdAt:days(-2)}
 ];
 const agentMatchRequests = [
-  {id:'amr-demo-1',userId:'u-active',statementSummary:'寻找产业研究共创与投研工具交流机会（演示）',inputMode:'text',status:'human_review_pending',aiStatus:'awaiting_configuration',humanStatus:'pending',createdAt:days(-1)}
+  {id:'amr-demo-1',userId:'u-active',statementSummary:'寻找产业研究共创与投研工具交流机会（演示）',inputMode:'text',requestedDistributionMode:'redacted_public',status:'human_review_pending',aiStatus:'awaiting_configuration',modelStatus:'not_configured',humanStatus:'pending',createdAt:days(-1)}
 ];
 const memberFavorites = new Map([
   ['u-active',new Set(['resource:r-demo-8','resource:r-demo-11','activity:a-online-open'])],

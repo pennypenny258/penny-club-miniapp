@@ -55,16 +55,21 @@ test('opportunities cover five categories without private demand fields',async()
   const types=new Set(response.payload.map(x=>x.type));
   for(const type of ['investment','fundraising','ma','recruitment','business_attraction'])assert.ok(types.has(type),type);
   const serialized=JSON.stringify(response.payload);
-  for(const field of ['companyName','transactionDetails','ownerUserId','privateAttachments','sensitiveMaterialKey','contact'])assert.equal(serialized.includes(field),false,field);
+  for(const field of ['companyName','transactionDetails','ownerUserId','privateAttachments','sensitiveMaterialKey','contactValue','phone','wechat','email'])assert.equal(serialized.toLowerCase().includes(field.toLowerCase()),false,field);
+  assert.equal(response.payload.every(x=>x.contactDisclosed===false),true);
 });
 
 test('agent matching and contact decisions disclose neither private matches nor contact',async()=>{
-  const match=await call('/api/agent-match-requests',{method:'POST',body:{inputMode:'text',statement:'我是产业研究从业者，希望寻找报告共创伙伴和合适的主题交流机会。'}});
-  assert.equal(match.status,201);assert.equal(match.payload.status,'human_review_pending');assert.equal('matches' in match.payload,false);
+  const demandCount=store.demands.length,requestCount=store.agentMatchRequests.length;
+  const match=await call('/api/agent-match-requests',{method:'POST',body:{inputMode:'text',category:'investment',who:'产业研究员',why:'希望验证行业判断',target:'寻找先进制造投资人',distributionMode:'private_match'}});
+  assert.equal(match.status,201);assert.equal(match.payload.status,'human_review_pending');assert.equal(match.payload.requestedDistributionMode,'private_match');assert.equal(match.payload.modelStatus,'not_configured');assert.equal('matches' in match.payload,false);
+  const created=store.demands[0];assert.equal(created.status,'human_review');assert.equal(created.humanReviewStatus,'pending');assert.equal(created.requestedDistributionMode,'private_match');
+  const opportunities=await call('/api/opportunities'),feed=await call('/api/feed');assert.equal(opportunities.payload.some(x=>x.id===created.id),false);assert.equal(feed.payload.items.some(x=>x.targetId===created.id),false);
   const notices=await call('/api/my/connection-notifications');const pending=notices.payload.find(x=>x.status==='submitted');assert.ok(pending);assert.equal(pending.contactDisclosed,false);
   const decision=await call(`/api/my/connection-notifications/${pending.id}`,{method:'PATCH',body:{decision:'share_contact'}});assert.equal(decision.status,200);assert.equal(decision.payload.contactDisclosed,false);
   const serialized=JSON.stringify({notices:notices.payload,decision:decision.payload});
   for(const field of ['phone','wechat','email','contactValue'])assert.equal(serialized.toLowerCase().includes(field.toLowerCase()),false,field);
+  store.demands.splice(0,store.demands.length-demandCount);store.agentMatchRequests.splice(0,store.agentMatchRequests.length-requestCount);
 });
 
 test('voice and payment clearly remain unconfigured and never fake success',async()=>{
