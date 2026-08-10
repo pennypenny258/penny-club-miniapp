@@ -3,8 +3,12 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const doc=fs.readFileSync(path.join(__dirname,'..','..','docs','production-launch-runbook.md'),'utf8');
 
 test('production runbook states current boundary and strict migration order',()=>{
-  for(const text of ['当前处于哪一步','001、CloudBase 002、003、040','正式写入','004 → 140 → 190','005 → 250 → 260 → 290','006 → 340 → 390','007 → 440 → 490','008 → 540 → 590','009 → 640 → 690','011 → 740 → 790'])assert.equal(doc.includes(text),true,text);
+  for(const text of ['当前处于哪一步','001、CloudBase 002、003、040','正式写入','004 → 140 → 190','005 → 250 → 260 → 290','006 → 340 → 390','007 → 440 → 490','008 → 540 → 590','停止在 008 基线','009 → 640 → 690 已延期','现有 011 → 740 → 790'])assert.equal(doc.includes(text),true,text);
   assert.ok(doc.indexOf('004 → 140 → 190')<doc.indexOf('011 → 740 → 790'));
+});
+
+test('production runbook does not ask the operator to retry deferred governance SQL',()=>{
+  for(const text of ['不再通过 CloudBase SQL 编辑器重试','生产继续保持 bootstrap 锁定态','两个生产环境已成功完成的 001–008 保持不动'])assert.equal(doc.includes(text),true,text);
 });
 
 test('production runbook keeps secrets server-only and cloud actions user-owned',()=>{
