@@ -3,7 +3,9 @@
 const PRIVATE_SCHEMA = 'venture_private';
 const APPLICATION_ROLE = 'venture_club_app';
 const REQUIRED_MIGRATION = '002_security';
-const CLOUDBASE_GATEWAY_REQUIRED_MIGRATION = '009_admin_governance';
+// 009 is a deferred governance enhancement. The MVP gateway contract is built
+// only on the CloudBase schema that has been verified through 008.
+const CLOUDBASE_GATEWAY_REQUIRED_MIGRATION = '008_admin_session_rbac';
 const CLOUDBASE_GATEWAY_REGION = 'ap-shanghai';
 
 function hasValue(value){return Boolean(String(value||'').trim())}

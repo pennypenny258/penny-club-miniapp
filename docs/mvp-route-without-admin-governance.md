@@ -21,8 +21,8 @@
 ## 下一阶段严格顺序
 
 1. **冻结数据库**：把 001–008 作为当前生产 schema 基线；不执行 009、640、690、010、011、740 或 790。
-2. **代码先行且离线验证**：把 CloudBase gateway 的最低已应用版本从 009 收敛为 008，但只开放经过 allowlist 的 MVP 仓库；数据库异常必须 503，绝不回退 memory demo。
-3. **先接 Agent 最小域**：仅接 `demands`、`demand_applications`、`agent_dispatches` 的服务端投影；004 会籍门禁先于查询，所有发布和定向发送仍由 008 已验证后台会话人工确认。模型保持关闭，联系人不直接返回。
+2. **代码先行且离线验证**：CloudBase gateway 的最低已应用版本已从 009 收敛为 008；真实 runtime 启动锁仍保留，当前只提供经过 allowlist 的可注入仓库契约。数据库异常统一 503，绝不回退 memory demo。
+3. **先接 Agent 最小域**：已增加 `demands`、`demand_applications`、`agent_dispatches` 的服务端契约，但尚未挂载正式 HTTP 路由。004 会籍门禁先于任何会员查询/提交；所有审核和分发先经过 008 正式后台会话的 `demand.review` 权限。模型保持关闭，不自动发布、不自动发送、不返回联系人。
 4. **保留 CRM 本地演练**：用户可在本地后台继续做真实表的只读预检、映射、冲突修正和批次确认演练，但页面必须持续显示“未写入生产库”。
 5. **重做 CRM MVP 前向包**：未来新包只依赖已确认的 006–008，优先使用表、RLS、最小服务端仓库，不包含 009 管理员治理 RPC；必须先在受支持的 CloudBase DMC、官方单语句执行方式或可复现 PostgreSQL 环境验证，不能再让用户试错。
 6. **配置正式身份后再开放写入**：先完成微信/后台外部身份、008 会话存储和一个受控预置运营账号；再用脱敏小批次验收 CRM 写入、幂等、审计和补偿。任何一项缺失继续 fail closed。
@@ -41,3 +41,11 @@ CLOUDBASE_CATALOG_READS_ENABLED=false
 ```
 
 不要把 `CLOUDBASE_PG_MIGRATIONS_APPLIED` 虚报成 009，也不要执行现有 011/740 来绕过依赖。当前最有价值的开发任务是“008 基线的 Agent 仓库 + CRM MVP 新前向包设计”，不需要用户继续操作 SQL。
+
+## 已完成的第一阶段代码边界
+
+- `StagedAgentGatewayRepository` 只允许已命名的公开机会读取、需求待审入队、申请待审入队、人工审核记录和人工分发记录；不接受任意 URL、表名、SQL 或 RPC 名称。
+- `AgentMvpService` 强制先调用 004 真实会员门禁，再允许机会读取、需求提交或对接申请；后台决定强制先调用 008 正式会话授权。
+- `private_match` 不进入公开机会列表；所有返回固定为 `contactDisclosed: false`，申请同意前仍由运营代转。
+- 仓库或身份服务异常时安全失败，不回显上游错误，不切换到 memory/local。
+- 本阶段未挂载正式路由、未启用 CloudBase、未运行 SQL，也没有 CRM 写方法。生产继续使用 `production_bootstrap_disabled`，直到正式身份、网关操作实现和逐路由验收全部完成。
