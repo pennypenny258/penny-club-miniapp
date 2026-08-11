@@ -63,6 +63,8 @@ Node 端现有两个固定白名单调用：
 
 本阶段的 `inspectMemberIdentityIntegration` 会始终报告 `activated=false` 和 `liveGatewayImplementationNotConfigured`。即使全部离线合约已注入，也不会误称正式绑定可以上线。
 
+CloudBase 官方受控写路径的研究结论、API Key 边界和“经部署验证的 RPC 能力清单”客户端见 `docs/cloudbase-member-binding-write-path.md`。当前不直接写表、不使用 ExecutePGSql 作为运行时通道，也没有提交或假设 004/008 中不存在的 RPC。
+
 ## CloudBase 生产变量（现在不要填写）
 
 未来只在 CloudBase 云托管服务的服务端环境变量中配置：
