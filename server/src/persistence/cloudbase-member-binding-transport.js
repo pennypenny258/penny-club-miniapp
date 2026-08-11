@@ -46,11 +46,11 @@ class CloudBaseVerifiedRpcClient{
 
 class PreparedCloudBaseMemberBindingTransport{
   constructor({client}){if(!(client instanceof CloudBaseVerifiedRpcClient))throw new Error('会员绑定 transport 需要已验证 CloudBase RPC client');this.kind=TRANSPORT_KIND;this.client=client}
-  resolveExactCrmMatch(payload){return this.client.call('resolveExactCrmMatch',payload)}
-  persistCandidate(payload){return this.client.call('persistCandidate',payload)}
-  listPending(payload){return this.client.call('listPending',payload)}
-  bindIdentityIdempotently(payload){return this.client.call('bindIdentityIdempotently',payload)}
-  rejectCandidate(payload){return this.client.call('rejectCandidate',payload)}
+  resolveExactCrmMatch(payload){return this.client.call('resolveExactCrmMatch',{p_request:payload})}
+  persistCandidate(payload){return this.client.call('persistCandidate',{p_request:payload})}
+  listPending(payload){return this.client.call('listPending',{p_request:payload})}
+  bindIdentityIdempotently(payload){return this.client.call('bindIdentityIdempotently',{p_request:payload})}
+  rejectCandidate(payload){return this.client.call('rejectCandidate',{p_request:payload})}
   safeReadiness(){return {kind:this.kind,prepared:true,runtimeEnabled:false,verifiedRpcOnly:true,directTableWrites:false,routesEnabled:false,credentialsExposed:false}}
 }
 

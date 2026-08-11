@@ -37,9 +37,9 @@ class OfflineMemberBindingGatewayAdapter{
     }catch(error){if(error?.message==='会员绑定操作不在固定白名单')throw error;if(error instanceof MemberBindingGatewayContractError)throw error;throw new MemberBindingGatewayContractError()}
   }
   async stage(payload){
-    const subjectHash=hex(payload.subjectHash),matchTokens={};for(const [key,value] of Object.entries(payload.matchTokens||{})){if(!['phone','wechatId','groupNickname'].includes(key))continue;matchTokens[key]=hex(value)}
-    const match=safeMatch(await this.transport.resolveExactCrmMatch({subjectHash,matchTokens,readScope:'crm_access_projection_only'}));
-    const stored=await this.transport.persistCandidate({subjectHash,matchTokens,evidence:safeEvidence(payload.evidence),match,status:'operator_review_required_unless_exact_policy_passes',writeScope:'binding_candidate_only'});
+    const appScopeHash=hex(payload.appScopeHash),subjectHash=hex(payload.subjectHash),matchTokens={};for(const [key,value] of Object.entries(payload.matchTokens||{})){if(!['phone','wechatId','groupNickname'].includes(key))continue;matchTokens[key]=hex(value)}
+    const match=safeMatch(await this.transport.resolveExactCrmMatch({appScopeHash,subjectHash,matchTokens,readScope:'crm_access_projection_only'}));
+    const stored=await this.transport.persistCandidate({appScopeHash,subjectHash,matchTokens,evidence:safeEvidence(payload.evidence),match,status:'operator_review_required_unless_exact_policy_passes',writeScope:'binding_candidate_only'});
     if(stored?.persisted!==true)throw new MemberBindingGatewayContractError();
     return {id:id(stored.id,'绑定候选'),...match,persisted:true,storageMode:'durable_contract',rawValuesReturned:false};
   }

@@ -1,0 +1,24 @@
+{
+  "status": "future_not_applied",
+  "purpose": "004/008-baseline member binding RPC package; never infer deployment from this file",
+  "runtimeEnablementAllowed": false,
+  "executionOrder": [
+    "server/db/future/member-binding-rpc/012_member_binding_rpc_008_baseline.sql",
+    "server/db/future/member-binding-rpc/820_record_member_binding_rpc_version.sql",
+    "server/db/future/member-binding-rpc/890_verify_member_binding_rpc_readonly.sql"
+  ],
+  "checksums": {
+    "server/db/migrations/004_wechat_identity_entitlement.sql": "89651f91578a44d1f5fd78e8039c7ded587bbfae3a18764ee4bb3b2090d5a621",
+    "server/db/migrations/008_admin_session_rbac.sql": "1d29f1997e3d63322ae56a0fef78b559d41028e2d278527ffdc0d51e1652bd3d",
+    "server/db/future/member-binding-rpc/012_member_binding_rpc_008_baseline.sql": "42334c45d6f398cf63e76bbbb5b46e2283c78e2786bb9d5fc3809f0676f0bb61",
+    "server/db/future/member-binding-rpc/820_record_member_binding_rpc_version.sql": "938d28e12763e32251f0ac38a62721a1a813e58218ceb1d3304ecb19782860f7",
+    "server/db/future/member-binding-rpc/890_verify_member_binding_rpc_readonly.sql": "5edb85f0619815ed961eb9f961432ba0359504a01bc1b6450bab349db85eb95e"
+  },
+  "rpc": {
+    "resolveExactCrmMatch": "venture_member_binding_resolve_exact_match",
+    "persistCandidate": "venture_member_binding_persist_candidate",
+    "listPending": "venture_member_binding_list_pending",
+    "bindIdentityIdempotently": "venture_member_binding_bind_and_recompute",
+    "rejectCandidate": "venture_member_binding_reject_candidate"
+  }
+}
