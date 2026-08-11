@@ -138,6 +138,8 @@ staging 服务如需继续展示匿名演示，必须在它自己的服务配置
 3. 每次会员访问都重新读取最小会籍投影；大群状态、CRM、付款复核和运营结论缺一不可。
 4. 验收通过后才设置 `WECHAT_LOGIN_ENABLED=true` 和会员身份提供方。
 
+当前代码已经准备好可注入的官方 `code2Session`、服务端 access token 与手机号 code 交换器，但没有注入运行时路由。未来 Secret 只在 CloudBase 云托管服务端设置：`WECHAT_MINIPROGRAM_APP_SECRET`、`WECHAT_IDENTITY_SUBJECT_HMAC_KEY`、`MEMBER_SESSION_ENCRYPTION_KEY`；不要把实际值写进 Git 部署配置模板。004/008 现阶段只覆盖最小 entitlement 读取与后台授权，CRM 精确匹配、绑定写入/重算和会员会话撤销适配器仍是启用前阻断项。
+
 完成标志：小程序不持有 AppSecret，未绑定或无有效会籍无法读取会员内容。
 
 正式会员绑定和 Agent HTTP 边界虽然已挂载，但此时仍保持 `FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false`、`FORMAL_AGENT_ROUTES_ENABLED=false`。先验收 004、服务端微信/手机号证明、`MEMBER_BINDING_MODE=crm_exact_match_or_operator_review` 和 008 异常复核，再只打开绑定；绑定与会话验收通过后才允许打开 Agent。用户当前不要打开任何一个开关。

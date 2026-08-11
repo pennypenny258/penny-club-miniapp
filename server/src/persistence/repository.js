@@ -57,7 +57,7 @@ class CloudBaseGatewayRepository{
   listPublishedResources({limit=50}={}){const safeLimit=boundedLimit(limit);return this.transport.readView(CLOUDBASE_READ_VIEWS.resources,[['select',RESOURCE_FIELDS],['order','published_at.desc'],['limit',safeLimit]])}
   listPublicActivities({limit=50}={}){const safeLimit=boundedLimit(limit);return this.transport.readView(CLOUDBASE_READ_VIEWS.activities,[['select',ACTIVITY_FIELDS],['order','starts_at.asc'],['limit',safeLimit]])}
   async resolveMemberEntitlement({subjectHash}){if(!/^[0-9a-f]{64}$/.test(String(subjectHash||'')))throw new Error('会员 subject 哈希格式无效');const rows=await this.transport.readView(CLOUDBASE_READ_VIEWS.entitlements,[['select',ENTITLEMENT_FIELDS],['subject_hash',`eq.${subjectHash}`],['limit',1]]);return rows[0]||null}
-  safeReadiness(){return {kind:this.kind,persistent:true,transport:'https_postgrest',serverOnly:true,methods:['published_resources.read','public_activities.read'],identityEntitlementPrepared:true,credentialsExposed:false}}
+  safeReadiness(){return {kind:this.kind,persistent:true,transport:'https_postgrest',serverOnly:true,methods:['published_resources.read','public_activities.read','member_entitlement.read'],identityEntitlementPrepared:true,identityBindingWritesPrepared:false,credentialsExposed:false}}
 }
 
 function boundedLimit(value){const parsed=Number(value);if(!Number.isInteger(parsed)||parsed<1||parsed>100)throw new Error('CloudBase 网关分页上限必须为 1–100 的整数');return parsed}

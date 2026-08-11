@@ -18,6 +18,17 @@
 10. Node 重新计算账号、会籍窗口、CRM 核验、最近付款证据复核、CRM 中的当前在群状态和最终判定；任一项不满足即拒绝。
 11. 通过后签发短期 AES-256-GCM 不透明会话。每个请求先验证会话及撤销状态，再重新查询会籍；网关异常统一 503，绝不回落匿名内存数据。
 
+## 微信官方服务端供应器（代码已准备，运行时未启用）
+
+Node 端现有两个固定白名单调用：
+
+- `wx.login` 的一次性 code 仅由服务端提交到微信官方 `code2Session`；返回只保留 app-scoped OpenID，立即丢弃 `session_key`、UnionID 条件值以及任何夹带的资料字段。
+- 用户明确点击 `getPhoneNumber` 后，小程序只提交一次性手机号 code。Node 先以 AppID/AppSecret 获取服务端 access token，再调用微信官方手机号接口；返回手机号只在进程内交给不可逆匹配令牌器，不返回浏览器、小程序或普通日志。
+
+供应器固定 HTTPS origin、端点白名单、禁止重定向、默认 5 秒超时与 16 KiB 响应上限，并将 HTTP、超时、无效 JSON、微信错误码统一映射为不含 URL、AppSecret、access token、手机号或上游正文的安全错误。所有测试使用注入的假 `fetch`，不会访问微信网络。
+
+当前没有把供应器注入正式路由。`WECHAT_LOGIN_ENABLED=false` 与 `FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false` 必须继续保持，直到下面的仓储缺口全部完成。
+
 ## 已准备的正式 HTTP 与小程序流程（当前关闭）
 
 - `POST /api/formal-member-binding/start`：接收一次性登录 code 和可选的用户主动手机号授权 code；拒绝客户端 member ID。
@@ -38,6 +49,27 @@
 - `server/db/cloudbase-pg-console/190_verify_wechat_identity_readonly.sql` 只检查对象、RLS、PUBLIC 权限和迁移记录，不读业务行。
 
 等受控身份绑定流程和持久化会话撤销存储设计完成后，再按 `wechat-identity-manifest.json` 在独立测试环境依次人工执行 004、140、190；190 任何结果不是全 true 都要停止。不能由运行时 `ExecutePGSql` 执行迁移。
+
+## 004 / 008 最小仓储边界
+
+当前已能离线验证的最小读取能力：
+
+- 004：`CloudBaseGatewayRepository.resolveMemberEntitlement(subjectHash)` 只读 `venture_member_access_entitlement` 安全视图。
+- 008：`CloudBaseAdminSessionRepository.resolveSession` 与 `reserveAction` 提供正式后台会话和人工复核授权边界。
+
+但 004/008 本身没有提供手机号哈希对应的最小 CRM 精确匹配投影、绑定候选持久化、幂等绑定写入与 entitlement 重算、会员会话持久撤销。它们必须以后通过服务端专用、固定 allowlist 的 CloudBase gateway/RPC 合约补齐；不能让小程序直连表、不能复用 demo 内存数据，也不能扩大为 CRM 通用写接口。
+
+本阶段的 `inspectMemberIdentityIntegration` 会始终报告 `activated=false`。即使 004/008 的读取适配器已注入，也不会误称正式绑定可以上线。
+
+## CloudBase 生产变量（现在不要填写）
+
+未来只在 CloudBase 云托管服务的服务端环境变量中配置：
+
+- 非敏感：`WECHAT_MINIPROGRAM_APP_ID`、`WECHAT_API_TIMEOUT_MS=5000`、`WECHAT_API_MAX_RESPONSE_BYTES=16384`、`WECHAT_ACCESS_TOKEN_REFRESH_SKEW_SECONDS=120`、会话 issuer/audience/TTL。
+- Secret：`WECHAT_MINIPROGRAM_APP_SECRET`、`WECHAT_IDENTITY_SUBJECT_HMAC_KEY`、`MEMBER_SESSION_ENCRYPTION_KEY`。Secret 只能在云托管控制台设置，不能进入 Git、构建参数、小程序、截图或聊天。
+- 启用与依赖：`MEMBER_SESSION_REVOCATION_STORE=external_persistent`、`MEMBER_IDENTITY_PROVIDER=external_verified_session`、`MEMBER_BINDING_MODE=crm_exact_match_or_operator_review`。只有 004/008 验证、上述仓储缺口和全链路匿名验收完成后，才依次开启真实登录、正式绑定路由和正式小程序 profile。
+
+配置解析器会在 production、CloudBase gateway、非 demo、密钥完整、32 字节 keyed-hash/session 密钥和受控网络参数全部满足前拒绝构造真实身份供应器；不会回落到本地或匿名模式。
 
 ## 将来的无敏感部署清单
 

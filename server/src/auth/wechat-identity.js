@@ -3,6 +3,7 @@
 const crypto=require('node:crypto');
 const {requireActiveMember}=require('../domain');
 const {hashWechatSubject}=require('./wechat-config');
+const {WechatOfficialJsonTransport,WechatOfficialProviderError}=require('./wechat-official-provider');
 
 class AuthBoundaryError extends Error{constructor(message,{code,statusCode}={}){super(message);this.name='AuthBoundaryError';this.code=code;this.statusCode=statusCode}}
 const unavailable=()=>new AuthBoundaryError('会员身份服务暂时不可用',{code:'MEMBER_IDENTITY_UNAVAILABLE',statusCode:503});
@@ -10,13 +11,11 @@ const unauthorized=()=>new AuthBoundaryError('需要有效的会员会话',{code
 const notBound=()=>new AuthBoundaryError('微信身份尚未绑定会员账号',{code:'IDENTITY_NOT_BOUND',statusCode:403});
 
 class WechatCodeExchangeClient{
-  constructor({config,fetchImpl=globalThis.fetch,timeoutMs=5000,maxResponseBytes=16384}){if(!config?.enabled||config.mode!=='server_code_exchange')throw new Error('微信 code 交换需要已通过预检的服务端配置');if(typeof fetchImpl!=='function')throw new Error('微信 code 交换需要服务端 fetch');this.config=config;this.fetchImpl=fetchImpl;this.timeoutMs=timeoutMs;this.maxResponseBytes=maxResponseBytes}
+  constructor({config,fetchImpl=globalThis.fetch,transport}={}){if(!config?.enabled||config.mode!=='server_code_exchange')throw new Error('微信 code 交换需要已通过预检的服务端配置');this.config=config;this.transport=transport||new WechatOfficialJsonTransport({fetchImpl,timeoutMs:config.apiTimeoutMs,maxResponseBytes:config.apiMaxResponseBytes})}
   async exchange(code){
     const value=String(code||'');if(!/^[A-Za-z0-9_-]{6,256}$/.test(value))throw new AuthBoundaryError('微信登录凭证无效',{code:'WECHAT_CODE_INVALID',statusCode:400});
     const url=new URL('https://api.weixin.qq.com/sns/jscode2session');url.searchParams.set('appid',this.config.appId);url.searchParams.set('secret',this.config.appSecret);url.searchParams.set('js_code',value);url.searchParams.set('grant_type','authorization_code');
-    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),this.timeoutMs);let response,text;
-    try{response=await this.fetchImpl(url,{method:'GET',redirect:'error',signal:controller.signal,headers:{accept:'application/json'}});if(!response?.ok)throw unavailable();const declared=Number(response.headers?.get?.('content-length'));if(Number.isFinite(declared)&&declared>this.maxResponseBytes)throw unavailable();text=await response.text();if(Buffer.byteLength(text,'utf8')>this.maxResponseBytes)throw unavailable()}catch(error){if(error instanceof AuthBoundaryError)throw error;throw unavailable()}finally{clearTimeout(timer)}
-    let body;try{body=JSON.parse(text)}catch{throw unavailable()}
+    let body;try{body=await this.transport.request({url})}catch(error){if(error instanceof WechatOfficialProviderError)throw unavailable();throw unavailable()}
     if(body?.errcode||!body?.openid||typeof body.openid!=='string')throw new AuthBoundaryError('微信登录凭证已失效或被拒绝',{code:'WECHAT_CODE_REJECTED',statusCode:401});
     // Use the app-scoped openid consistently. A conditionally returned unionid would make bindings unstable.
     return {subjectType:'openid',subject:body.openid};
