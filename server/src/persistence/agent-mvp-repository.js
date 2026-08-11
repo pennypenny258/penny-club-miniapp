@@ -5,7 +5,10 @@ const AGENT_OPERATIONS=Object.freeze({
   STAGE_DEMAND:'agent.demands.stage_review',
   STAGE_APPLICATION:'agent.applications.stage_review',
   REVIEW_DEMAND:'agent.demands.record_human_review',
-  DISPATCH_APPLICATION:'agent.applications.record_dispatch'
+  UPSERT_DIRECTIONAL_CANDIDATE:'agent.directional_candidates.upsert',
+  DISPATCH_APPLICATION:'agent.applications.record_dispatch',
+  RECORD_OWNER_DECISION:'agent.applications.record_owner_decision',
+  RECORD_OPERATOR_RELAY:'agent.applications.record_operator_relay'
 });
 const ALLOWED_OPERATIONS=new Set(Object.values(AGENT_OPERATIONS));
 
@@ -45,8 +48,11 @@ class StagedAgentGatewayRepository{
   stageDemandForReview({memberId,draft}){return this.execute(AGENT_OPERATIONS.STAGE_DEMAND,{memberId:cleanId(memberId,'会员 ID'),draft})}
   stageApplication({memberId,demandId,application}){return this.execute(AGENT_OPERATIONS.STAGE_APPLICATION,{memberId:cleanId(memberId,'会员 ID'),demandId:cleanId(demandId,'需求 ID'),application})}
   reviewDemand({adminId,demandId,decision,publicProjection,authorizationId}){return this.execute(AGENT_OPERATIONS.REVIEW_DEMAND,{adminId:cleanId(adminId,'管理员 ID'),demandId:cleanId(demandId,'需求 ID'),decision,publicProjection,authorizationId:cleanId(authorizationId,'授权 ID')})}
+  upsertDirectionalCandidate({adminId,candidate,authorizationId}){return this.execute(AGENT_OPERATIONS.UPSERT_DIRECTIONAL_CANDIDATE,{adminId:cleanId(adminId,'管理员 ID'),candidate,authorizationId:cleanId(authorizationId,'授权 ID')})}
   dispatchApplication({adminId,applicationId,decision,safeReasonCode,authorizationId}){return this.execute(AGENT_OPERATIONS.DISPATCH_APPLICATION,{adminId:cleanId(adminId,'管理员 ID'),applicationId:cleanId(applicationId,'申请 ID'),decision,safeReasonCode:cleanText(safeReasonCode,48),authorizationId:cleanId(authorizationId,'授权 ID')})}
-  safeReadiness(){return {kind:this.kind,activated:false,migrationBaseline:'008_admin_session_rbac',memoryFallback:false,crmWrites:false,operations:[...ALLOWED_OPERATIONS]}}
+  recordOwnerDecision({memberId,applicationId,decision}){return this.execute(AGENT_OPERATIONS.RECORD_OWNER_DECISION,{memberId:cleanId(memberId,'会员 ID'),applicationId:cleanId(applicationId,'申请 ID'),decision})}
+  recordOperatorRelay({adminId,applicationId,decision,authorizationId}){return this.execute(AGENT_OPERATIONS.RECORD_OPERATOR_RELAY,{adminId:cleanId(adminId,'管理员 ID'),applicationId:cleanId(applicationId,'申请 ID'),decision,authorizationId:cleanId(authorizationId,'授权 ID')})}
+  safeReadiness(){return {kind:this.kind,activated:false,migrationBaseline:'008_admin_session_rbac',rpcCapability:'agent-mvp-rpc-v1-not_verified',memoryFallback:false,crmWrites:false,automaticPublish:false,automaticPush:false,contactDisclosure:false,operations:[...ALLOWED_OPERATIONS]}}
 }
 
 module.exports={AGENT_OPERATIONS,AgentRepositoryUnavailableError,StagedAgentGatewayRepository,safePublishedOpportunity};

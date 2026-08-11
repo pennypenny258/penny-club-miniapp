@@ -69,11 +69,34 @@ test('008 formal review authorization always precedes review and dispatch mutati
   assert.deepEqual(calls.slice(0,2).map(call=>call[0]),['admin','repository']);
 });
 
+test('directional candidates enforce 3-of-4, 14-day suppression and never auto-send',async()=>{
+  const {service,calls}=harness();
+  await assert.rejects(()=>service.prepareDirectionalCandidate({request:{},demandId:'demand_fixture_1',targetMemberId:'member_fixture_2',criteria:{person:'投资人',role:'负责人'},idempotencyKey:'candidate-fixture-1'}),/至少需要/);
+  assert.equal(calls.some(call=>call[0]==='repository'),false);
+  calls.length=0;
+  const result=await service.prepareDirectionalCandidate({request:{},demandId:'demand_fixture_1',targetMemberId:'member_fixture_2',criteria:{person:'投资人',organization:'产业基金',role:'负责人'},lastSentAt:new Date(Date.now()-3*86400000).toISOString(),idempotencyKey:'candidate-fixture-2'});
+  assert.equal(result.suppressedBy14DayWindow,true);assert.equal(result.notificationSent,false);assert.equal(result.contactDisclosed,false);
+  const staged=calls.find(call=>call[1]===AGENT_OPERATIONS.UPSERT_DIRECTIONAL_CANDIDATE)[2].candidate;
+  assert.equal(staged.matchedDimensionCount,3);assert.equal(staged.automaticSend,false);
+});
+
+test('owner approval creates operator relay work and formal contract never returns contact',async()=>{
+  const {service,calls}=harness();
+  const owner=await service.recordOwnerDecision({request:{},applicationId:'application_fixture_1',decision:'approved_intro'});
+  assert.equal(owner.status,'operator_relay_pending');assert.equal(owner.operatorRelayRequired,true);assert.equal(owner.contactDisclosed,false);
+  assert.equal(calls.find(call=>call[1]===AGENT_OPERATIONS.RECORD_OWNER_DECISION)[2].decision,'approved_intro');
+  calls.length=0;
+  const relay=await service.recordOperatorRelay({request:{},applicationId:'application_fixture_1',decision:'relayed',idempotencyKey:'relay-fixture-1'});
+  assert.equal(relay.status,'relayed');assert.equal(relay.contactDisclosed,false);assert.equal(relay.deliveryMode,'operator_relay_only');
+  assert.deepEqual(calls.slice(0,2).map(call=>call[0]),['admin','repository']);
+});
+
 test('gateway failures are safe 503 and the Agent contract has no CRM write or memory fallback',async()=>{
   const {service,repository}=harness({adapterFailure:new Error('raw credential and row data')});
   await assert.rejects(()=>service.listOpportunities({request:{},limit:10}),error=>error.code==='AGENT_REPOSITORY_UNAVAILABLE'&&error.statusCode===503&&!error.message.includes('credential'));
   const readiness=repository.safeReadiness();
   assert.equal(readiness.memoryFallback,false);assert.equal(readiness.crmWrites,false);assert.equal(readiness.activated,false);
+  assert.equal(readiness.automaticPublish,false);assert.equal(readiness.automaticPush,false);assert.equal(readiness.contactDisclosure,false);
   assert.equal(Object.keys(repository).some(key=>/crm/i.test(key)),false);
   await assert.rejects(()=>repository.execute('arbitrary.sql',{sql:'select *'}),/白名单/);
 });

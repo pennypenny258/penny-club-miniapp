@@ -45,6 +45,8 @@ test('production bootstrap requires an explicit locked non-demo configuration',(
   assert.throws(()=>validateDeploymentEnvironment({...environment,CLOUDBASE_PG_ENV_ID:'fixture-env'}),/CLOUDBASE_PG_ENV_ID/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,WECHAT_LOGIN_ENABLED:'true'}),/WECHAT_LOGIN_ENABLED/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,FORMAL_AGENT_ROUTES_ENABLED:'true'}),/FORMAL_AGENT_ROUTES_ENABLED/);
+  assert.throws(()=>validateDeploymentEnvironment({...environment,CLOUDBASE_AGENT_RPC_ENABLED:'true'}),/CLOUDBASE_AGENT_RPC_ENABLED/);
+  assert.throws(()=>validateDeploymentEnvironment({...environment,CLOUDBASE_AGENT_RPC_MANIFEST_SHA256:'a'.repeat(64)}),/CLOUDBASE_AGENT_RPC_MANIFEST_SHA256/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,FORMAL_MEMBER_BINDING_ROUTES_ENABLED:'true'}),/FORMAL_MEMBER_BINDING_ROUTES_ENABLED/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,CRM_MATCH_TOKEN_PROVISIONING_PREPARED:'true'}),/CRM_MATCH_TOKEN_PROVISIONING_PREPARED/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,MEMBER_BINDING_MODE:'crm_exact_match_or_operator_review'}),/MEMBER_BINDING_MODE/);
@@ -112,5 +114,11 @@ test('CloudBase staging profile rejects local storage and real integrations', ()
   assert.throws(() => validateDeploymentEnvironment({
     DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',CRM_MATCH_TOKEN_PROVISIONING_PREPARED:'true'
   }), /CRM_MATCH_TOKEN_PROVISIONING_PREPARED/);
+  assert.throws(() => validateDeploymentEnvironment({
+    DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',CLOUDBASE_AGENT_RPC_CAPABILITY_VERSION:'agent-mvp-rpc-v1'
+  }), /CLOUDBASE_AGENT_RPC_CAPABILITY_VERSION/);
+  assert.throws(() => validateDeploymentEnvironment({
+    DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',CLOUDBASE_AGENT_RPC_ENABLED:'true'
+  }), /CLOUDBASE_AGENT_RPC_ENABLED/);
   assert.equal(validateDeploymentEnvironment({DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',DATA_REPOSITORY:'memory_demo'}).anonymousDemoOnly,true);
 });

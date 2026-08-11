@@ -1,13 +1,12 @@
 'use strict';
 
 const {validateDemandSubmission}=require('./demand-submission-policy');
-const {validateConnectionApplication}=require('./member-crm-mvp');
+const {applicationDraft,applicationTransition,directionalCandidate,reviewDemandTransition}=require('./agent-workflow-policy');
 const {AgentRepositoryUnavailableError}=require('./persistence/agent-mvp-repository');
 
 const DEMAND_TYPES=new Set(['investment','fundraising','ma','recruitment','business_attraction']);
 const REVIEW_DECISIONS=new Set(['needs_more_information','rejected','archived','approved']);
 const DISPATCH_DECISIONS=new Set(['shortlisted','declined']);
-function safe(value,max){return String(value||'').trim().replace(/[\u0000-\u001f\u007f]/g,' ').slice(0,max)}
 function bad(message){const error=new Error(message);error.code='AGENT_INPUT_INVALID';error.statusCode=400;return error}
 
 class AgentMvpService{
@@ -28,19 +27,22 @@ class AgentMvpService{
     return {id:result?.id||null,status:'pending_review',humanReviewRequired:true,automaticPublish:false,automaticPush:false,contactDisclosed:false};
   }
   async applyToDemand({request,demandId,input}){
-    const member=await this.member(request),validated=validateConnectionApplication(input);
-    if(!validated.valid)throw bad(validated.errors.join('；'));
-    const result=await this.repository.stageApplication({memberId:member.id,demandId,application:{...validated.data,status:'submitted',agentReviewStatus:'pending',ownerDecision:null,contactDisclosed:false}});
+    const member=await this.member(request),application=applicationDraft(input);
+    const result=await this.repository.stageApplication({memberId:member.id,demandId,application});
     return {id:result?.id||null,status:'submitted',humanReviewRequired:true,contactDisclosed:false,deliveryMode:'operator_relay_only'};
   }
   async reviewDemand({request,demandId,input,idempotencyKey}){
     const decision=String(input?.decision||'');if(!REVIEW_DECISIONS.has(decision))throw bad('审核决定无效');
     const admin=await this.adminSessionService.authorizeAction({request,permission:'demand.review',idempotencyKey});
-    const mode=String(input?.distributionMode||'private_match');
-    if(decision==='approved'&&!['full_public','redacted_public','private_match'].includes(mode))throw bad('发布方式无效');
-    const projection=decision==='approved'?{distributionMode:mode,anonymousTitle:safe(input?.anonymousTitle,120),anonymousSummary:safe(input?.anonymousSummary,500),publicTags:[...new Set((input?.publicTags||[]).map(value=>safe(value,24)).filter(Boolean))].slice(0,10),contactDisclosed:false}:null;
-    await this.repository.reviewDemand({adminId:admin.userId,demandId,decision,publicProjection:projection,authorizationId:admin.authorizationId});
-    return {decision,humanReviewed:true,automaticPush:false,contactDisclosed:false};
+    const transition=reviewDemandTransition({currentStatus:String(input?.currentStatus||'pending_review'),decision,distributionMode:String(input?.distributionMode||'private_match'),publicInput:{anonymousTitle:input?.anonymousTitle,anonymousSummary:input?.anonymousSummary,publicTags:input?.publicTags,publicDetails:input?.publicDetails}});
+    await this.repository.reviewDemand({adminId:admin.userId,demandId,decision,publicProjection:transition,authorizationId:admin.authorizationId});
+    return {decision,status:transition.nextStatus,distributionMode:transition.distributionMode,humanReviewed:true,automaticPublish:false,automaticPush:false,contactDisclosed:false};
+  }
+  async prepareDirectionalCandidate({request,demandId,targetMemberId,criteria,lastSentAt,idempotencyKey}){
+    const admin=await this.adminSessionService.authorizeAction({request,permission:'demand.review',idempotencyKey});
+    const candidate=directionalCandidate({demandId,targetMemberId,criteria,lastSentAt});
+    await this.repository.upsertDirectionalCandidate({adminId:admin.userId,candidate,authorizationId:admin.authorizationId});
+    return {status:candidate.status,matchedDimensionCount:candidate.matchedDimensionCount,suppressedBy14DayWindow:candidate.suppressedBy14DayWindow,nextEligibleAt:candidate.nextEligibleAt,notificationSent:false,contactDisclosed:false};
   }
   async dispatchApplication({request,applicationId,input,idempotencyKey}){
     const decision=String(input?.decision||'');if(!DISPATCH_DECISIONS.has(decision))throw bad('分发决定无效');
@@ -48,7 +50,17 @@ class AgentMvpService{
     await this.repository.dispatchApplication({adminId:admin.userId,applicationId,decision,safeReasonCode:input?.safeReasonCode,authorizationId:admin.authorizationId});
     return {decision,humanReviewed:true,notificationSent:false,contactDisclosed:false,deliveryMode:'operator_relay_only'};
   }
-  safeReadiness(){return {activated:false,routesMounted:false,memberGate:'004_wechat_identity_entitlement',adminReviewBoundary:'008_admin_session_rbac',crmWrites:false,memoryFallback:false}}
+  async recordOwnerDecision({request,applicationId,decision}){
+    const member=await this.member(request),transition=applicationTransition({currentStatus:'shortlisted',decision});
+    await this.repository.recordOwnerDecision({memberId:member.id,applicationId,decision});
+    return {status:transition.nextStatus,operatorRelayRequired:transition.operatorRelayRequired,contactDisclosed:false,deliveryMode:'operator_relay_only'};
+  }
+  async recordOperatorRelay({request,applicationId,decision,idempotencyKey}){
+    const admin=await this.adminSessionService.authorizeAction({request,permission:'demand.review',idempotencyKey}),transition=applicationTransition({currentStatus:'operator_relay_pending',decision});
+    await this.repository.recordOperatorRelay({adminId:admin.userId,applicationId,decision,authorizationId:admin.authorizationId});
+    return {status:transition.nextStatus,humanReviewed:true,contactDisclosed:false,deliveryMode:'operator_relay_only'};
+  }
+  safeReadiness(){return {activated:false,routesMounted:false,rpcCapabilityVerified:false,memberGate:'004_wechat_identity_entitlement',adminReviewBoundary:'008_admin_session_rbac',crmWrites:false,memoryFallback:false,automaticPublish:false,automaticPush:false,contactDisclosure:false}}
 }
 
 module.exports={AgentMvpService,DEMAND_TYPES,REVIEW_DECISIONS,DISPATCH_DECISIONS,AgentRepositoryUnavailableError};
