@@ -172,6 +172,23 @@ staging 服务如需继续展示匿名演示，必须在它自己的服务配置
 
 只有这一步全部通过，才提交微信审核和生产发布。
 
+## CRM 身份绑定 + Agent 统一 Readiness 与 Canary
+
+本地或未来受控后台可打开“上线检查”查看 `/api/admin/production-readiness`。该接口只返回布尔状态、阻断类别和匿名 canary 清单，不接收、保存或回显任何 Secret。
+
+必须严格按以下顺序推进，不能跳步：
+
+1. 生产环境保持非演示，Node 服务只使用 CloudBase 服务端网关。
+2. 只读确认 004 / 008 基线与未来 012；当前 012 **尚未应用**。
+3. 分别只读验收 binding RPC、match-token RPC 和 Agent RPC manifests；当前这些证据**尚未验证**，Agent RPC 也未部署。
+4. 用户仅在 CloudBase 云托管服务端配置微信 AppSecret、subject HMAC、会话加密、持久撤销和正式后台会话类别；页面没有 Secret 输入框。当前微信服务端 Secret **缺失或未验收**。
+5. 使用匿名测试账号完成页面列出的 canary；每项必须有人工记录，任何失败都停止。
+6. 最后、单独打开正式绑定与 Agent 路由；不能与迁移、凭据配置或 canary 同时变更。
+
+当前正确状态是 `blocked_safe`：`cloudWritesEnabled=false`、`formalRoutesEnabled=false`、`memoryFallback=false`、`demoFallback=false`。微信、RPC 或数据库失败都必须返回安全 503；manifest 不匹配必须拒绝启动；canary 失败必须保持路由关闭。
+
+匿名 canary 至少覆盖：code2Session 不泄露 session_key、明确手机号授权、唯一有效 CRM 自动绑定、异常匹配进入人工队列、会话撤销、Agent 人工终审、3-of-4 与 14 天去重、三段式申请及运营代转、依赖异常无回退。canary 不得使用真实 CRM、联系人、付款或附件。
+
 ## 绝不能做
 
 - 不把 AppSecret、API Key、数据库密码、连接串或证书发到聊天、GitHub、前端或小程序。

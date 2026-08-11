@@ -40,6 +40,7 @@
 | GET | `/api/admin/dashboard` | 后台总览（演示管理员） |
 | GET | `/api/admin/session` | 当前后台角色、权限说明及演示认证状态；不返回凭据 |
 | GET | `/api/admin/operations-readiness` | 上线准备矩阵与演示/生产环境边界 |
+| GET | `/api/admin/production-readiness` | CRM 身份绑定与 Agent 的统一只读阻断、分阶段启用和匿名 canary 清单 |
 | GET | `/api/admin/:collection` | 后台资源列表 |
 | PATCH | `/api/admin/members/:id/group-status` | 更新群内状态并记录审计 |
 | PATCH | `/api/admin/crm-verifications/:id` | 运营维护内部 CRM 核验/到期日/群状态并重新生成会籍判定；不修改公开名册 |

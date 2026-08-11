@@ -34,6 +34,7 @@ const { buildCrmSpreadsheetPreview, resolveCrmPersistentImportConfig } = require
 const { resolveCrmMatchTokenPreparationConfig } = require('./persistence/crm-match-token-provisioning');
 const { resolveCloudBaseCrmMatchTokenTransportConfig } = require('./persistence/cloudbase-crm-match-token-transport');
 const { resolveCloudBaseAgentRpcConfig } = require('./persistence/cloudbase-agent-rpc-transport');
+const { buildUnifiedProductionReadiness } = require('./production-readiness');
 const { CrmImportRehearsalStore, buildSourceOverview } = require('./crm-import-rehearsal');
 const store = require('./store');
 const deployment = validateDeploymentEnvironment();
@@ -54,8 +55,10 @@ const feishuReadonly = new OfficialFeishuReadonlyAdapter({client:feishuClient,pr
 const feishuPrivateRoots = new Map();
 const processedIdempotencyKeys = new Set();
 const tagSuggestionService = new TagSuggestionService();
-const formalAgentHttp = createFormalAgentHttpHandler({config:resolveFormalAgentHttpConfig(process.env)});
-const formalMemberBindingHttp = createFormalMemberBindingHttpHandler({config:resolveFormalMemberBindingHttpConfig(process.env)});
+const formalAgentHttpConfig = resolveFormalAgentHttpConfig(process.env);
+const formalMemberBindingHttpConfig = resolveFormalMemberBindingHttpConfig(process.env);
+const formalAgentHttp = createFormalAgentHttpHandler({config:formalAgentHttpConfig});
+const formalMemberBindingHttp = createFormalMemberBindingHttpHandler({config:formalMemberBindingHttpConfig});
 
 function json(res, status, body) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*' });
@@ -222,6 +225,7 @@ const server = http.createServer(async (req, res) => {
     if(req.method==='POST'&&url.pathname==='/api/logout'){return json(res,200,{demoSessionCleared:true,productionBehavior:'待微信登录态接入后清理服务端会话与本地令牌',wechatLogoutPerformed:false})}
     if (req.method === 'GET' && url.pathname === '/api/admin/session') return json(res,200,safeSession(req));
     if (req.method === 'GET' && url.pathname === '/api/admin/operations-readiness') return json(res,200,{environment:{demoData:true,persistentDatabase:false,privateObjectStorage:Boolean(process.env.PRIVATE_STORAGE_DIR),externalDelivery:false,productionAuthentication:false},checks:store.operationsReadiness});
+    if (req.method === 'GET' && url.pathname === '/api/admin/production-readiness') return json(res,200,buildUnifiedProductionReadiness({environment:process.env,bindingManifestVerified:false,matchTokenManifestVerified:crmMatchTokenTransportConfig.enabled===true,agentManifestVerified:agentRpcConfig.manifestVerified===true,formalBindingRoutesEnabled:formalMemberBindingHttpConfig.enabled===true,formalAgentRoutesEnabled:formalAgentHttpConfig.enabled===true,canaryEvidence:{}}));
     if (req.method === 'GET' && url.pathname === '/api/admin/agent/readiness') return json(res,200,{...agentRpcConfig.safeSummary,memberGate:'004_wechat_identity_entitlement',adminReviewBoundary:'008_admin_session_rbac',distributionModes:['full_public','redacted_public','private_match'],directionalRule:'3_of_4',directionalDeduplicationDays:14,applicationStatement:'three_part',deliveryMode:'operator_relay_only',notice:'当前仅完成离线持久化合约；正式 RPC 能力尚未部署和只读验收，生产路由与云端写入保持关闭。'});
     if (req.method === 'GET' && url.pathname === '/api/admin/dashboard') { const allMembers=Object.values(store.users); return json(res, 200, { metrics: { members:allMembers.length, activeMembers:allMembers.filter(x=>isMembershipActive(x)).length, nearExpiryMembers:allMembers.filter(x=>isMembershipActive(x) && new Date(x.endsAt)-Date.now()<30*86400000).length, pendingMembershipReviews:allMembers.filter(x=>!isMembershipActive(x)).length, publicProfiles:store.directoryProfiles.filter(x=>x.consentStatus==='granted'&&x.reviewStatus==='approved'&&x.visibility!=='hidden').length, pendingProfileReviews:store.publicProfileUpdates.filter(x=>['submitted','pending_review'].includes(x.status)).length, pendingEmploymentReviews:store.employmentVerifications.filter(x=>['submitted','pending_review'].includes(x.status)).length, importErrorItems:store.importItems.filter(x=>x.status==='error').length, notificationRetries:store.notificationJobs.filter(x=>['retry_pending','template_pending'].includes(x.status)).length, paymentReviews:store.paymentEvidence.filter(x=>x.evidenceStatus==='needs_review').length, demandReviews:store.demands.filter(x=>x.humanReviewStatus==='pending').length, dispatchReviews:store.applications.filter(x=>x.agentReviewStatus==='pending').length, demands:store.demands.length, applications:store.applications.length, activities:store.activities.length, resources:store.resources.length, importBatches:store.importBatches.length }, requirementCoverage:store.requirementCoverage }); }
     if(req.method==='GET'&&url.pathname==='/api/admin/local-imports')return json(res,200,{capabilities:{privateStorageConfigured:privateStorage.configured,persistentDatabase:false,virusScanConfigured:false,contentPreviewConfigured:false,textExtractionConfigured:false,ocrConfigured:false,transcriptionConfigured:false,tagSuggestionMode:'metadata_rules_only',...tagSuggestionService.safeCapabilities(),maxFileBytes:MAX_FILE_BYTES,maxFilesPerBatch:20,supportedFormats:['PDF','DOCX','XLSX','PPTX','MP4','MP3','M4A','PNG','JPG/JPEG','Markdown','TXT','ZIP（仅附件包）']},batches:store.localImportBatches,items:store.localImportItems.map(item=>safeLocalItem(ensureLocalTagSuggestion(item)))});
