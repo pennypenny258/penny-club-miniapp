@@ -13,15 +13,16 @@ BEGIN
      to_regprocedure('public.venture_member_binding_persist_candidate(jsonb)') IS NULL OR
      to_regprocedure('public.venture_member_binding_list_pending(jsonb)') IS NULL OR
      to_regprocedure('public.venture_member_binding_bind_and_recompute(jsonb)') IS NULL OR
-     to_regprocedure('public.venture_member_binding_reject_candidate(jsonb)') IS NULL THEN
+     to_regprocedure('public.venture_member_binding_reject_candidate(jsonb)') IS NULL OR
+     to_regprocedure('public.venture_member_binding_replace_confirmed_phone_tokens(jsonb)') IS NULL THEN
     RAISE EXCEPTION 'member binding RPC package is incomplete';
   END IF;
   SELECT checksum INTO existing_checksum FROM venture_private.schema_migrations WHERE version='012_member_binding_rpc_008_baseline';
-  IF existing_checksum IS NOT NULL AND existing_checksum<>'22c97b08bfc91ef411f284869ec8c7c1f80b6fb8a126c84df9f6194bbde2b699' THEN
+  IF existing_checksum IS NOT NULL AND existing_checksum<>'89d8779f3752fdfd6a1cebcbf131b6291ff9f64a3a14b8b11a2eab1b30abf50e' THEN
     RAISE EXCEPTION 'existing 012 checksum mismatch';
   END IF;
   INSERT INTO venture_private.schema_migrations(version,checksum)
-  VALUES('012_member_binding_rpc_008_baseline','22c97b08bfc91ef411f284869ec8c7c1f80b6fb8a126c84df9f6194bbde2b699')
+  VALUES('012_member_binding_rpc_008_baseline','89d8779f3752fdfd6a1cebcbf131b6291ff9f64a3a14b8b11a2eab1b30abf50e')
   ON CONFLICT(version) DO NOTHING;
 END $record_member_binding_rpc$;
 COMMIT;

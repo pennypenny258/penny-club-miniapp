@@ -33,7 +33,7 @@ CloudBase PostgreSQL Data API 基于 PostgREST。官方文档明确支持：
 
 客户端不从环境变量接收 RPC 名称，避免运营者误填一个未部署函数。能力清单不存在、校验和不一致或任何权限证明缺失时拒绝构造。请求固定使用 HTTPS CloudBase gateway、POST、禁止重定向、超时与 64 KiB 响应上限，错误不回显 API Key、URL、请求正文或上游响应。
 
-当前仓库没有提交能力清单，因为 004/008 中确实没有这些 RPC。代码与测试只使用合成函数名和 mock fetch，不连接 CloudBase。
+仓库现在包含未来 012 SQL 草案、五个绑定 RPC 和一个受控 token provisioning RPC，但它们**没有应用到 CloudBase**，也没有产生部署后能力清单。代码与测试只使用合成数据和 mock invoker，不连接 CloudBase。
 
 ## 最小凭据与当前开关
 
@@ -48,14 +48,18 @@ FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false
 CLOUDBASE_MEMBER_BINDING_WRITES_ENABLED=false
 CLOUDBASE_MEMBER_BINDING_TRANSPORT=
 CLOUDBASE_MEMBER_BINDING_CAPABILITY_SHA256=
+CLOUDBASE_MEMBER_BINDING_RPC_MIGRATION_APPLIED=
+CLOUDBASE_CRM_MATCH_TOKEN_WRITES_ENABLED=false
+CLOUDBASE_CRM_MATCH_TOKEN_TRANSPORT=
+CLOUDBASE_CRM_MATCH_TOKEN_CAPABILITY_SHA256=
 ```
 
 ## 将来启用前仍需完成
 
-1. 设计新的前向迁移（不能修改已执行的 004/008），实现五个最小 RPC；本阶段没有生成该 SQL。
-2. 在隔离测试库人工执行并用只读查询核验函数存在、函数 ACL、PUBLIC/客户端角色拒绝、事务和幂等约束。
+1. 在官方支持的隔离无敏感测试库人工执行未来 012，并用只读 890 核验六个 RPC、函数 ACL、PUBLIC/客户端角色拒绝、事务和幂等约束。当前不要执行。
+2. 对 token provisioning 额外验证双人授权、active/previous key version、重放、冲突和脱敏响应；不得使用真实手机或 CRM。
 3. 将核验后的函数名与证据固化为代码内能力清单，代码评审后配置其 SHA-256；函数名不能由环境变量临时输入。
 4. 使用合成账号完成重复绑定、冲突、数据库故障、entitlement 失效和审计测试。
 5. 最后才评估写 transport 开关；正式 HTTP 路由仍要单独、稍后开启。
 
-当前结论仍是 `liveGatewayImplementationNotConfigured`，不能导入真实 CRM，也不能启用正式微信绑定。
+当前 readiness 固定包含 `future012NotApplied`、`readonlyCapabilityManifestNotVerified` 和 `liveGatewayImplementationNotConfigured`，不能导入真实 CRM，也不能启用正式微信绑定。

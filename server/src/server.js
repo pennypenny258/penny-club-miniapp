@@ -31,6 +31,8 @@ const { createFormalAgentHttpHandler } = require('./agent-http-handler');
 const { resolveFormalMemberBindingHttpConfig } = require('./member-binding-http-config');
 const { createFormalMemberBindingHttpHandler } = require('./member-binding-http-handler');
 const { buildCrmSpreadsheetPreview, resolveCrmPersistentImportConfig } = require('./persistence/crm-import-pipeline');
+const { resolveCrmMatchTokenPreparationConfig } = require('./persistence/crm-match-token-provisioning');
+const { resolveCloudBaseCrmMatchTokenTransportConfig } = require('./persistence/cloudbase-crm-match-token-transport');
 const { CrmImportRehearsalStore, buildSourceOverview } = require('./crm-import-rehearsal');
 const store = require('./store');
 const deployment = validateDeploymentEnvironment();
@@ -38,6 +40,8 @@ const persistenceConfig = resolvePersistenceConfig(process.env);
 assertRuntimeRepositoryReady(persistenceConfig);
 const repository = createRepository({config:persistenceConfig,store});
 const crmPersistentImportConfig = resolveCrmPersistentImportConfig(process.env);
+const crmMatchTokenPreparationConfig = resolveCrmMatchTokenPreparationConfig(process.env);
+const crmMatchTokenTransportConfig = resolveCloudBaseCrmMatchTokenTransportConfig(process.env);
 const crmImportRehearsals = new CrmImportRehearsalStore();
 const PORT = parsePort(process.env.PORT);
 const publicDir = path.join(__dirname, '..', 'public');
@@ -258,7 +262,7 @@ const server = http.createServer(async (req, res) => {
     match = url.pathname.match(/^\/api\/admin\/feishu-migrations\/([^/]+)\/disconnect$/);
     if (req.method === 'POST' && match) { requireHighRiskConfirmation(req,'feishu.disconnect');rememberIdempotency(req);const task=store.feishuMigrationTasks.find(x=>x.id===match[1]); if(!task)return json(res,404,{error:'一次性迁入任务不存在'});const items=store.feishuMigrationItems.filter(x=>x.taskId===task.id);disconnectSource(task,items);feishuPrivateRoots.delete(task.id);store.audit(adminActor(req),'feishu_migration.disconnect_source','feishu_migration',task.id,{externalRefsCleared:true,credentialStored:false,ownedContentRetained:true,continuousSync:false});return json(res,200,safeTask(task,items)); }
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/knowledge/preview') { const input = await body(req); return json(res, 200, savePreview(previewKnowledgeCsv(input.csv, input.mapping))); }
-    if (req.method === 'GET' && url.pathname === '/api/admin/imports/internal-crm/readiness') return json(res,200,{...crmPersistentImportConfig.safeSummary,realDataAllowed:false,notice:crmPersistentImportConfig.enabled?'持久化服务配置已通过预检，但标准业务路由仍需完成真实后台身份联调后单独放行。':'当前为本地演练：只允许匿名预检，不能作为正式入库。'});
+    if (req.method === 'GET' && url.pathname === '/api/admin/imports/internal-crm/readiness') return json(res,200,{...crmPersistentImportConfig.safeSummary,realDataAllowed:false,identityBinding:{status:'offline_preparation_only',futureMigration:'012_not_applied',matchTokenGenerationPrepared:crmMatchTokenPreparationConfig.prepared===true,tokenRpcTransportEnabled:crmMatchTokenTransportConfig.enabled===true,bindingRpcCapabilityVerified:false,formalRoutesEnabled:false,cloudWritesEnabled:false,credentialsRequiredNow:false,rawCrmFieldsExposed:false},notice:crmPersistentImportConfig.enabled?'持久化服务配置已通过预检，但未来 012、RPC 能力清单和真实后台身份仍未验收，不允许写入。':'当前为本地演练：只允许匿名预检，未来 012 未应用，不能作为正式入库。'});
     if (req.method === 'GET' && url.pathname === '/api/admin/imports/internal-crm/rehearsals') return json(res,200,{batches:crmImportRehearsals.list(),sourceOverview:buildSourceOverview(store),capabilities:{safeRowReview:true,missingFieldChecklist:true,conflictResolutionRehearsal:true,formalWriteEnabled:false,persistent:false,memoryBusinessFactsWritten:false}});
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/rehearsals') { const input=await body(req);return json(res,201,crmImportRehearsals.create(input)); }
     match=url.pathname.match(/^\/api\/admin\/imports\/internal-crm\/rehearsals\/([^/]+)\/rows\/([^/]+)$/);

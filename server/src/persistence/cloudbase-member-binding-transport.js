@@ -3,7 +3,7 @@
 const crypto=require('node:crypto');
 const {TRANSPORT_KIND}=require('./member-binding-gateway-adapter');
 
-const REQUIRED_BASELINE='008_admin_session_rbac';
+const REQUIRED_BASELINE='012_member_binding_rpc_008_baseline';
 const TRANSPORT_MODE='verified_postgrest_rpc';
 const MAX_REQUEST_BYTES=32768;
 const LOGICAL_OPERATIONS=Object.freeze(['resolveExactCrmMatch','persistCandidate','listPending','bindIdentityIdempotently','rejectCandidate']);
@@ -22,14 +22,14 @@ function verifyCapabilityManifest(manifest){
   const checksum=manifestChecksum(manifest);if(manifest.checksum!==checksum)throw new Error('会员绑定 RPC 能力清单校验和不一致');return Object.freeze({...manifest,rpc:Object.freeze({...manifest.rpc}),evidence:Object.freeze({...evidence})});
 }
 function resolveCloudBaseMemberBindingTransportConfig(environment=process.env,{persistenceConfig,capabilityManifest}={}){
-  const enabled=flag(environment.CLOUDBASE_MEMBER_BINDING_WRITES_ENABLED,'CLOUDBASE_MEMBER_BINDING_WRITES_ENABLED'),hasPrepared=present(environment.CLOUDBASE_MEMBER_BINDING_TRANSPORT)||present(environment.CLOUDBASE_MEMBER_BINDING_CAPABILITY_SHA256);
+  const enabled=flag(environment.CLOUDBASE_MEMBER_BINDING_WRITES_ENABLED,'CLOUDBASE_MEMBER_BINDING_WRITES_ENABLED'),hasPrepared=present(environment.CLOUDBASE_MEMBER_BINDING_TRANSPORT)||present(environment.CLOUDBASE_MEMBER_BINDING_CAPABILITY_SHA256)||present(environment.CLOUDBASE_MEMBER_BINDING_RPC_MIGRATION_APPLIED);
   if(!enabled){if(hasPrepared)throw new Error('会员绑定写入未启用，拒绝静默保留 transport 或能力清单配置');return {enabled:false,mode:'disabled',safeSummary:{enabled:false,serverOnly:true,directTableWrites:false,routesEnabled:false,credentialsExposed:false}}}
   if(environment.NODE_ENV!=='production'||environment.DEPLOYMENT_PROFILE==='cloudbase_staging_demo'||environment.DEMO_DATA_ONLY==='true')throw new Error('会员绑定写入 transport 只允许非 demo production');
   if(environment.FORMAL_MEMBER_BINDING_ROUTES_ENABLED!=='false')throw new Error('离线准备阶段要求正式会员绑定路由继续保持 false');
   if(environment.CLOUDBASE_MEMBER_BINDING_TRANSPORT!==TRANSPORT_MODE)throw new Error(`CLOUDBASE_MEMBER_BINDING_TRANSPORT 必须为 ${TRANSPORT_MODE}`);
   if(persistenceConfig?.mode!=='cloudbase_gateway'||persistenceConfig.runtimeEnvironment!=='production'||persistenceConfig.safeSummary?.rolePurpose==='migrator')throw new Error('会员绑定写入 transport 需要生产 CloudBase server_runtime 网关配置');
   if(environment.CLOUDBASE_PG_CREDENTIAL_PURPOSE!=='server_runtime')throw new Error('会员绑定写入 transport 只接受 CloudBase 服务端 runtime API Key');
-  if(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED!==REQUIRED_BASELINE)throw new Error(`会员绑定写入 transport 只允许 ${REQUIRED_BASELINE} 基线`);
+  if(environment.CLOUDBASE_MEMBER_BINDING_RPC_MIGRATION_APPLIED!==REQUIRED_BASELINE)throw new Error(`会员绑定写入 transport 只允许已经只读验收的 ${REQUIRED_BASELINE} 能力基线`);
   const manifest=verifyCapabilityManifest(capabilityManifest),expected=String(environment.CLOUDBASE_MEMBER_BINDING_CAPABILITY_SHA256||'');if(!/^[0-9a-f]{64}$/.test(expected)||expected!==manifest.checksum)throw new Error('CLOUDBASE_MEMBER_BINDING_CAPABILITY_SHA256 未匹配已验证能力清单');
   return {enabled:true,mode:TRANSPORT_MODE,origin:persistenceConfig.origin,serverApiKey:persistenceConfig.serverApiKey,timeoutMs:persistenceConfig.timeoutMs,maxResponseBytes:Math.min(persistenceConfig.maxResponseBytes,65536),manifest,safeSummary:{enabled:true,serverOnly:true,credentialType:'cloudbase_service_role_api_key',verifiedRpcOnly:true,directTableWrites:false,routesEnabled:false,credentialsExposed:false}};
 }

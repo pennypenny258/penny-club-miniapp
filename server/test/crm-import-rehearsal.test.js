@@ -44,4 +44,8 @@ test('admin CRM workbench exposes review steps without claiming persistence',()=
   for(const text of ['脱敏批次审阅工作台','演练补齐','确认唯一匹配','标记匹配冲突','新建待补主档','历史续费追踪表','确认写入正式 CRM（尚未启用）'])assert.ok(app.includes(text)||rehearsal.includes(text),text);
   assert.ok(rehearsal.includes('微信群标签 / OCR'));
   assert.ok(app.includes('演练批次不保存原始值，也不会连接 CloudBase'));
+  assert.ok(app.includes('身份绑定安全状态'));
+  assert.ok(app.includes('未来 012 未应用'));
 });
+
+test('CRM readiness exposes only safe offline binding state',async()=>{const response=await request('GET','/api/admin/imports/internal-crm/readiness');assert.equal(response.status,200);assert.deepEqual(response.payload.identityBinding,{status:'offline_preparation_only',futureMigration:'012_not_applied',matchTokenGenerationPrepared:false,tokenRpcTransportEnabled:false,bindingRpcCapabilityVerified:false,formalRoutesEnabled:false,cloudWritesEnabled:false,credentialsRequiredNow:false,rawCrmFieldsExposed:false});assert.equal(JSON.stringify(response.payload).includes('HMAC_KEY'),false)});

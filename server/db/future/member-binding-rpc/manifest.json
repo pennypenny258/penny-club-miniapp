@@ -10,9 +10,9 @@
   "checksums": {
     "server/db/migrations/004_wechat_identity_entitlement.sql": "89651f91578a44d1f5fd78e8039c7ded587bbfae3a18764ee4bb3b2090d5a621",
     "server/db/migrations/008_admin_session_rbac.sql": "1d29f1997e3d63322ae56a0fef78b559d41028e2d278527ffdc0d51e1652bd3d",
-    "server/db/future/member-binding-rpc/012_member_binding_rpc_008_baseline.sql": "22c97b08bfc91ef411f284869ec8c7c1f80b6fb8a126c84df9f6194bbde2b699",
-    "server/db/future/member-binding-rpc/820_record_member_binding_rpc_version.sql": "b1d81f6fd983eb830665f167f7848b3ba0ae516df23c83b1c3407415595a12db",
-    "server/db/future/member-binding-rpc/890_verify_member_binding_rpc_readonly.sql": "84ec03c372e72b6ddd1f5a1c8c9ac39f8ce2a639e33d295967c3ff91066c2de1"
+    "server/db/future/member-binding-rpc/012_member_binding_rpc_008_baseline.sql": "89d8779f3752fdfd6a1cebcbf131b6291ff9f64a3a14b8b11a2eab1b30abf50e",
+    "server/db/future/member-binding-rpc/820_record_member_binding_rpc_version.sql": "d3a6110937fe78c82e6f3639c4c0a4d767664f4d63090095e58486755e2e0699",
+    "server/db/future/member-binding-rpc/890_verify_member_binding_rpc_readonly.sql": "ec962b68acae5ec1d62c99ca873507064244ed9720483975c54fa9d4b20517b7"
   },
   "rpc": {
     "resolveExactCrmMatch": "venture_member_binding_resolve_exact_match",
@@ -20,5 +20,6 @@
     "listPending": "venture_member_binding_list_pending",
     "bindIdentityIdempotently": "venture_member_binding_bind_and_recompute",
     "rejectCandidate": "venture_member_binding_reject_candidate"
-  }
+  },
+  "tokenProvisioningRpc": "venture_member_binding_replace_confirmed_phone_tokens"
 }

@@ -63,6 +63,15 @@ CREATE TABLE venture_private.member_binding_idempotency (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE venture_private.member_binding_token_idempotency (
+  idempotency_key_hash text PRIMARY KEY CHECK (idempotency_key_hash ~ '^[0-9a-f]{64}$'),
+  user_id text NOT NULL REFERENCES venture_private.users(id),
+  request_fingerprint text NOT NULL CHECK (request_fingerprint ~ '^[0-9a-f]{32}$'),
+  token_generation_count integer NOT NULL CHECK (token_generation_count BETWEEN 1 AND 2),
+  safe_result jsonb NOT NULL DEFAULT '{}'::jsonb CHECK (jsonb_typeof(safe_result)='object'),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
 ALTER TABLE venture_private.member_binding_match_tokens ENABLE ROW LEVEL SECURITY;
 ALTER TABLE venture_private.member_binding_match_tokens FORCE ROW LEVEL SECURITY;
 ALTER TABLE venture_private.member_binding_match_options ENABLE ROW LEVEL SECURITY;
@@ -71,10 +80,13 @@ ALTER TABLE venture_private.member_binding_candidates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE venture_private.member_binding_candidates FORCE ROW LEVEL SECURITY;
 ALTER TABLE venture_private.member_binding_idempotency ENABLE ROW LEVEL SECURITY;
 ALTER TABLE venture_private.member_binding_idempotency FORCE ROW LEVEL SECURITY;
+ALTER TABLE venture_private.member_binding_token_idempotency ENABLE ROW LEVEL SECURITY;
+ALTER TABLE venture_private.member_binding_token_idempotency FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON venture_private.member_binding_match_tokens FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON venture_private.member_binding_match_options FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON venture_private.member_binding_candidates FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON venture_private.member_binding_idempotency FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON venture_private.member_binding_token_idempotency FROM PUBLIC, anon, authenticated;
 
 -- Package-local guard: do not depend on the helper introduced by migration 005.
 CREATE OR REPLACE FUNCTION venture_private.assert_member_binding_service_role() RETURNS void
@@ -235,15 +247,58 @@ BEGIN
   RETURN result_value||jsonb_build_object('idempotencyStatus','created');
 END $function$;
 
+CREATE OR REPLACE FUNCTION public.venture_member_binding_replace_confirmed_phone_tokens(p_request jsonb)
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
+SET search_path=venture_private,pg_catalog AS $function$
+DECLARE
+  user_value text:=p_request->>'userId'; actor_value text:=p_request->>'actorId'; reviewer_value text:=p_request->>'reviewerId';
+  actor_authorization_value text:=p_request->>'actorAuthorizationId'; review_authorization_value text:=p_request->>'reviewAuthorizationId';
+  record_version_value text:=p_request->>'crmRecordVersionHash'; idempotency_value text:=p_request->>'idempotencyKeyHash';
+  record_material text; expected_record_version text; fingerprint_value text; generation_count integer; generation jsonb; existing venture_private.member_binding_token_idempotency%ROWTYPE; result_value jsonb;
+BEGIN
+  PERFORM venture_private.assert_member_binding_service_role();
+  IF EXISTS(SELECT 1 FROM jsonb_object_keys(coalesce(p_request,'{}'::jsonb)) key WHERE key NOT IN ('userId','tokenKind','generations','source','crmRecordVersionHash','actorId','reviewerId','actorAuthorizationId','reviewAuthorizationId','idempotencyKeyHash','writeScope')) THEN RAISE EXCEPTION 'unsupported token projection field'; END IF;
+  IF p_request->>'tokenKind'<>'phone' OR p_request->>'source'<>'confirmed_crm_materialization' OR p_request->>'writeScope'<>'member_binding_match_tokens_only' OR
+     record_version_value !~ '^[0-9a-f]{64}$' OR idempotency_value !~ '^[0-9a-f]{64}$' OR actor_value=reviewer_value OR coalesce(jsonb_typeof(p_request->'generations'),'')<>'array' THEN RAISE EXCEPTION 'invalid token projection'; END IF;
+  generation_count:=jsonb_array_length(p_request->'generations');IF generation_count NOT BETWEEN 1 AND 2 THEN RAISE EXCEPTION 'invalid token generation count'; END IF;
+  SELECT concat_ws(':',account.updated_at::text,crm.updated_at::text,crm.verification_status,crm.group_status,coalesce(crm.membership_start::text,''),coalesce(crm.membership_end::text,'')) INTO record_material
+  FROM venture_private.users account JOIN LATERAL(SELECT verification_status,group_status,membership_start,membership_end,updated_at FROM venture_private.crm_verifications WHERE user_id=account.id ORDER BY updated_at DESC LIMIT 1) crm ON true
+  WHERE account.id=user_value AND crm.verification_status='verified';
+  IF record_material IS NULL THEN RAISE EXCEPTION 'confirmed CRM member unavailable'; END IF;
+  expected_record_version:=md5(record_material)||md5('member-binding-crm-v1:'||record_material);
+  IF expected_record_version<>record_version_value THEN RAISE EXCEPTION 'CRM record version changed'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM venture_private.admin_action_authorizations WHERE id=actor_authorization_value AND actor_user_id=actor_value AND permission_code='member_import.materialize.execute' AND status='reserved' AND expires_at>now()) THEN RAISE EXCEPTION 'materialization authorization required'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM venture_private.admin_action_authorizations WHERE id=review_authorization_value AND actor_user_id=reviewer_value AND permission_code='member_import.review' AND status='reserved' AND expires_at>now()) THEN RAISE EXCEPTION 'independent review authorization required'; END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(p_request->'generations') item WHERE jsonb_typeof(item)<>'object' OR EXISTS(SELECT 1 FROM jsonb_object_keys(item) key WHERE key NOT IN ('kind','keyVersion','tokenHash')) OR item->>'kind'<>'phone' OR item->>'keyVersion' !~ '^[a-z0-9][a-z0-9._-]{1,31}$' OR item->>'tokenHash' !~ '^[0-9a-f]{64}$') THEN RAISE EXCEPTION 'invalid token generation'; END IF;
+  IF (SELECT count(DISTINCT item->>'keyVersion') FROM jsonb_array_elements(p_request->'generations') item)<>generation_count OR (SELECT count(DISTINCT item->>'tokenHash') FROM jsonb_array_elements(p_request->'generations') item)<>generation_count THEN RAISE EXCEPTION 'duplicate token generation'; END IF;
+  fingerprint_value:=md5(p_request::text);
+  SELECT * INTO existing FROM venture_private.member_binding_token_idempotency WHERE idempotency_key_hash=idempotency_value;
+  IF FOUND THEN IF existing.request_fingerprint<>fingerprint_value OR existing.user_id<>user_value THEN RAISE EXCEPTION 'token idempotency conflict'; END IF; RETURN existing.safe_result||jsonb_build_object('idempotencyStatus','reused'); END IF;
+  UPDATE venture_private.member_binding_match_tokens SET status='revoked',revoked_at=now() WHERE user_id=user_value AND token_kind='phone' AND status='active';
+  FOR generation IN SELECT value FROM jsonb_array_elements(p_request->'generations') LOOP
+    INSERT INTO venture_private.member_binding_match_tokens(id,user_id,token_kind,key_version,token_hash,status,created_at,revoked_at)
+    VALUES('binding-token-'||md5(random()::text||clock_timestamp()::text),user_value,'phone',generation->>'keyVersion',generation->>'tokenHash','active',now(),NULL)
+    ON CONFLICT(token_kind,key_version,token_hash,user_id) DO UPDATE SET status='active',revoked_at=NULL;
+  END LOOP;
+  UPDATE venture_private.admin_action_authorizations SET status='consumed' WHERE id IN (actor_authorization_value,review_authorization_value);
+  result_value:=jsonb_build_object('idempotencyStatus','created','tokenGenerationCount',generation_count);
+  INSERT INTO venture_private.member_binding_token_idempotency(idempotency_key_hash,user_id,request_fingerprint,token_generation_count,safe_result) VALUES(idempotency_value,user_value,fingerprint_value,generation_count,result_value);
+  INSERT INTO venture_private.audit_logs(id,actor_user_id,actor_role,action,subject_type,subject_id,safe_change_summary)
+  VALUES('audit-'||md5(random()::text||clock_timestamp()::text),actor_value,'verified_admin','member_binding.match_tokens.replace','member',user_value,jsonb_build_object('token_kind','phone','key_version_count',generation_count,'crm_record_version_checked',true,'reviewer_separate',true,'sensitive_data_included',false));
+  RETURN result_value;
+END $function$;
+
 REVOKE ALL ON FUNCTION public.venture_member_binding_resolve_exact_match(jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.venture_member_binding_persist_candidate(jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.venture_member_binding_list_pending(jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.venture_member_binding_bind_and_recompute(jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.venture_member_binding_reject_candidate(jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.venture_member_binding_replace_confirmed_phone_tokens(jsonb) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.venture_member_binding_resolve_exact_match(jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.venture_member_binding_persist_candidate(jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.venture_member_binding_list_pending(jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.venture_member_binding_bind_and_recompute(jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.venture_member_binding_reject_candidate(jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION public.venture_member_binding_replace_confirmed_phone_tokens(jsonb) TO service_role;
 
 COMMIT;

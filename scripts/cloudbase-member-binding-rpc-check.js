@@ -17,9 +17,12 @@ for(const rpc of rpcs){
   if(!new RegExp(`REVOKE ALL ON FUNCTION public\\.${rpc}\\(jsonb\\) FROM PUBLIC, anon, authenticated`).test(sql))issues.push(`${rpc} 未拒绝客户端角色`);
   if(!new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${rpc}\\(jsonb\\) TO service_role`).test(sql))issues.push(`${rpc} 未限定 service_role`);
 }
-for(const table of ['member_binding_match_tokens','member_binding_match_options','member_binding_candidates','member_binding_idempotency']){
+for(const table of ['member_binding_match_tokens','member_binding_match_options','member_binding_candidates','member_binding_idempotency','member_binding_token_idempotency']){
   if(!sql.includes(`CREATE TABLE venture_private.${table}`)||!sql.includes(`ALTER TABLE venture_private.${table} FORCE ROW LEVEL SECURITY`)||!sql.includes(`REVOKE ALL ON venture_private.${table} FROM PUBLIC, anon, authenticated`))issues.push(`${table} 缺少私有表/RLS/客户端禁权`);
 }
+const tokenRpc='venture_member_binding_replace_confirmed_phone_tokens',tokenStart=sql.indexOf(`FUNCTION public.${tokenRpc}(p_request jsonb)`),tokenBody=sql.slice(tokenStart,sql.indexOf('REVOKE ALL ON FUNCTION',tokenStart));
+if(tokenStart<0||!tokenBody.includes('assert_member_binding_service_role')||!tokenBody.includes("permission_code='member_import.materialize.execute'")||!tokenBody.includes("permission_code='member_import.review'")||!tokenBody.includes('actor_value=reviewer_value')||!tokenBody.includes("writeScope'<>'member_binding_match_tokens_only"))issues.push('受控 token RPC 缺少 service_role、双人授权或固定写入范围');
+if(!sql.includes(`REVOKE ALL ON FUNCTION public.${tokenRpc}(jsonb) FROM PUBLIC, anon, authenticated`)||!sql.includes(`GRANT EXECUTE ON FUNCTION public.${tokenRpc}(jsonb) TO service_role`))issues.push('受控 token RPC 缺少客户端禁权或 service_role 授权');
 if(!/FUNCTION venture_private\.assert_member_binding_service_role\(\)[\s\S]{0,500}current_setting\('request\.jwt\.claims',true\)/.test(sql)||!/claims->>'role'<>'service_role'/.test(sql)||!/REVOKE ALL ON FUNCTION venture_private\.assert_member_binding_service_role\(\) FROM PUBLIC, anon, authenticated/.test(sql))issues.push('包内 service_role guard 缺少 JWT claims 核对或客户端禁权');
 for(const required of ['app_scope_hash','subject_hash','key_version','token_fingerprint','idempotency_key_hash','external_identity_bindings','admin_action_authorizations','entitlementRecheckRequired'])if(!sql.includes(required))issues.push(`012 缺少 ${required}`);
 for(const forbidden of ['phone_number','raw_openid','raw_phone','payment_amount','protected_payload_ciphertext','contact_value'])if(new RegExp(forbidden,'i').test(sql))issues.push(`012 含禁止的原始/敏感字段 ${forbidden}`);
@@ -31,4 +34,5 @@ if(!recorder.includes("version='004_wechat_identity_entitlement' AND checksum='8
 const verify=stripStrings(read(`${dir}/890_verify_member_binding_rpc_readonly.sql`));
 if(/\b(INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|GRANT|REVOKE|TRUNCATE|DO|CALL|EXECUTE)\b/i.test(verify))issues.push('890 必须保持只读');
 for(const rpc of rpcs)if(!read(`${dir}/890_verify_member_binding_rpc_readonly.sql`).includes(`${rpc}(jsonb)`))issues.push(`890 未验证 ${rpc}`);
+if(!read(`${dir}/890_verify_member_binding_rpc_readonly.sql`).includes(`${tokenRpc}(jsonb)`))issues.push(`890 未验证 ${tokenRpc}`);
 if(issues.length){console.error('CloudBase 会员绑定 RPC 未来包离线检查失败：\n- '+issues.join('\n- '));process.exitCode=1}else console.log('CloudBase 会员绑定 RPC 未来包离线检查通过；未连接数据库、未执行 SQL、未启用生产路由。');
