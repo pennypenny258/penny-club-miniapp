@@ -13,7 +13,7 @@ function resolveFormalAgentHttpConfig(environment=process.env){
   if(environment.DEPLOYMENT_PROFILE==='cloudbase_staging_demo'||environment.DEMO_DATA_ONLY==='true')throw new Error('匿名 staging 禁止启用正式 Agent 路由');
   if(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED!==REQUIRED_MIGRATION)throw new Error(`正式 Agent 路由要求迁移基线为 ${REQUIRED_MIGRATION}`);
   if(environment.FORMAL_ADMIN_AUTH_ENABLED!=='true'||environment.WECHAT_LOGIN_ENABLED!=='true')throw new Error('正式 Agent 路由要求同时启用 004 会员身份与 008 后台会话边界');
-  if(environment.MEMBER_BINDING_MODE!=='operator_confirmed_crm')throw new Error('正式 Agent 路由要求运营确认的 CRM 身份绑定，不能用微信登录自动推断会员身份');
+  if(environment.MEMBER_BINDING_MODE!=='crm_exact_match_or_operator_review')throw new Error('正式 Agent 路由要求唯一 CRM 精确匹配自动绑定、其余人工复核的身份模式');
   return {enabled:true,prefix:'/api/formal-agent',migrationBaseline:REQUIRED_MIGRATION,memberGate:'004_wechat_identity_entitlement',adminBoundary:'008_admin_session_rbac',safeSummary:{enabled:true,serverOnly:true,memoryFallback:false,crmWrites:false}};
 }
 

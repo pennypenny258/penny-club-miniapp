@@ -5,7 +5,7 @@ const {resolveWechatIdentityConfig,hashWechatSubject}=require('../src/auth/wecha
 const {WechatCodeExchangeClient,OpaqueMemberSessionManager,VerifiedMemberIdentityService}=require('../src/auth/wechat-identity');
 
 const key=value=>Buffer.alloc(32,value).toString('base64');
-const production={NODE_ENV:'production',DATA_REPOSITORY:'cloudbase_gateway',WECHAT_LOGIN_ENABLED:'true',MEMBER_IDENTITY_PROVIDER:'external_verified_session',MEMBER_BINDING_MODE:'operator_confirmed_crm',MEMBER_SESSION_REVOCATION_STORE:'external_persistent',WECHAT_MINIPROGRAM_APP_ID:'wx1234567890abcdef',WECHAT_MINIPROGRAM_APP_SECRET:'fixture-server-app-secret',WECHAT_IDENTITY_SUBJECT_HMAC_KEY:key(7),MEMBER_SESSION_ENCRYPTION_KEY:key(9),MEMBER_SESSION_ISSUER:'venture-club-node',MEMBER_SESSION_AUDIENCE:'venture-club-miniapp',MEMBER_SESSION_TTL_SECONDS:'900'};
+const production={NODE_ENV:'production',DATA_REPOSITORY:'cloudbase_gateway',WECHAT_LOGIN_ENABLED:'true',MEMBER_IDENTITY_PROVIDER:'external_verified_session',MEMBER_BINDING_MODE:'crm_exact_match_or_operator_review',MEMBER_SESSION_REVOCATION_STORE:'external_persistent',WECHAT_MINIPROGRAM_APP_ID:'wx1234567890abcdef',WECHAT_MINIPROGRAM_APP_SECRET:'fixture-server-app-secret',WECHAT_IDENTITY_SUBJECT_HMAC_KEY:key(7),MEMBER_SESSION_ENCRYPTION_KEY:key(9),MEMBER_SESSION_ISSUER:'venture-club-node',MEMBER_SESSION_AUDIENCE:'venture-club-miniapp',MEMBER_SESSION_TTL_SECONDS:'900'};
 const config=()=>resolveWechatIdentityConfig(production);
 const activeRow={subject_hash:'a'.repeat(64),member_id:'member-fixture',account_active:true,membership_start:'2025-01-01T00:00:00.000Z',membership_end:'2099-01-01T00:00:00.000Z',crm_verified:true,payment_verified:true,payment_reviewed_at:'2026-01-01T00:00:00.000Z',group_active:true,decision_active:true,entitlement_version:'fixture-v1'};
 const sessions=(identityConfig=config(),extra={})=>new OpaqueMemberSessionManager({config:identityConfig,revocationStore:{isRevoked:async()=>false},...extra});
@@ -16,7 +16,7 @@ test('real WeChat identity configuration is explicit, server-only and fail close
   for(const field of ['WECHAT_MINIPROGRAM_APP_SECRET','WECHAT_IDENTITY_SUBJECT_HMAC_KEY','MEMBER_SESSION_ENCRYPTION_KEY','MEMBER_SESSION_REVOCATION_STORE']){const env={...production};delete env[field];assert.throws(()=>resolveWechatIdentityConfig(env),new RegExp(field));}
   assert.throws(()=>resolveWechatIdentityConfig({...production,DEMO_DATA_ONLY:'true'}),/匿名 staging/);
   assert.throws(()=>resolveWechatIdentityConfig({...production,MEMBER_SESSION_REVOCATION_STORE:'memory'}),/external_persistent/);
-  assert.throws(()=>resolveWechatIdentityConfig({...production,MEMBER_BINDING_MODE:'automatic_wechat_profile'}),/operator_confirmed_crm/);
+  assert.throws(()=>resolveWechatIdentityConfig({...production,MEMBER_BINDING_MODE:'automatic_wechat_profile'}),/crm_exact_match_or_operator_review/);
   const resolved=config();assert.equal(resolved.safeSummary.credentialsExposed,false);assert.equal(resolved.safeSummary.loginReturnsProfile,false);assert.equal(resolved.safeSummary.groupMembershipApi,false);assert.equal(resolved.safeSummary.phoneRequiresExplicitUserAction,true);assert.equal(JSON.stringify(resolved.safeSummary).includes('fixture-server-app-secret'),false);
 });
 

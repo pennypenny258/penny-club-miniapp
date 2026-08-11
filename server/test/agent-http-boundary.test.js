@@ -8,7 +8,7 @@ const {createFormalAgentHttpHandler,MAX_BODY_BYTES}=require('../src/agent-http-h
 const {AgentMvpService}=require('../src/agent-mvp-service');
 const {AGENT_OPERATIONS,StagedAgentGatewayRepository}=require('../src/persistence/agent-mvp-repository');
 
-const production={FORMAL_AGENT_ROUTES_ENABLED:'true',NODE_ENV:'production',DATA_REPOSITORY:'cloudbase_gateway',CLOUDBASE_PG_MIGRATIONS_APPLIED:'008_admin_session_rbac',FORMAL_ADMIN_AUTH_ENABLED:'true',WECHAT_LOGIN_ENABLED:'true',MEMBER_BINDING_MODE:'operator_confirmed_crm'};
+const production={FORMAL_AGENT_ROUTES_ENABLED:'true',NODE_ENV:'production',DATA_REPOSITORY:'cloudbase_gateway',CLOUDBASE_PG_MIGRATIONS_APPLIED:'008_admin_session_rbac',FORMAL_ADMIN_AUTH_ENABLED:'true',WECHAT_LOGIN_ENABLED:'true',MEMBER_BINDING_MODE:'crm_exact_match_or_operator_review'};
 function invoke(handler,path,{method='GET',headers={},payload,raw}={}){return new Promise((resolve,reject)=>{const req=new PassThrough();req.method=method;req.url=path;req.headers={host:'localhost',...headers};const res={statusCode:200,headers:{},writeHead(status,responseHeaders){this.statusCode=status;this.headers=responseHeaders},end(chunk=''){const text=String(chunk||'');resolve({handled:true,status:this.statusCode,headers:this.headers,body:text?JSON.parse(text):{}})}};req.on('error',reject);const pending=handler(req,res).then(value=>{if(value===false)resolve({handled:false})}).catch(reject);if(raw!==undefined)req.end(raw);else if(payload!==undefined)req.end(JSON.stringify(payload));else req.end();void pending})}
 
 test('formal Agent HTTP config is explicit production-only and pinned to 004/008',()=>{

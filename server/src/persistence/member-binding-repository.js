@@ -1,0 +1,25 @@
+'use strict';
+
+const MEMBER_BINDING_OPERATIONS=Object.freeze({
+  STAGE_CANDIDATE:'member_binding.candidate.stage',
+  LIST_PENDING:'member_binding.candidate.list_pending',
+  CONFIRM_AND_REEVALUATE:'member_binding.confirm_and_reevaluate_entitlement',
+  REJECT_CANDIDATE:'member_binding.candidate.reject'
+});
+const ALLOWLIST=new Set(Object.values(MEMBER_BINDING_OPERATIONS));
+class MemberBindingRepositoryUnavailableError extends Error{constructor(){super('会员身份绑定服务暂时不可用');this.code='MEMBER_BINDING_REPOSITORY_UNAVAILABLE';this.statusCode=503}}
+function id(value,name='记录 ID'){const text=String(value||'').trim();if(!/^[A-Za-z0-9_-]{6,128}$/.test(text)){const error=new Error(`${name} 格式无效`);error.code='MEMBER_BINDING_INPUT_INVALID';error.statusCode=400;throw error}return text}
+function hash(value,name='匹配令牌'){const text=String(value||'');if(!/^[0-9a-f]{64}$/.test(text)){const error=new Error(`${name} 格式无效`);error.code='MEMBER_BINDING_INPUT_INVALID';error.statusCode=400;throw error}return text}
+function safePending(row={}){const matchOptions=Array.isArray(row.match_options)?row.match_options.slice(0,20).map((option,index)=>({matchId:id(option.match_id,'匹配候选 ID'),label:`候选 ${index+1}`,evidenceTypes:Array.isArray(option.evidence_types)?option.evidence_types.map(String).filter(value=>['phone','wechat_id','group_nickname','existing_openid'].includes(value)):[]})):[];return {id:id(row.id,'候选 ID'),status:'operator_review_required',reviewReasons:Array.isArray(row.review_reasons)?row.review_reasons.map(String).filter(value=>['no_match','ambiguous_match','missing_crm_data','contradictory_crm_data','group_not_active','membership_month_not_effective','account_not_active','risk_flags_present','entitlement_projection_not_ready'].includes(value)):['contradictory_crm_data'],evidenceTypes:Array.isArray(row.evidence_types)?row.evidence_types.map(String).filter(value=>['openid_verified','phone_user_consent','wechat_id_user_provided','group_nickname_user_provided'].includes(value)):[],candidateCount:Number.isInteger(row.candidate_count)?Math.max(0,Math.min(row.candidate_count,20)):0,conflictStatus:['no_match','unique_candidate','multiple_candidates','conflict'].includes(row.conflict_status)?row.conflict_status:'conflict',matchOptions,createdAt:row.created_at||null,rawValuesReturned:false}}
+
+class StagedMemberBindingRepository{
+  constructor({adapter}){if(!adapter||typeof adapter.execute!=='function')throw new Error('会员身份绑定仓库需要可注入的服务端适配器');this.kind='member_binding_gateway_contract';this.adapter=adapter}
+  async execute(operation,payload){if(!ALLOWLIST.has(operation))throw new Error('会员身份绑定操作不在白名单');try{return await this.adapter.execute(operation,payload)}catch{throw new MemberBindingRepositoryUnavailableError()}}
+  stageCandidate({subjectHash,matchTokens,evidence}){const tokens={};for(const [key,value] of Object.entries(matchTokens||{})){if(!['phone','wechatId','groupNickname'].includes(key))continue;tokens[key]=hash(value)}return this.execute(MEMBER_BINDING_OPERATIONS.STAGE_CANDIDATE,{subjectHash:hash(subjectHash,'subject 哈希'),matchTokens:tokens,evidence,status:'pending_match_evaluation',writeScope:'binding_candidate_only'})}
+  async listPending({limit=30}){const value=Number(limit);if(!Number.isInteger(value)||value<1||value>50)throw new Error('候选列表数量必须为 1–50');const rows=await this.execute(MEMBER_BINDING_OPERATIONS.LIST_PENDING,{limit:value});if(!Array.isArray(rows))throw new MemberBindingRepositoryUnavailableError();try{return rows.map(safePending)}catch{throw new MemberBindingRepositoryUnavailableError()}}
+  confirmAndReevaluate({candidateId,selectedMatchId,actorId,reasonCode,authorizationId,confirmationMode}){return this.execute(MEMBER_BINDING_OPERATIONS.CONFIRM_AND_REEVALUATE,{candidateId:id(candidateId,'候选 ID'),selectedMatchId:id(selectedMatchId,'匹配候选 ID'),actorId:id(actorId,'操作方 ID'),reasonCode:String(reasonCode),authorizationId:authorizationId?id(authorizationId,'授权 ID'):null,confirmationMode:String(confirmationMode),writeScope:'identity_binding_only',reevaluateEntitlement:true})}
+  rejectCandidate({candidateId,operatorId,reasonCode,authorizationId}){return this.execute(MEMBER_BINDING_OPERATIONS.REJECT_CANDIDATE,{candidateId:id(candidateId,'候选 ID'),operatorId:id(operatorId,'运营 ID'),reasonCode:String(reasonCode),authorizationId:id(authorizationId,'授权 ID')})}
+  safeReadiness(){return {kind:this.kind,activated:false,migrationBaseline:'008_admin_session_rbac',memoryFallback:false,crmWrites:false,bindingWrites:'unique_exact_auto_or_operator_review',operations:[...ALLOWLIST]}}
+}
+
+module.exports={MEMBER_BINDING_OPERATIONS,MemberBindingRepositoryUnavailableError,StagedMemberBindingRepository,safePending};
