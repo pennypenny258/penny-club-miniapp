@@ -42,7 +42,7 @@ test('bootstrap handler is inert outside the dedicated deployment profile',()=>{
 });
 
 test('the complete documented bootstrap environment accepts explicit false feature flags',()=>{
-  const environment={NODE_ENV:'production',DEPLOYMENT_PROFILE:'cloudbase_production_bootstrap',DEMO_DATA_ONLY:'false',DATA_REPOSITORY:'production_bootstrap_disabled',PORT:'3000',WECHAT_LOGIN_ENABLED:'false',FORMAL_ADMIN_AUTH_ENABLED:'false',ADMIN_GOVERNANCE_ENABLED:'false',CLOUDBASE_CATALOG_READS_ENABLED:'false',CLOUDBASE_STORAGE_ENABLED:'false',GOVERNED_MEMBER_IMPORTS_ENABLED:'false',GOVERNED_MATERIALIZATION_ENABLED:'false'};
+  const environment={NODE_ENV:'production',DEPLOYMENT_PROFILE:'cloudbase_production_bootstrap',DEMO_DATA_ONLY:'false',DATA_REPOSITORY:'production_bootstrap_disabled',PORT:'3000',WECHAT_LOGIN_ENABLED:'false',FORMAL_ADMIN_AUTH_ENABLED:'false',FORMAL_AGENT_ROUTES_ENABLED:'false',FORMAL_MEMBER_BINDING_ROUTES_ENABLED:'false',ADMIN_GOVERNANCE_ENABLED:'false',CLOUDBASE_CATALOG_READS_ENABLED:'false',CLOUDBASE_STORAGE_ENABLED:'false',GOVERNED_MEMBER_IMPORTS_ENABLED:'false',GOVERNED_MATERIALIZATION_ENABLED:'false'};
   assert.equal(validateDeploymentEnvironment(environment).bootstrapOnly,true);
   assert.equal(resolvePersistenceConfig(environment).mode,'production_bootstrap_disabled');
   assert.equal(resolveCrmPersistentImportConfig(environment).enabled,false);

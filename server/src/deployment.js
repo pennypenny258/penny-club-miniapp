@@ -16,7 +16,7 @@ const PRODUCTION_BOOTSTRAP_DISABLED_FLAGS = Object.freeze([
   'CLOUDBASE_CATALOG_READS_ENABLED','CLOUDBASE_STORAGE_ENABLED',
   'GOVERNED_MEMBER_IMPORTS_ENABLED','GOVERNED_MATERIALIZATION_ENABLED',
   'FORMAL_ADMIN_AUTH_ENABLED','ADMIN_GOVERNANCE_ENABLED','WECHAT_LOGIN_ENABLED',
-  'FORMAL_AGENT_ROUTES_ENABLED'
+  'FORMAL_AGENT_ROUTES_ENABLED','FORMAL_MEMBER_BINDING_ROUTES_ENABLED'
 ]);
 
 function parsePort(value) {
@@ -85,6 +85,7 @@ function validateDeploymentEnvironment(environment = process.env) {
   if (environment.GOVERNED_MATERIALIZATION_ENABLED && environment.GOVERNED_MATERIALIZATION_ENABLED !== 'false') forbidden.push('GOVERNED_MATERIALIZATION_ENABLED');
   if (environment.FORMAL_ADMIN_AUTH_ENABLED && environment.FORMAL_ADMIN_AUTH_ENABLED !== 'false') forbidden.push('FORMAL_ADMIN_AUTH_ENABLED');
   if (environment.FORMAL_AGENT_ROUTES_ENABLED && environment.FORMAL_AGENT_ROUTES_ENABLED !== 'false') forbidden.push('FORMAL_AGENT_ROUTES_ENABLED');
+  if (environment.FORMAL_MEMBER_BINDING_ROUTES_ENABLED && environment.FORMAL_MEMBER_BINDING_ROUTES_ENABLED !== 'false') forbidden.push('FORMAL_MEMBER_BINDING_ROUTES_ENABLED');
   if (environment.ADMIN_GOVERNANCE_ENABLED && environment.ADMIN_GOVERNANCE_ENABLED !== 'false') forbidden.push('ADMIN_GOVERNANCE_ENABLED');
   if (environment.ADMIN_AUTH_MODE && environment.ADMIN_AUTH_MODE !== 'demo_header') forbidden.push('ADMIN_AUTH_MODE');
   if (environment.DATA_REPOSITORY && environment.DATA_REPOSITORY !== 'memory_demo') forbidden.push('DATA_REPOSITORY');

@@ -45,6 +45,7 @@ test('production bootstrap requires an explicit locked non-demo configuration',(
   assert.throws(()=>validateDeploymentEnvironment({...environment,CLOUDBASE_PG_ENV_ID:'fixture-env'}),/CLOUDBASE_PG_ENV_ID/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,WECHAT_LOGIN_ENABLED:'true'}),/WECHAT_LOGIN_ENABLED/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,FORMAL_AGENT_ROUTES_ENABLED:'true'}),/FORMAL_AGENT_ROUTES_ENABLED/);
+  assert.throws(()=>validateDeploymentEnvironment({...environment,FORMAL_MEMBER_BINDING_ROUTES_ENABLED:'true'}),/FORMAL_MEMBER_BINDING_ROUTES_ENABLED/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,MEMBER_BINDING_MODE:'crm_exact_match_or_operator_review'}),/MEMBER_BINDING_MODE/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,DATABASE_URL:'postgresql:\/\/fixture'}),/DATABASE_URL/);
 });

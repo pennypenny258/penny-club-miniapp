@@ -45,6 +45,7 @@ PORT=3000
 WECHAT_LOGIN_ENABLED=false
 FORMAL_ADMIN_AUTH_ENABLED=false
 FORMAL_AGENT_ROUTES_ENABLED=false
+FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false
 ADMIN_GOVERNANCE_ENABLED=false
 CLOUDBASE_CATALOG_READS_ENABLED=false
 CLOUDBASE_STORAGE_ENABLED=false
@@ -139,7 +140,7 @@ staging 服务如需继续展示匿名演示，必须在它自己的服务配置
 
 完成标志：小程序不持有 AppSecret，未绑定或无有效会籍无法读取会员内容。
 
-正式 Agent HTTP 边界虽然已挂载，但此时仍保持 `FORMAL_AGENT_ROUTES_ENABLED=false`。只有 004 会员门禁、`MEMBER_BINDING_MODE=crm_exact_match_or_operator_review`、008 后台会话、五个固定 Agent 网关操作及故障演练全部验收后，才能由开发方逐路由启用；用户当前不要打开该开关。
+正式会员绑定和 Agent HTTP 边界虽然已挂载，但此时仍保持 `FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false`、`FORMAL_AGENT_ROUTES_ENABLED=false`。先验收 004、服务端微信/手机号证明、`MEMBER_BINDING_MODE=crm_exact_match_or_operator_review` 和 008 异常复核，再只打开绑定；绑定与会话验收通过后才允许打开 Agent。用户当前不要打开任何一个开关。
 
 ### 8. 建立私有对象存储（用户在 CloudBase 存储控制台操作）
 

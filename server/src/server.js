@@ -28,6 +28,8 @@ const { createRepository } = require('./persistence/repository');
 const { handleProductionBootstrap } = require('./production-bootstrap');
 const { resolveFormalAgentHttpConfig } = require('./agent-http-config');
 const { createFormalAgentHttpHandler } = require('./agent-http-handler');
+const { resolveFormalMemberBindingHttpConfig } = require('./member-binding-http-config');
+const { createFormalMemberBindingHttpHandler } = require('./member-binding-http-handler');
 const { buildCrmSpreadsheetPreview, resolveCrmPersistentImportConfig } = require('./persistence/crm-import-pipeline');
 const { CrmImportRehearsalStore, buildSourceOverview } = require('./crm-import-rehearsal');
 const store = require('./store');
@@ -47,6 +49,7 @@ const feishuPrivateRoots = new Map();
 const processedIdempotencyKeys = new Set();
 const tagSuggestionService = new TagSuggestionService();
 const formalAgentHttp = createFormalAgentHttpHandler({config:resolveFormalAgentHttpConfig(process.env)});
+const formalMemberBindingHttp = createFormalMemberBindingHttpHandler({config:resolveFormalMemberBindingHttpConfig(process.env)});
 
 function json(res, status, body) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*' });
@@ -160,6 +163,7 @@ function serveStatic(req, res) {
 
 const server = http.createServer(async (req, res) => {
   if (handleProductionBootstrap(req,res,{deployment,repository})) return;
+  if (await formalMemberBindingHttp(req,res)) return;
   if (await formalAgentHttp(req,res)) return;
   if (req.method === 'OPTIONS') return json(res, 204, {});
   if ((req.url.startsWith('/admin/') || req.url.startsWith('/member/')) && serveStatic(req, res)) return;

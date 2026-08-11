@@ -1,5 +1,7 @@
 # 微信开发者工具连接 CloudBase 测试环境
 
+> 当前 local 与 CloudBase staging 都是匿名演示配置，`formalBindingEnabled=false`。即使首次绑定页面已随代码打包，也不会调用 `wx.login`、`getPhoneNumber` 或正式绑定接口。不要为了测试匿名 staging 手工改开该值。
+
 本指南只用于微信开发者工具里的匿名演示联调，不是体验版、真机验收或正式发布流程。测试 API 使用 CloudBase 分配的临时默认域名；它不承诺生产 SLA，也不应成为正式小程序的服务器域名。
 
 ## 1. 导入项目

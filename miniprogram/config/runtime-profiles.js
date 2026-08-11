@@ -7,7 +7,8 @@ const profiles = Object.freeze({
     apiBase: 'http://localhost:3000',
     demoMode: true,
     testOnly: true,
-    identityMode: 'anonymous_demo_default'
+    identityMode: 'anonymous_demo_default',
+    formalBindingEnabled: false
   }),
   'cloudbase-staging': Object.freeze({
     target: 'cloudbase-staging',
@@ -15,7 +16,8 @@ const profiles = Object.freeze({
     apiBase: 'https://penny-club-miniapp2-292157-4-1319128701.sh.run.tcloudbase.com',
     demoMode: true,
     testOnly: true,
-    identityMode: 'anonymous_demo_default'
+    identityMode: 'anonymous_demo_default',
+    formalBindingEnabled: false
   })
 });
 

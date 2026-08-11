@@ -2,6 +2,8 @@
 
 当前状态是“边界和离线测试已准备，真实登录未上线”。代码没有新增可用的真实登录路由，没有连接 CloudBase 数据库，也没有把现有资料/活动 API 切到真实网关。匿名 staging 仍只能使用匿名演示数据。
 
+代码已挂载独立的 `/api/formal-member-binding/*` HTTP 命名空间和小程序首次验证页，但 `FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false`、小程序 `formalBindingEnabled=false`。因此当前本机、staging 和生产 bootstrap 都不会发起真实 `wx.login` / 手机号绑定请求。服务端关闭时固定返回 503，不会落入 demo 路由。
+
 ## 服务端信任顺序
 
 1. 小程序将 `wx.login` 得到的一次性 `code` 交给 Node 服务；小程序永远不持有 AppSecret。
@@ -15,6 +17,14 @@
 9. CloudBase 后端网关只查询 `venture_member_access_entitlement`，返回内部会员 ID 和门禁必需字段；不返回 CRM/付款记录、原因码、群资料、手机号或联系人信息。
 10. Node 重新计算账号、会籍窗口、CRM 核验、最近付款证据复核、CRM 中的当前在群状态和最终判定；任一项不满足即拒绝。
 11. 通过后签发短期 AES-256-GCM 不透明会话。每个请求先验证会话及撤销状态，再重新查询会籍；网关异常统一 503，绝不回落匿名内存数据。
+
+## 已准备的正式 HTTP 与小程序流程（当前关闭）
+
+- `POST /api/formal-member-binding/start`：接收一次性登录 code 和可选的用户主动手机号授权 code；拒绝客户端 member ID。
+- `POST /api/formal-member-binding/session`：绑定完成后使用新的 `wx.login` code 换取短期不透明会话。
+- `GET /api/formal-member-binding/admin/candidates`：008 已验证后台查看脱敏异常队列。
+- `PATCH .../confirm` 与 `PATCH .../reject`：使用候选令牌、幂等键与 008 权限处理异常；不写 CRM。
+- 小程序首次页只在未来 production profile 同时设置 `identityMode=formal_member_binding` 与 `formalBindingEnabled=true` 时进入。当前 local/staging 均为 false；未启用时页面明确提示且不会调用微信能力。
 
 `x-demo-user` 和 cookie 只属于当前匿名演示机制。真实身份服务明确拒绝这两种来源，只接受服务端验证的 Bearer 会话。现有标准 API 尚未接线，避免混用演示和真实事实域。
 
@@ -41,7 +51,7 @@
    - 非敏感开关与标识：真实登录开关、外部已验证会话身份源、会话 issuer/audience/TTL、外部持久撤销存储标识。
    - 敏感值：微信 AppSecret、subject HMAC 32 字节密钥、会话加密 32 字节密钥、CloudBase 服务端 API Key。
    - 数据版本：`004_wechat_identity_entitlement`。
-6. 用测试身份完成绑定、撤销、过期、退群、付款复核失效和网关故障演练。全部通过后，才新增真实登录端点并逐域接资料/活动目录。
+6. 用测试身份完成唯一匹配自动绑定、异常人工队列、会话签发/撤销/过期、退群、月份失效和网关故障演练。全部通过后，才把 `FORMAL_MEMBER_BINDING_ROUTES_ENABLED` 与小程序 production profile 逐项打开。
 
 当前真实网关启动保护仍然存在；真实身份路由、登录防重放/限流、撤销存储和审计写入完成前不能解除。
 

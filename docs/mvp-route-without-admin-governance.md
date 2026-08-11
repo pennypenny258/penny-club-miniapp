@@ -51,5 +51,6 @@ CLOUDBASE_CATALOG_READS_ENABLED=false
 - 仓库或身份服务异常时安全失败，不回显上游错误，不切换到 memory/local。
 - 本阶段未启用正式路由、未启用 CloudBase、未运行 SQL，也没有 CRM 写方法。生产继续使用 `production_bootstrap_disabled`，直到正式身份、网关操作实现和逐路由验收全部完成。
 - 正式 HTTP 命名空间现已挂载为 `/api/formal-agent/*`，但默认返回 `FORMAL_AGENT_ROUTES_DISABLED`，不会落入既有 `/api/opportunities` 等匿名演示路由。只有生产 `cloudbase_gateway`、迁移基线精确为 008、004 微信身份、`crm_exact_match_or_operator_review` 绑定模式与 008 后台会话均显式启用并完整注入服务后，进程才允许创建正式处理器。`wx.login` 不被当作昵称、微信号、群昵称、手机号或群成员状态来源。
-- 首次绑定服务契约已准备但未挂路由：服务端验证手机号且唯一 CRM 候选同时满足账号有效、当前在群、月份有效、数据完整、无风险和 004 投影就绪时自动写绑定并重算；其他情况只进入脱敏人工队列。它不接收客户端 member ID，不写 CRM，不直接激活会籍或签发会话。
+- 首次绑定服务契约已准备并以默认关闭方式挂载：服务端验证手机号且唯一 CRM 候选同时满足账号有效、当前在群、月份有效、数据完整、无风险和 004 投影就绪时自动写绑定并重算；其他情况只进入脱敏人工队列。它不接收客户端 member ID，不写 CRM，不直接激活会籍。
+- 首次绑定命名空间现已挂载，但 `FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false`；小程序 local/staging 的首次绑定能力也固定关闭。未来正式 profile 才会显示手机号授权、唯一匹配自动绑定、异常人工队列和绑定后重新登录流程。
 - 五条正式路由分别对应：公开机会列表、需求待审提交、对接申请待审提交、后台人工审核、后台人工分发。没有 CRM 路由；未识别的正式路径直接 404，不会转交 demo handler。
