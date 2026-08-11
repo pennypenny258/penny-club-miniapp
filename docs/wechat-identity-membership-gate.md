@@ -57,9 +57,11 @@ Node 端现有两个固定白名单调用：
 - 004：`CloudBaseGatewayRepository.resolveMemberEntitlement(subjectHash)` 只读 `venture_member_access_entitlement` 安全视图。
 - 008：`CloudBaseAdminSessionRepository.resolveSession` 与 `reserveAction` 提供正式后台会话和人工复核授权边界。
 
-但 004/008 本身没有提供手机号哈希对应的最小 CRM 精确匹配投影、绑定候选持久化、幂等绑定写入与 entitlement 重算、会员会话持久撤销。它们必须以后通过服务端专用、固定 allowlist 的 CloudBase gateway/RPC 合约补齐；不能让小程序直连表、不能复用 demo 内存数据，也不能扩大为 CRM 通用写接口。
+离线代码现已提供可 mock 的固定操作 adapter 合约，按顺序执行：最小 CRM 精确匹配投影 → 持久化脱敏候选 → 幂等写入 identity binding → 重新读取 004 entitlement。重复确认使用稳定幂等哈希；绑定成功但 entitlement 读取失败时返回安全 503，重试不会重复绑定。该合约只接收 subject/match 哈希、候选 ID 和安全布尔投影，不接收或返回手机号、OpenID、姓名、付款、备注或 CRM 原始行。
 
-本阶段的 `inspectMemberIdentityIntegration` 会始终报告 `activated=false`。即使 004/008 的读取适配器已注入，也不会误称正式绑定可以上线。
+但是，004/008 本身没有提供这些操作的 CloudBase 持久化端点，也没有会员会话持久撤销。当前 adapter 的 transport 只能注入/mock，没有真实 URL、RPC 或数据库实现。以后必须通过服务端专用、固定 allowlist 且经 CloudBase 官方路径验证的实现补齐；不能让小程序直连表、不能复用 demo 内存数据，也不能扩大为 CRM 通用写接口。
+
+本阶段的 `inspectMemberIdentityIntegration` 会始终报告 `activated=false` 和 `liveGatewayImplementationNotConfigured`。即使全部离线合约已注入，也不会误称正式绑定可以上线。
 
 ## CloudBase 生产变量（现在不要填写）
 

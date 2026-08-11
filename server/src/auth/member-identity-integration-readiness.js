@@ -12,17 +12,19 @@ const REQUIRED_CONTRACTS=Object.freeze({
 });
 
 function inspectMemberIdentityIntegration({entitlementRepository,adminSessionRepository,bindingRepository,sessionRevocationStore}={}){
+  const binding=typeof bindingRepository?.safeReadiness==='function'?bindingRepository.safeReadiness():{};
   const ready={
     entitlementRead:entitlementRepository?.kind==='cloudbase_gateway'&&typeof entitlementRepository.resolveMemberEntitlement==='function',
     adminSessionRead:typeof adminSessionRepository?.resolveSession==='function',
     adminAuthorization:typeof adminSessionRepository?.reserveAction==='function',
-    bindingCandidateWrite:bindingRepository?.kind==='member_binding_gateway_contract'&&typeof bindingRepository.stageCandidate==='function',
-    identityBindingWrite:bindingRepository?.kind==='member_binding_gateway_contract'&&typeof bindingRepository.confirmAndReevaluate==='function',
+    exactCrmMatch:binding.exactCrmMatchProjection===true,
+    bindingCandidateWrite:binding.candidatePersistence===true,
+    identityBindingWrite:binding.idempotentIdentityBinding===true&&binding.entitlementReevaluation===true,
     memberSessionRevocation:typeof sessionRevocationStore?.isRevoked==='function'
   };
   // 004 exposes only an entitlement read view. It cannot prove that an exact CRM
   // matcher or a durable binding-write adapter exists, so runtime activation stays blocked.
-  const blockers=['exactCrmMatch'];for(const [key,value] of Object.entries(ready))if(!value)blockers.push(key);
+  const blockers=[];for(const [key,value] of Object.entries(ready))if(!value)blockers.push(key);blockers.push('liveGatewayImplementationNotConfigured');
   return {activated:false,migrationBaseline:BASELINE,ready,blockers:[...new Set(blockers)],requiredContracts:REQUIRED_CONTRACTS,memoryFallback:false,crmWrites:false,routesEnabled:false};
 }
 
