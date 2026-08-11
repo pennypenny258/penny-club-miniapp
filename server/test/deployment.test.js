@@ -46,6 +46,7 @@ test('production bootstrap requires an explicit locked non-demo configuration',(
   assert.throws(()=>validateDeploymentEnvironment({...environment,WECHAT_LOGIN_ENABLED:'true'}),/WECHAT_LOGIN_ENABLED/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,FORMAL_AGENT_ROUTES_ENABLED:'true'}),/FORMAL_AGENT_ROUTES_ENABLED/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,FORMAL_MEMBER_BINDING_ROUTES_ENABLED:'true'}),/FORMAL_MEMBER_BINDING_ROUTES_ENABLED/);
+  assert.throws(()=>validateDeploymentEnvironment({...environment,CRM_MATCH_TOKEN_PROVISIONING_PREPARED:'true'}),/CRM_MATCH_TOKEN_PROVISIONING_PREPARED/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,MEMBER_BINDING_MODE:'crm_exact_match_or_operator_review'}),/MEMBER_BINDING_MODE/);
   assert.throws(()=>validateDeploymentEnvironment({...environment,DATABASE_URL:'postgresql:\/\/fixture'}),/DATABASE_URL/);
 });
@@ -108,5 +109,8 @@ test('CloudBase staging profile rejects local storage and real integrations', ()
   assert.throws(() => validateDeploymentEnvironment({
     DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',ADMIN_GOVERNANCE_ENABLED:'true'
   }), /ADMIN_GOVERNANCE_ENABLED/);
+  assert.throws(() => validateDeploymentEnvironment({
+    DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',CRM_MATCH_TOKEN_PROVISIONING_PREPARED:'true'
+  }), /CRM_MATCH_TOKEN_PROVISIONING_PREPARED/);
   assert.equal(validateDeploymentEnvironment({DEPLOYMENT_PROFILE:'cloudbase_staging_demo',DEMO_DATA_ONLY:'true',DATA_REPOSITORY:'memory_demo'}).anonymousDemoOnly,true);
 });

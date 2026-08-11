@@ -17,11 +17,11 @@ BEGIN
     RAISE EXCEPTION 'member binding RPC package is incomplete';
   END IF;
   SELECT checksum INTO existing_checksum FROM venture_private.schema_migrations WHERE version='012_member_binding_rpc_008_baseline';
-  IF existing_checksum IS NOT NULL AND existing_checksum<>'42334c45d6f398cf63e76bbbb5b46e2283c78e2786bb9d5fc3809f0676f0bb61' THEN
+  IF existing_checksum IS NOT NULL AND existing_checksum<>'22c97b08bfc91ef411f284869ec8c7c1f80b6fb8a126c84df9f6194bbde2b699' THEN
     RAISE EXCEPTION 'existing 012 checksum mismatch';
   END IF;
   INSERT INTO venture_private.schema_migrations(version,checksum)
-  VALUES('012_member_binding_rpc_008_baseline','42334c45d6f398cf63e76bbbb5b46e2283c78e2786bb9d5fc3809f0676f0bb61')
+  VALUES('012_member_binding_rpc_008_baseline','22c97b08bfc91ef411f284869ec8c7c1f80b6fb8a126c84df9f6194bbde2b699')
   ON CONFLICT(version) DO NOTHING;
 END $record_member_binding_rpc$;
 COMMIT;

@@ -32,7 +32,7 @@ npm run staging:check
 - 先核对 004/008 migration version 与 checksum，备份并记录回滚边界；任何一项不符立即停止。
 - 执行 012 后先运行目录中的只读 890，所有项必须为 `true`，再记录版本并重跑 890。
 - 用匿名 fixture 验证：无匹配、多匹配、过期/退群、唯一有效匹配、幂等重放、授权过期、网关失败；数据库错误必须返回脱敏 503，不得回退内存。
-- 为 CRM 导入另行建立 `member_binding_match_tokens` 的受控生成通道。本包故意不提供第六个“任意写 token” RPC；在该通道完成前，精确匹配无法上线。
+- CRM 导入的版本化 HMAC token 生成与双人复核合约已离线准备，但 CloudBase 持久化 RPC/仓库仍未实现和验证。本包仍故意不提供“任意写 token” RPC；在受控写入通道完成前，精确匹配不得上线。详见 `docs/crm-match-token-provisioning.md`。
 - 上述能力证据经只读验收签名后，才能生成 `member-binding-rpc-v1` manifest checksum、注入 server-only API Key，最后分别打开写入与正式路由。
 
 任何时候都不应将 API Key、AppSecret、手机、OpenID、CRM 原表或执行结果粘贴到聊天、浏览器或小程序。

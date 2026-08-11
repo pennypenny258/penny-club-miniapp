@@ -8,12 +8,14 @@ CREATE TABLE venture_private.member_binding_match_tokens (
   id text PRIMARY KEY,
   user_id text NOT NULL REFERENCES venture_private.users(id) ON DELETE CASCADE,
   token_kind text NOT NULL CHECK (token_kind IN ('phone','wechat_id','group_nickname')),
+  key_version text NOT NULL CHECK (key_version ~ '^[a-z0-9][a-z0-9._-]{1,31}$'),
   token_hash text NOT NULL CHECK (token_hash ~ '^[0-9a-f]{64}$'),
   status text NOT NULL DEFAULT 'active' CHECK (status IN ('active','revoked')),
   created_at timestamptz NOT NULL DEFAULT now(),
   revoked_at timestamptz,
-  UNIQUE(token_kind,token_hash,user_id)
+  UNIQUE(token_kind,key_version,token_hash,user_id)
 );
+CREATE INDEX member_binding_match_tokens_lookup_idx ON venture_private.member_binding_match_tokens(token_kind,token_hash) WHERE status='active';
 
 CREATE TABLE venture_private.member_binding_match_options (
   id text PRIMARY KEY,

@@ -2,7 +2,7 @@
 SELECT
   EXISTS(SELECT 1 FROM venture_private.schema_migrations WHERE version='004_wechat_identity_entitlement' AND checksum='89651f91578a44d1f5fd78e8039c7ded587bbfae3a18764ee4bb3b2090d5a621') AS canonical_004_verified,
   EXISTS(SELECT 1 FROM venture_private.schema_migrations WHERE version='008_admin_session_rbac' AND checksum='1d29f1997e3d63322ae56a0fef78b559d41028e2d278527ffdc0d51e1652bd3d') AS canonical_008_verified,
-  EXISTS(SELECT 1 FROM venture_private.schema_migrations WHERE version='012_member_binding_rpc_008_baseline' AND checksum='42334c45d6f398cf63e76bbbb5b46e2283c78e2786bb9d5fc3809f0676f0bb61') AS future_012_recorded,
+  EXISTS(SELECT 1 FROM venture_private.schema_migrations WHERE version='012_member_binding_rpc_008_baseline' AND checksum='22c97b08bfc91ef411f284869ec8c7c1f80b6fb8a126c84df9f6194bbde2b699') AS future_012_recorded,
   to_regclass('venture_private.member_binding_match_tokens') IS NOT NULL AS match_tokens_private,
   to_regclass('venture_private.member_binding_match_options') IS NOT NULL AS match_options_private,
   to_regclass('venture_private.member_binding_candidates') IS NOT NULL AS candidates_private,
