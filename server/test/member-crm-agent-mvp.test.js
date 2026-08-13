@@ -64,3 +64,32 @@ test('opportunity application rejects vague text and returns no contact after co
   const vague=await call(`/api/demands/${demand.id}/apply`,{method:'POST',body:{who:'我',why:'想认识',topic:'加微信'}});assert.equal(vague.status,400);
   const good=await call(`/api/demands/${demand.id}/apply`,{method:'POST',body:{who:'我是产业研究方向的一名匿名会员',why:'长期研究该产业并能提供相关方法和案例',topic:'希望讨论行业验证方法与一项具体共创计划'}});assert.equal(good.status,201);assert.equal(good.payload.contactReleaseStatus,'not_released');assert.equal(JSON.stringify(good.payload).includes('phone'),false);store.applications.splice(store.applications.findIndex(x=>x.id===good.payload.id),1)
 });
+
+test('admin demand queue exposes only safe CRM submitter context and separates approved work',async()=>{
+  const demand={id:'d-admin-queue-fixture',ownerUserId:'u-peer',type:'investment',anonymousTitle:'待审核需求',anonymousSummary:'仅用于审核队列测试',publicTags:['投资'],requestedDistributionMode:'redacted_public',reviewElements:{who:'产业研究员',why:'验证合作可能',target:'寻找产业投资负责人'},humanReviewStatus:'pending',status:'human_review',expiresAt:new Date(Date.now()+86400000).toISOString()};
+  store.demands.unshift(demand);
+  try{
+    const before=await call('/api/admin/demands',{role:'administrator'}),row=before.payload.find(item=>item.id===demand.id);
+    assert.equal(row.reviewQueue,'pending_review');
+    assert.equal(typeof row.submitter.wechatContactAvailable,'boolean');
+    assert.equal('wechatId' in row.submitter,false);
+    assert.equal('phone' in row.submitter,false);
+    const reviewed=await call(`/api/admin/demands/${demand.id}/human-review`,{role:'administrator',method:'PATCH',body:{decision:'approve_distribution',distributionMode:'redacted_public'},headers:{'x-admin-confirmation':'demand.finalize','idempotency-key':'admin-queue-review-fixture'}});
+    assert.equal(reviewed.status,200);
+    assert.equal(reviewed.payload.reviewQueue,'reviewed');
+  }finally{store.demands.splice(store.demands.indexOf(demand),1)}
+});
+
+test('operator records manual WeChat relay without persisting contact data',async()=>{
+  const demand={id:'d-relay-fixture',ownerUserId:'u-peer',type:'investment',anonymousTitle:'受控对接需求',anonymousSummary:'仅用于运营代转测试',status:'published',humanReviewStatus:'approved'};
+  const application={id:'app-relay-fixture',demandId:demand.id,userId:'u-active',applicationSummary:{who:'匿名会员',why:'希望讨论合作',topic:'具体项目交流'},agentReviewStatus:'shortlisted',ownerDecisionStatus:'approved_intro',operatorRelayStatus:'not_started',status:'shortlisted',createdAt:new Date().toISOString()};
+  store.demands.unshift(demand);store.applications.unshift(application);
+  try{
+    const result=await call(`/api/admin/applications/${application.id}/operator-relay`,{role:'administrator',method:'PATCH',body:{decision:'wechat_group_created'},headers:{'x-admin-confirmation':'application.dispatch','idempotency-key':'operator-relay-fixture'}});
+    assert.equal(result.status,200);
+    assert.equal(result.payload.operatorRelayStatus,'completed');
+    assert.equal(result.payload.operatorRelayMethod,'wechat_group_created');
+    assert.equal(result.payload.contactDisclosed,false);
+    assert.equal(JSON.stringify(result.payload).includes('wechatId'),false);
+  }finally{store.demands.splice(store.demands.indexOf(demand),1);store.applications.splice(store.applications.indexOf(application),1)}
+});
