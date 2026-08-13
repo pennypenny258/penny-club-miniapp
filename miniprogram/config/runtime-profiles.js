@@ -13,7 +13,8 @@ const profiles = Object.freeze({
   'cloudbase-staging': Object.freeze({
     target: 'cloudbase-staging',
     environment: 'cloudbase_staging',
-    apiBase: 'https://penny-club-miniapp2-292157-4-1319128701.sh.run.tcloudbase.com',
+    // 标准版环境内的独立匿名测试服务；不能用于正式会员、CRM 或支付数据。
+    apiBase: 'https://penny-club-test-api-294701-10-1319128701.sh.run.tcloudbase.com',
     demoMode: true,
     testOnly: true,
     identityMode: 'anonymous_demo_default',

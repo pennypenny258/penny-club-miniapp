@@ -14,7 +14,7 @@ test('local mini-program API configuration remains available', () => {
 
 test('CloudBase staging is HTTPS, test-only and never presented as production', () => {
   const staging = resolveRuntime('cloudbase-staging');
-  assert.equal(staging.apiBase, 'https://penny-club-miniapp2-292157-4-1319128701.sh.run.tcloudbase.com');
+  assert.equal(staging.apiBase, 'https://penny-club-test-api-294701-10-1319128701.sh.run.tcloudbase.com');
   assert.equal(staging.environment, 'cloudbase_staging');
   assert.equal(staging.testOnly, true);
   assert.equal(staging.demoMode, true);
