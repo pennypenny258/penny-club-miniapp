@@ -1,6 +1,8 @@
 # CloudBase 云托管测试环境部署
 
-本指南只用于上海区域测试环境 `penny-club-staging` 的匿名演示。当前服务是内存型 Node MVP：重启、扩缩容或重新部署后，后台操作产生的数据会消失；容器本地文件也不持久、不跨实例共享。因此它不能承载真实会员、真实订单、飞书资料或任何私有附件。
+本指南只用于匿名演示测试服务。原有体验版环境若被隔离，不需要恢复或迁移真实资料：可在已购买的标准版环境 `penny-club-prod` 中新建第二个服务，例如 `penny-club-test-api`。该服务与 `penny-club-prod-api` 完全分开，仍只使用匿名演示数据。
+
+当前服务是内存型 Node MVP：重启、扩缩容或重新部署后，后台操作产生的数据会消失；容器本地文件也不持久、不跨实例共享。因此它不能承载真实会员、真实订单、飞书资料或任何私有附件。
 
 ## 部署前的安全边界
 
@@ -23,7 +25,7 @@
 | --- | --- |
 | Git 平台/仓库 | 授权 GitHub 后选择刚创建的私有仓库 |
 | 分支 | `main` |
-| 服务名 | `penny-club-web` |
+| 服务名 | `penny-club-test-api`（不要改动正式服务 `penny-club-prod-api`） |
 | 代码/构建目录 | 仓库根目录：`.`（页面允许留空并代表根目录时可留空） |
 | 构建方式 | Dockerfile / 自动识别 Dockerfile |
 | Dockerfile 路径 | `Dockerfile`（若已自动识别，不再填写自定义构建命令） |
@@ -34,15 +36,17 @@
 
 ## 测试环境变量与安全默认
 
-镜像现在默认进入“生产初始化锁定态”，不会自动展示任何匿名演示数据。要继续运行 staging 演示，必须在测试服务中显式填写以下三个非敏感值：
+镜像现在默认进入“生产初始化锁定态”，不会自动展示任何匿名演示数据。要继续运行匿名演示，必须在**测试服务**中显式填写以下非敏感值：
 
 ```text
 NODE_ENV=staging
 DEPLOYMENT_PROFILE=cloudbase_staging_demo
 DEMO_DATA_ONLY=true
+DATA_REPOSITORY=memory_demo
+PORT=3000
 ```
 
-CloudBase 服务页面配置的同名变量优先于镜像默认值。若漏填，服务会保持健康但锁住 `/admin/`、`/member/` 和业务 API，不会回落到本地开发或匿名演示。端口已在服务设置中填写 3000 时，可以不另填 `PORT`；如页面明确要求环境变量，则填写 `PORT=3000`。完整模板见 `config/cloudbase-staging.env.example`。
+CloudBase 服务页面配置的同名变量优先于镜像默认值。若漏填，服务会保持健康但锁住 `/admin/`、`/member/` 和业务 API，不会回落到本地开发或匿名演示。完整模板见 `config/cloudbase-staging.env.example`。
 
 本机直接运行 `npm run dev` 不读取 Dockerfile，仍显示 `local_development`。主动构建镜像但未提供服务环境变量时会保守进入生产初始化锁定态。staging 必须显式配置模板中的测试变量后才会展示匿名演示。
 

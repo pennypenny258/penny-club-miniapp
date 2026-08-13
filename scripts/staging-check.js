@@ -32,7 +32,8 @@ try {
   validateDeploymentEnvironment({
     NODE_ENV: 'staging',
     DEPLOYMENT_PROFILE: 'cloudbase_staging_demo',
-    DEMO_DATA_ONLY: 'true'
+    DEMO_DATA_ONLY: 'true',
+    DATA_REPOSITORY: 'memory_demo'
   });
   validateDeploymentEnvironment({NODE_ENV:'production',DEPLOYMENT_PROFILE:'cloudbase_production_bootstrap',DEMO_DATA_ONLY:'false',DATA_REPOSITORY:'production_bootstrap_disabled'});
   const identity=resolveWechatIdentityConfig({NODE_ENV:'staging',WECHAT_LOGIN_ENABLED:'false'});
