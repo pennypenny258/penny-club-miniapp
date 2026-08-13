@@ -1,7 +1,7 @@
 'use strict';
 
 const REQUIRED_MIGRATION='006_governed_member_import';
-const ACCEPTED_MIGRATIONS=new Set([REQUIRED_MIGRATION,'007_governed_materialization','008_admin_session_rbac','009_admin_governance']);
+const ACCEPTED_MIGRATIONS=new Set([REQUIRED_MIGRATION,'007_governed_materialization','008_admin_session_rbac']);
 function present(value){return Boolean(String(value||'').trim())}
 function resolveGovernedImportConfig(environment=process.env){
   const requested=environment.GOVERNED_MEMBER_IMPORTS_ENABLED==='true';

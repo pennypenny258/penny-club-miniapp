@@ -1,5 +1,7 @@
 'use strict';
 
+const { buildCrmSmallBatchReviewReadiness } = require('./crm-small-batch-canary');
+
 const ALLOWED_MISSING_FIELDS=new Set(['wechat_group_nickname','wechat_id','phone','real_name']);
 const MATCH_RESOLUTIONS=new Set(['not_run','unique_match','conflict','unmatched','manual_new_record']);
 const GROUP_STATUSES=new Set(['in_group','left','removed','unknown']);
@@ -45,6 +47,11 @@ class CrmImportRehearsalStore{
     }else throw Object.assign(new Error('CRM 演练操作无效'),{statusCode:400,code:'CRM_REHEARSAL_ACTION_INVALID'});
     if(row.status!=='excluded')row.status=row.validationErrorPresent?'needs_correction':row.matchingStatus==='conflict'?'conflict':(['unique_match','manual_new_record'].includes(row.matchingStatus)&&row.groupStatus!=='unknown'?'review_ready':row.missingFields.length?'needs_completion':'needs_match');
     return {batch:this.publicBatch(batch),row:{...row,missingFields:[...row.missingFields]}};
+  }
+  canaryReadiness(batchId){
+    const batch=this.batches.find(item=>item.id===batchId);
+    if(!batch)throw Object.assign(new Error('CRM 演练批次不存在'),{statusCode:404,code:'CRM_REHEARSAL_BATCH_NOT_FOUND'});
+    return {batchId:batch.id,sourceKind:batch.sourceKind,createdAt:batch.createdAt,review:buildCrmSmallBatchReviewReadiness(this.publicBatch(batch))};
   }
   publicBatch(batch){return {id:batch.id,previewId:batch.previewId,status:batch.status,sourceKind:batch.sourceKind,createdAt:batch.createdAt,summary:summarize(batch),rows:batch.rows.map(row=>({...row,missingFields:[...row.missingFields]})),safeguards:{rehearsalOnly:true,sensitiveValuesStored:false,persistent:false,memoryBusinessFactsWritten:false,publicDirectoryMutationAllowed:false,membershipActivated:false,formalConfirmationAvailable:false}}}
 }

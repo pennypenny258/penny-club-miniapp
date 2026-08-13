@@ -2,6 +2,49 @@
 
 const MAX_CANARY_ROWS=50;
 
+function buildCrmSmallBatchReviewReadiness(batch){
+  if(!batch||typeof batch!=='object'||!Array.isArray(batch.rows))throw new Error('CRM 脱敏演练批次无效');
+  const summary=batch.summary||{};
+  const totalRows=Number(summary.totalRows||batch.rows.length||0);
+  const reviewReadyRows=Number(summary.reviewReadyRows||0);
+  const errorRows=Number(summary.errorRows||0);
+  const unresolvedRows=Number(summary.unresolvedRows||0);
+  const conflictRows=Number(summary.conflictRows||0);
+  const unknownGroupRows=Number(summary.unknownGroupRows||0);
+  const missingFieldRows=Number(summary.missingFieldRows||0);
+  const withinLimit=totalRows>0&&totalRows<=MAX_CANARY_ROWS;
+  const rowsReady=reviewReadyRows===totalRows&&errorRows===0&&unresolvedRows===0&&conflictRows===0&&unknownGroupRows===0;
+  const readyForIndependentReview=withinLimit&&rowsReady;
+  const blockers=[];
+  if(!withinLimit)blockers.push(totalRows>MAX_CANARY_ROWS?'canary_row_limit_exceeded':'no_rows_present');
+  if(errorRows)blockers.push('row_errors_need_source_correction');
+  if(unresolvedRows)blockers.push('matching_decisions_incomplete');
+  if(conflictRows)blockers.push('matching_conflicts_unresolved');
+  if(unknownGroupRows)blockers.push('group_status_confirmation_incomplete');
+  return {
+    status:readyForIndependentReview?'awaiting_independent_reviewer':'operator_row_review_required',
+    maxRows:MAX_CANARY_ROWS,
+    totalRows,
+    reviewReadyRows,
+    readyForIndependentReview,
+    automaticBindingEligibleRows:0,
+    automaticBindingBlockedByMissingMatchEvidence:missingFieldRows,
+    blockers,
+    nextStep:readyForIndependentReview
+      ? '请由独立复核人核对脱敏状态与原始受控表；当前系统不会暂存、写入或开通会籍。'
+      : '请继续在演练中处理匹配、群状态或源表校正；不要把未完成行带入未来小批次。',
+    safeguards:{
+      rehearsalOnly:true,
+      persistent:false,
+      crmFactsMutated:false,
+      membershipActivated:false,
+      automaticBindingPerformed:false,
+      notificationsSent:false,
+      rawRowsReturned:false
+    }
+  };
+}
+
 function buildCrmSmallBatchCanaryPlan(preview,{requestedRows}={}){
   if(!preview||typeof preview!=='object')throw new Error('CRM 脱敏预检结果无效');
   const requested=Number(requestedRows||MAX_CANARY_ROWS);
@@ -39,4 +82,4 @@ function buildCrmSmallBatchCanaryPlan(preview,{requestedRows}={}){
   };
 }
 
-module.exports={MAX_CANARY_ROWS,buildCrmSmallBatchCanaryPlan};
+module.exports={MAX_CANARY_ROWS,buildCrmSmallBatchCanaryPlan,buildCrmSmallBatchReviewReadiness};

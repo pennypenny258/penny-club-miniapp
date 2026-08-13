@@ -2,7 +2,7 @@
 
 const crypto=require('node:crypto');
 const REQUIRED_MIGRATION='008_admin_session_rbac';
-const ACCEPTED_MIGRATIONS=new Set([REQUIRED_MIGRATION,'009_admin_governance']);
+const ACCEPTED_MIGRATIONS=new Set([REQUIRED_MIGRATION]);
 function present(value){return Boolean(String(value||'').trim())}
 function flag(value,fallback,name){if(value===undefined||value===null||value==='')return fallback;if(value==='true')return true;if(value==='false')return false;throw new Error(`${name} 只允许 true 或 false`)}
 function integer(value,fallback,min,max,name){const parsed=value===undefined||value===''?fallback:Number(value);if(!Number.isInteger(parsed)||parsed<min||parsed>max)throw new Error(`${name} 必须是 ${min}–${max} 的整数`);return parsed}

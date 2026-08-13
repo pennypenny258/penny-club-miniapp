@@ -2,6 +2,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const {PassThrough}=require('node:stream');
 const {CrmImportRehearsalStore,buildSourceOverview}=require('../src/crm-import-rehearsal');
+const {buildCrmSmallBatchReviewReadiness}=require('../src/crm-small-batch-canary');
 const server=require('../src/server');
 
 function request(method,pathname,payload){return new Promise((resolve,reject)=>{const req=new PassThrough();req.method=method;req.url=pathname;req.headers={host:'localhost','x-demo-role':'administrator',...(payload?{'content-type':'application/json'}:{})};const response={statusCode:200,headers:{},writeHead(status,headers){this.statusCode=status;this.headers=headers||{}},end(chunk=''){const text=String(chunk||'');resolve({status:this.statusCode,payload:text?JSON.parse(text):{}})}};req.on('error',reject);server.emit('request',req,response);req.end(payload?JSON.stringify(payload):'')})}
@@ -22,6 +23,17 @@ test('a validation error cannot be turned into a review-ready row inside rehears
   const workbench=new CrmImportRehearsalStore(),batch=workbench.create({previewId:'crm-preview-0123456789abcdef',previewDigest:'b'.repeat(64),rows:[{rowNumber:3,hasErrors:true,missingFields:['phone'],groupStatus:'unknown'}]}),row=batch.rows[0];
   workbench.updateRow(batch.id,row.id,{action:'set_match_resolution',resolution:'unique_match'});workbench.updateRow(batch.id,row.id,{action:'set_group_status',groupStatus:'in_group'});
   const current=workbench.list()[0];assert.equal(current.rows[0].status,'needs_correction');assert.equal(current.summary.errorRows,1);assert.equal(current.summary.reviewReadyRows,0);
+});
+
+test('small canary review requires every row match and group status before independent review',()=>{
+  const workbench=new CrmImportRehearsalStore(),batch=workbench.create({previewId:'crm-preview-fedcba9876543210',previewDigest:'c'.repeat(64),rows:[{rowNumber:2,groupStatus:'unknown'},{rowNumber:3,groupStatus:'unknown'}]});
+  let readiness=workbench.canaryReadiness(batch.id).review;
+  assert.equal(readiness.readyForIndependentReview,false);assert.ok(readiness.blockers.includes('matching_decisions_incomplete'));
+  for(const row of batch.rows){workbench.updateRow(batch.id,row.id,{action:'set_match_resolution',resolution:'unique_match'});workbench.updateRow(batch.id,row.id,{action:'set_group_status',groupStatus:'in_group'})}
+  readiness=workbench.canaryReadiness(batch.id).review;
+  assert.equal(readiness.readyForIndependentReview,true);assert.equal(readiness.automaticBindingEligibleRows,0);assert.equal(readiness.safeguards.membershipActivated,false);
+  const overLimit={rows:Array.from({length:51},()=>({})),summary:{totalRows:51,reviewReadyRows:51,errorRows:0,unresolvedRows:0,conflictRows:0,unknownGroupRows:0,missingFieldRows:0}};
+  assert.equal(buildCrmSmallBatchReviewReadiness(overLimit).readyForIndependentReview,false);
 });
 
 test('CRM source overview keeps OCR and three payment sources aggregate-only',()=>{
@@ -45,6 +57,13 @@ test('HTTP small-batch canary accepts only an already small anonymous input and 
   const rows=['昵称,到期月份',...Array.from({length:51},(_,index)=>`匿名${index},2026-08`)];
   const large=await request('POST','/api/admin/imports/internal-crm/small-batch-canary',{format:'csv',csv:rows.join('\n')});
   assert.equal(large.status,200);assert.equal(large.payload.canary.stageEligible,false);assert.ok(large.payload.canary.blockers.includes('prepare_a_separate_operator_selected_small_spreadsheet'));
+});
+
+test('HTTP rehearsal canary readiness returns only aggregate safety state',async()=>{
+  const preview=await request('POST','/api/admin/imports/internal-crm/preview',{format:'csv',csv:'昵称,到期月份\n匿名甲,2026-08'});
+  const batch=await request('POST','/api/admin/imports/internal-crm/rehearsals',{previewId:preview.payload.previewId,previewDigest:preview.payload.previewDigest,rows:preview.payload.rehearsalRows});
+  const readiness=await request('GET',`/api/admin/imports/internal-crm/rehearsals/${batch.payload.id}/canary-readiness`);
+  assert.equal(readiness.status,200);assert.equal(readiness.payload.review.safeguards.rawRowsReturned,false);assert.equal(readiness.payload.review.safeguards.crmFactsMutated,false);assert.equal(JSON.stringify(readiness.payload).includes('匿名甲'),false);
 });
 
 test('admin CRM workbench exposes review steps without claiming persistence',()=>{
