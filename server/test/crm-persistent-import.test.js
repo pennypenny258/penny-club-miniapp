@@ -1,6 +1,6 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),ExcelJS=require('exceljs');
-const {buildCrmSpreadsheetPreview,resolveCrmPersistentImportConfig,CrmPersistentImportCoordinator}=require('../src/persistence/crm-import-pipeline');
+const {buildCrmSpreadsheetPreview,buildCrmSmallBatchCanaryPreview,resolveCrmPersistentImportConfig,CrmPersistentImportCoordinator}=require('../src/persistence/crm-import-pipeline');
 const {CloudBaseGovernedImportRepository}=require('../src/persistence/governed-import-repository');
 
 async function fixturePayload(){
@@ -19,6 +19,14 @@ test('historical renewal XLSX produces only a redacted, zero-write CRM preview',
   assert.equal(preview.summary.missingPhoneRows,3);assert.equal(preview.summary.missingWechatRows,3);assert.equal(preview.summary.unknownGroupRows,2);assert.equal(preview.summary.expiryNeedsReviewRows,1);assert.equal(preview.summary.errorRows,0);
   assert.equal(preview.safeguards.unpaidMeansInactive,false);assert.equal(preview.safeguards.membershipActivated,false);assert.equal(preview.safeguards.publicDirectoryMutationAllowed,false);
   const serialized=JSON.stringify(preview);for(const forbidden of ['匿名甲','匿名丙','示例备注名','仅匿名测试','待确认','499','666'])assert.equal(serialized.includes(forbidden),false,forbidden);
+});
+
+test('small batch canary never picks members automatically or writes CRM facts',async()=>{
+  const payload=await fixturePayload(),result=await buildCrmSmallBatchCanaryPreview(payload,{requestedRows:3});
+  assert.equal(result.canary.stageEligible,true);assert.equal(result.canary.formalWriteEnabled,false);assert.equal(result.canary.materializationEnabled,false);
+  assert.equal(result.canary.safeguards.crmFactsMutated,false);assert.equal(result.canary.safeguards.membershipActivated,false);
+  const oversized={...payload};const workbook=new ExcelJS.Workbook(),sheet=workbook.addWorksheet('匿名大表');sheet.addRow(['昵称','到期月份']);for(let index=0;index<51;index+=1)sheet.addRow([`匿名${index}`,'2026-08']);oversized.dataBase64=Buffer.from(await workbook.xlsx.writeBuffer()).toString('base64');
+  const plan=await buildCrmSmallBatchCanaryPreview(oversized);assert.equal(plan.canary.stageEligible,false);assert.equal(plan.canary.blockers.includes('prepare_a_separate_operator_selected_small_spreadsheet'),true);
 });
 
 test('CRM persistence activation is exact, server-only and fail closed',()=>{

@@ -2,6 +2,7 @@
 const crypto=require('node:crypto');
 const {parseSpreadsheetUpload}=require('../spreadsheet-import');
 const {previewCrmVerificationCsv,crmVerificationFields}=require('../imports');
+const {buildCrmSmallBatchCanaryPlan}=require('../crm-small-batch-canary');
 
 const REQUIRED_CRM_MIGRATION='011_crm_master_import';
 const MAX_CRM_ROWS=10000;
@@ -38,6 +39,11 @@ async function buildCrmSpreadsheetPreview(payload){
   return {previewId:`crm-preview-${digest.slice(0,16)}`,previewDigest:digest,status:preview.headerErrors.length?'mapping_required':'preview_complete',persisted:false,writeAttempted:false,localDemoOnly:true,spreadsheet:{format:upload.meta.format,sheetName:upload.meta.sheetName,rowCount:upload.meta.rowCount,detectedStandardFields:preview.headers.filter(field=>crmVerificationFields.includes(field)),needsMapping:preview.headerErrors.length>0},summary,rehearsalRows,issueCodes:{headers:preview.headerErrors.map(message=>safeIssueCode(message,'header')),rows:[...new Set(preview.results.flatMap(row=>row.errors.map(message=>safeIssueCode(message,'row'))))]},safeguards:{sensitiveValuesReturned:false,rawHeadersReturned:false,rawRowsReturned:false,ordinaryLogsContainValues:false,publicDirectoryMutationAllowed:false,membershipActivated:false,unpaidMeansInactive:false,memoryFallback:false},notice:'当前仅完成本地脱敏预检，未创建正式批次、未写入内存业务事实或 CloudBase，不能作为正式入库。'};
 }
 
+async function buildCrmSmallBatchCanaryPreview(payload,options={}){
+  const preview=await buildCrmSpreadsheetPreview(payload);
+  return {previewId:preview.previewId,previewDigest:preview.previewDigest,canary:buildCrmSmallBatchCanaryPlan(preview,options)};
+}
+
 class CrmPersistentImportCoordinator{
   constructor({config,stagingService}){if(!config?.enabled||config.mode!=='cloudbase_gateway')throw new Error('CRM 正式写入协调器需要完整生产配置');if(typeof stagingService?.stageCsv!=='function')throw new Error('CRM 正式写入协调器需要持久化受控批次服务');this.config=config;this.stagingService=stagingService}
   async confirm({adminSession,payload,previewDigest,explicitConfirmation,idempotencyKey}){
@@ -47,4 +53,4 @@ class CrmPersistentImportCoordinator{
     try{return await this.stagingService.stageCsv({adminSession,domain:'crm',csv:(await parseSpreadsheetUpload(payload)).csv,mapping:payload.mapping||{},idempotencyKey})}catch(error){if(error?.statusCode===403||error?.statusCode===409)throw error;throw Object.assign(new Error('CRM 持久化服务暂时不可用；未回退到本地或内存'),{statusCode:503,code:'CRM_PERSISTENCE_UNAVAILABLE'})}
   }
 }
-module.exports={REQUIRED_CRM_MIGRATION,MAX_CRM_ROWS,resolveCrmPersistentImportConfig,buildCrmSpreadsheetPreview,CrmPersistentImportCoordinator};
+module.exports={REQUIRED_CRM_MIGRATION,MAX_CRM_ROWS,resolveCrmPersistentImportConfig,buildCrmSpreadsheetPreview,buildCrmSmallBatchCanaryPreview,CrmPersistentImportCoordinator};

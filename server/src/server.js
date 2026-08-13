@@ -30,7 +30,7 @@ const { resolveFormalAgentHttpConfig } = require('./agent-http-config');
 const { createFormalAgentHttpHandler } = require('./agent-http-handler');
 const { resolveFormalMemberBindingHttpConfig } = require('./member-binding-http-config');
 const { createFormalMemberBindingHttpHandler } = require('./member-binding-http-handler');
-const { buildCrmSpreadsheetPreview, resolveCrmPersistentImportConfig } = require('./persistence/crm-import-pipeline');
+const { buildCrmSpreadsheetPreview, buildCrmSmallBatchCanaryPreview, resolveCrmPersistentImportConfig } = require('./persistence/crm-import-pipeline');
 const { resolveCrmMatchTokenPreparationConfig } = require('./persistence/crm-match-token-provisioning');
 const { resolveCloudBaseCrmMatchTokenTransportConfig } = require('./persistence/cloudbase-crm-match-token-transport');
 const { resolveCloudBaseAgentRpcConfig } = require('./persistence/cloudbase-agent-rpc-transport');
@@ -275,6 +275,7 @@ const server = http.createServer(async (req, res) => {
     match=url.pathname.match(/^\/api\/admin\/imports\/internal-crm\/rehearsals\/([^/]+)\/rows\/([^/]+)$/);
     if (req.method === 'PATCH' && match) { const input=await body(req);return json(res,200,crmImportRehearsals.updateRow(match[1],match[2],input)); }
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/preview') { const input = await body(req, 15*1024*1024);return json(res,200,await buildCrmSpreadsheetPreview(input)); }
+    if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/small-batch-canary') { const input = await body(req, 15*1024*1024);return json(res,200,await buildCrmSmallBatchCanaryPreview(input,{requestedRows:input.requestedRows})); }
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/internal-crm/confirm') return json(res,503,{error:'CRM 正式写入尚未激活；必须先完成 CloudBase 迁移、服务端网关配置与真实后台会话验收',code:'CRM_PERSISTENCE_NOT_ACTIVATED',persisted:false,memoryFallback:false});
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/member-orders/preview') return json(res, 410, { error: '旧历史订单预检已停用；小店记录请使用付款证据预检，非小店续费需进入受控人工补录流程' });
     if (req.method === 'POST' && url.pathname === '/api/admin/imports/wechat-shop-orders/preview') { const input = await body(req, 45*1024*1024);if(Array.isArray(input.files)){try{return json(res,200,savePaymentClueBatchSummary(await previewPaymentClueBatch(input)))}catch(error){if(error.safeBatch)return json(res,error.statusCode||413,{error:error.message,code:error.code,...error.safeBatch,persisted:false});throw error}}const upload=await parseSpreadsheetUpload(input),paymentSource=['wechat_shop_order','wechat_merchant_receipt','manual_transfer'].includes(input.paymentSource)?input.paymentSource:'wechat_shop_order',preview=previewPaymentClueCsv(upload.csv,{source:paymentSource});return json(res,200,{...savePaymentClueSummary(preview,upload.meta),paymentSource}); }
