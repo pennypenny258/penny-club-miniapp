@@ -39,9 +39,17 @@ test('HTTP preview can create a safe review batch while formal write stays 503',
   const confirm=await request('POST','/api/admin/imports/internal-crm/confirm',{previewDigest:preview.previewDigest});assert.equal(confirm.status,503);assert.equal(confirm.payload.persisted,false);assert.equal(confirm.payload.memoryFallback,false);
 });
 
+test('HTTP small-batch canary accepts only an already small anonymous input and never writes facts',async()=>{
+  const small=await request('POST','/api/admin/imports/internal-crm/small-batch-canary',{format:'csv',csv:'昵称,到期月份\n匿名甲,2026-08\n匿名乙,2026-08'});
+  assert.equal(small.status,200);assert.equal(small.payload.canary.stageEligible,true);assert.equal(small.payload.canary.formalWriteEnabled,false);assert.equal(small.payload.canary.safeguards.crmFactsMutated,false);
+  const rows=['昵称,到期月份',...Array.from({length:51},(_,index)=>`匿名${index},2026-08`)];
+  const large=await request('POST','/api/admin/imports/internal-crm/small-batch-canary',{format:'csv',csv:rows.join('\n')});
+  assert.equal(large.status,200);assert.equal(large.payload.canary.stageEligible,false);assert.ok(large.payload.canary.blockers.includes('prepare_a_separate_operator_selected_small_spreadsheet'));
+});
+
 test('admin CRM workbench exposes review steps without claiming persistence',()=>{
   const app=fs.readFileSync(path.join(__dirname,'../public/app.js'),'utf8'),rehearsal=fs.readFileSync(path.join(__dirname,'../src/crm-import-rehearsal.js'),'utf8');
-  for(const text of ['脱敏批次审阅工作台','演练补齐','确认唯一匹配','标记匹配冲突','新建待补主档','历史续费追踪表','确认写入正式 CRM（尚未启用）'])assert.ok(app.includes(text)||rehearsal.includes(text),text);
+  for(const text of ['脱敏批次审阅工作台','演练补齐','确认唯一匹配','标记匹配冲突','新建待补主档','历史续费追踪表','确认写入正式 CRM（尚未启用）','检查是否适合 50 人小批次'])assert.ok(app.includes(text)||rehearsal.includes(text),text);
   assert.ok(rehearsal.includes('微信群标签 / OCR'));
   assert.ok(app.includes('演练批次不保存原始值，也不会连接 CloudBase'));
   assert.ok(app.includes('身份绑定安全状态'));
