@@ -44,6 +44,22 @@ test('published tags are searchable while draft tags remain private',async()=>{
   const privateView=await call('/api/resources/r-private-tag-test/view');assert.equal(privateView.status,404);
 });
 
+test('shared feed search includes only authorized public directory profiles',async()=>{
+  const publicResult=await call(`/api/feed?query=${encodeURIComponent('远汀')}`);assert.equal(publicResult.status,200);
+  const member=publicResult.payload.items.find(x=>x.kind==='member');assert.ok(member);assert.equal(member.title,'远汀（演示）');
+  for(const field of ['privateContactRef','phone','wechat','email'])assert.equal(JSON.stringify(member).includes(field),false,field);
+  const hidden=await call(`/api/feed?query=${encodeURIComponent('白榆')}`);assert.equal(hidden.payload.items.some(x=>x.kind==='member'),false);
+  const pending=await call(`/api/feed?query=${encodeURIComponent('青岚')}`);assert.equal(pending.payload.items.some(x=>x.kind==='member'),false);
+});
+
+test('activity list exposes topic logistics and participants but never meeting links',async()=>{
+  const response=await call('/api/activities');assert.equal(response.status,200);assert.ok(response.payload.length);
+  assert.ok(response.payload.some(x=>x.format==='online'&&Array.isArray(x.speakers)&&x.attendeeSummary));
+  assert.ok(response.payload.some(x=>x.format==='offline'&&x.venue&&x.attendeeSummary));
+  assert.ok(response.payload.some(x=>x.status==='ended'&&x.archiveResourceIds.length));
+  assert.equal(response.payload.every(item=>!Object.prototype.hasOwnProperty.call(item,'meetingLink')),true);
+});
+
 test('enabled downloads still require private storage and never reveal a locator',async()=>{
   const resources=(await call('/api/resources')).payload;const enabled=resources.find(x=>x.downloadEnabled);assert.ok(enabled);
   const response=await call(`/api/resources/${enabled.id}/download`,{method:'POST'});assert.equal(response.status,503);assert.equal(response.payload.code,'PRIVATE_DOWNLOAD_NOT_CONFIGURED');

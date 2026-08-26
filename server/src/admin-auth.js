@@ -22,7 +22,8 @@ function hasPermission(role,permission){const permissions=ROLE_DEFINITIONS[role]
 function permissionForRequest(method,pathname){
   if(pathname==='/api/admin/session'||pathname==='/api/admin/dashboard'||pathname==='/api/admin/operations-readiness')return 'dashboard.read';
   if(pathname.includes('/feishu-'))return method==='GET'?'content.read':'feishu.manage';
-  if(pathname.includes('/local-import'))return method==='GET'?'content.read':'imports.manage';
+  if(pathname.includes('/local-import-items/'))return method==='GET'?'content.read':pathname.endsWith('/review')?'content.review':'imports.manage';
+  if(pathname.includes('/local-imports'))return method==='GET'?'content.read':'imports.manage';
   if(pathname.includes('/imports/')||pathname.includes('/import-items/')||pathname.includes('/import-templates/'))return method==='GET'?'content.read':'imports.manage';
   if(pathname.includes('/public-profile-updates/')||pathname.includes('/directory-profiles/'))return method==='GET'?'directory.read':'directory.review';
   if(pathname.includes('/employment-verifications/'))return method==='GET'?'artifact.metadata.read':'artifact.review';

@@ -15,5 +15,5 @@ App({
       wx.reLaunch({ url: '/pages/member-binding/member-binding' });
     }
   },
-  globalData: { runtime }
+  globalData: { runtime, publicSearchQuery: '' }
 });
