@@ -1,0 +1,42 @@
+{
+  "status": "future_not_applied",
+  "purpose": "004/008-baseline Agent MVP RPC package; never infer deployment from this file",
+  "runtimeEnablementAllowed": false,
+  "version": "agent-mvp-rpc-v1",
+  "migrationBaseline": "008_admin_session_rbac",
+  "platform": "cloudbase_postgrest_rpc",
+  "executionOrder": [
+    "server/db/future/agent-rpc/013_agent_rpc_008_baseline.sql",
+    "server/db/future/agent-rpc/830_record_agent_rpc_version.sql",
+    "server/db/future/agent-rpc/893_verify_agent_rpc_readonly.sql"
+  ],
+  "checksums": {
+    "server/db/migrations/004_wechat_identity_entitlement.sql": "89651f91578a44d1f5fd78e8039c7ded587bbfae3a18764ee4bb3b2090d5a621",
+    "server/db/migrations/008_admin_session_rbac.sql": "1d29f1997e3d63322ae56a0fef78b559d41028e2d278527ffdc0d51e1652bd3d",
+    "server/db/future/agent-rpc/013_agent_rpc_008_baseline.sql": "cdbb91f952fea9f0aec41e2bfeadce0bb149cac1f5d56fad1413653128e2e46d",
+    "server/db/future/agent-rpc/830_record_agent_rpc_version.sql": "09eea3fef2580bf3fcd2da3318734517715f029253a4cab4d18cfc8a8e4241e9",
+    "server/db/future/agent-rpc/893_verify_agent_rpc_readonly.sql": "a3c97e416c68bb96b9b8f84e16c33bf7f2248bc36a785886f218502d110c95ca"
+  },
+  "rpcs": [
+    "venture_agent_list_published_opportunities",
+    "venture_agent_stage_demand_review",
+    "venture_agent_stage_application_review",
+    "venture_agent_record_demand_review",
+    "venture_agent_upsert_directional_candidate",
+    "venture_agent_record_application_dispatch",
+    "venture_agent_record_owner_decision",
+    "venture_agent_record_operator_relay"
+  ],
+  "proofs": {
+    "serviceRoleOnly": true,
+    "clientRolesDenied": true,
+    "rlsForced": true,
+    "idempotentMutations": true,
+    "humanReviewStateMachine": true,
+    "publicProjectionAllowlist": true,
+    "directionalThreeOfFour": true,
+    "directionalDeduplicationDays": 14,
+    "operatorRelayOnly": true,
+    "noContactOrCrmProjection": true
+  }
+}

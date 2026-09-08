@@ -9,12 +9,13 @@ const {AgentMvpService}=require('../src/agent-mvp-service');
 const gatewayEnvironment={NODE_ENV:'production',DATA_REPOSITORY:'cloudbase_gateway',CLOUDBASE_PG_ENV_ID:'fixture-env',CLOUDBASE_PG_SERVER_API_KEY:'fixture-server-only-key',CLOUDBASE_PG_REGION:'ap-shanghai',CLOUDBASE_PG_MIGRATIONS_APPLIED:'008_admin_session_rbac',CLOUDBASE_PG_CREDENTIAL_PURPOSE:'server_runtime'};
 const published={id:'demand_fixture_1',type:'financing',anonymous_title:'匿名融资需求',anonymous_summary:'寻找产业协同与融资交流机会',public_tags:['融资','产业协同'],distribution_mode:'redacted_public',human_review_status:'approved',status:'published',owner_user_id:'must-not-leak',protected_details_ciphertext:'must-not-leak',contact:'must-not-leak'};
 
-function harness({memberFailure=null,adminFailure=null,adapterFailure=null,rows=[published]}={}){
+function harness({memberFailure=null,adminFailure=null,adapterFailure=null,rows=[published],candidateResult=null}={}){
   const calls=[];
   const adapter={execute:async(operation,payload)=>{
     calls.push(['repository',operation,payload]);
     if(adapterFailure)throw adapterFailure;
     if(operation===AGENT_OPERATIONS.LIST_PUBLISHED)return rows;
+    if(operation===AGENT_OPERATIONS.UPSERT_DIRECTIONAL_CANDIDATE)return candidateResult||{id:'candidate_fixture_1',status:'awaiting_operator_send',suppressedBy14DayWindow:false,nextEligibleAt:null};
     return {id:operation.includes('applications')?'application_fixture_1':'demand_fixture_2'};
   }};
   const repository=new StagedAgentGatewayRepository({adapter});
@@ -46,11 +47,11 @@ test('004 member gate runs before any Agent read and response is a safe public p
 
 test('member demand and application writes only stage human review records',async()=>{
   const {service,calls}=harness();
-  const demand=await service.submitDemand({request:{},input:{type:'investment',who:'我是产业投资方向会员',why:'希望寻找联合研究与项目协同机会',target:'寻找熟悉新能源供应链的产业伙伴',distributionMode:'private_match'}});
+  const demand=await service.submitDemand({request:{},idempotencyKey:'demand-fixture-1',input:{type:'investment',who:'我是产业投资方向会员',why:'希望寻找联合研究与项目协同机会',target:'寻找熟悉新能源供应链的产业伙伴',distributionMode:'private_match'}});
   assert.deepEqual(demand,{id:'demand_fixture_2',status:'pending_review',humanReviewRequired:true,automaticPublish:false,automaticPush:false,contactDisclosed:false});
   const staged=calls.find(call=>call[1]===AGENT_OPERATIONS.STAGE_DEMAND)[2].draft;
   assert.equal(staged.status,'pending_review');assert.equal(staged.modelStatus,'not_configured');assert.equal(staged.automaticPublish,false);
-  const application=await service.applyToDemand({request:{},demandId:'demand_fixture_1',input:{who:'我是长期关注产业投资的匿名会员',why:'我的项目经验与需求描述中的产业环节高度相关',topic:'希望讨论供应链验证、合作路径和后续分工'}});
+  const application=await service.applyToDemand({request:{},demandId:'demand_fixture_1',idempotencyKey:'application-fixture-1',input:{who:'我是长期关注产业投资的匿名会员',why:'我的项目经验与需求描述中的产业环节高度相关',topic:'希望讨论供应链验证、合作路径和后续分工'}});
   assert.equal(application.contactDisclosed,false);assert.equal(application.deliveryMode,'operator_relay_only');
   assert.equal(calls.find(call=>call[1]===AGENT_OPERATIONS.STAGE_APPLICATION)[2].application.agentReviewStatus,'pending');
 });
@@ -70,19 +71,20 @@ test('008 formal review authorization always precedes review and dispatch mutati
 });
 
 test('directional candidates enforce 3-of-4, 14-day suppression and never auto-send',async()=>{
-  const {service,calls}=harness();
+  const nextEligibleAt=new Date(Date.now()+11*86400000).toISOString(),{service,calls}=harness({candidateResult:{id:'candidate_fixture_1',status:'duplicate_suppressed',suppressedBy14DayWindow:true,nextEligibleAt}});
   await assert.rejects(()=>service.prepareDirectionalCandidate({request:{},demandId:'demand_fixture_1',targetMemberId:'member_fixture_2',criteria:{person:'投资人',role:'负责人'},idempotencyKey:'candidate-fixture-1'}),/至少需要/);
   assert.equal(calls.some(call=>call[0]==='repository'),false);
   calls.length=0;
-  const result=await service.prepareDirectionalCandidate({request:{},demandId:'demand_fixture_1',targetMemberId:'member_fixture_2',criteria:{person:'投资人',organization:'产业基金',role:'负责人'},lastSentAt:new Date(Date.now()-3*86400000).toISOString(),idempotencyKey:'candidate-fixture-2'});
+  const result=await service.prepareDirectionalCandidate({request:{},demandId:'demand_fixture_1',targetMemberId:'member_fixture_2',criteria:{person:'投资人',organization:'产业基金',role:'负责人'},idempotencyKey:'candidate-fixture-2'});
   assert.equal(result.suppressedBy14DayWindow,true);assert.equal(result.notificationSent,false);assert.equal(result.contactDisclosed,false);
+  assert.equal(result.nextEligibleAt,nextEligibleAt);
   const staged=calls.find(call=>call[1]===AGENT_OPERATIONS.UPSERT_DIRECTIONAL_CANDIDATE)[2].candidate;
   assert.equal(staged.matchedDimensionCount,3);assert.equal(staged.automaticSend,false);
 });
 
 test('owner approval creates operator relay work and formal contract never returns contact',async()=>{
   const {service,calls}=harness();
-  const owner=await service.recordOwnerDecision({request:{},applicationId:'application_fixture_1',decision:'approved_intro'});
+  const owner=await service.recordOwnerDecision({request:{},applicationId:'application_fixture_1',decision:'approved_intro',idempotencyKey:'owner-fixture-1'});
   assert.equal(owner.status,'operator_relay_pending');assert.equal(owner.operatorRelayRequired,true);assert.equal(owner.contactDisclosed,false);
   assert.equal(calls.find(call=>call[1]===AGENT_OPERATIONS.RECORD_OWNER_DECISION)[2].decision,'approved_intro');
   calls.length=0;

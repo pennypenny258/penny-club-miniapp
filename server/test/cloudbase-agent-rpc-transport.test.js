@@ -17,14 +17,15 @@ test('Agent RPC stays disabled until an exact read-only capability manifest is v
 });
 
 test('prepared adapter calls only fixed RPCs with allowlisted contact-free payloads',async()=>{
-  const calls=[],adapter=new PreparedCloudBaseAgentRpcAdapter({config,invoker:{invoke:async(name,payload)=>{calls.push({name,payload});return {id:'fixture_result_1'}}}});
-  await adapter.execute(AGENT_OPERATIONS.STAGE_APPLICATION,{memberId:'member_123',demandId:'demand_123',application:{statement:{who:'我是匿名产业研究会员',why:'具备相关行业经验并希望参与具体协作',topic:'希望讨论验证方法、合作路径与后续分工'},status:'submitted',contactDisclosed:false}});
+  const calls=[],adapter=new PreparedCloudBaseAgentRpcAdapter({config,invoker:{invoke:async(name,payload)=>{calls.push({name,payload});return {id:'fixture_result_1',status:name.includes('directional_candidate')?'awaiting_operator_send':'submitted',suppressed_by_14_day_window:false,next_eligible_at:null}}}});
+  await adapter.execute(AGENT_OPERATIONS.STAGE_APPLICATION,{memberId:'member_123',demandId:'demand_123',idempotencyKeyHash:'b'.repeat(64),application:{statement:{who:'我是匿名产业研究会员',why:'具备相关行业经验并希望参与具体协作',topic:'希望讨论验证方法、合作路径与后续分工'},status:'submitted',contactDisclosed:false}});
   assert.equal(calls[0].name,'venture_agent_stage_application_review');
   assert.deepEqual(Object.keys(calls[0].payload.p_request.statement).sort(),['topic','who','why']);
   assert.equal(JSON.stringify(calls[0]).includes('phone'),false);
   const candidate={demandId:'demand_123',targetMemberId:'member_123',matchedDimensions:['person','organization','role'],deduplicationKey:'a'.repeat(64),suppressedBy14DayWindow:false,status:'awaiting_operator_send'};
-  await adapter.execute(AGENT_OPERATIONS.UPSERT_DIRECTIONAL_CANDIDATE,{adminId:'admin_123',authorizationId:'authorization_123',candidate});
+  await adapter.execute(AGENT_OPERATIONS.UPSERT_DIRECTIONAL_CANDIDATE,{adminId:'admin_123',authorizationId:'authorization_123',idempotencyKeyHash:'c'.repeat(64),candidate});
   assert.equal(calls[1].payload.p_request.automatic_send,false);assert.equal(calls[1].payload.p_request.contact_disclosed,false);
+  assert.equal('suppressed_by_14_day_window' in calls[1].payload.p_request,false);assert.equal('status' in calls[1].payload.p_request,false);
 });
 
 test('private fields, arbitrary operations and upstream details fail closed',async()=>{

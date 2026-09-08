@@ -18,17 +18,17 @@ class AgentMvpService{
   }
   async member(request){return this.memberIdentityService.resolveAuthorizationRequest(request)}
   async listOpportunities({request,limit}){const member=await this.member(request);return {items:await this.repository.listPublishedOpportunities({memberId:member.id,limit}),contactDisclosed:false}}
-  async submitDemand({request,input}){
+  async submitDemand({request,input,idempotencyKey}){
     const member=await this.member(request),validated=validateDemandSubmission(input);
     if(!validated.valid)throw bad(validated.errors.join('；'));
     const type=String(input?.type||'').trim();if(!DEMAND_TYPES.has(type))throw bad('需求分类无效');
     const draft={type,reviewElements:validated.data,requestedDistributionMode:validated.data.distributionMode,status:'pending_review',humanReviewStatus:'pending',modelStatus:'not_configured',automaticPublish:false,automaticPush:false,contactDisclosed:false};
-    const result=await this.repository.stageDemandForReview({memberId:member.id,draft});
+    const result=await this.repository.stageDemandForReview({memberId:member.id,draft,idempotencyKey});
     return {id:result?.id||null,status:'pending_review',humanReviewRequired:true,automaticPublish:false,automaticPush:false,contactDisclosed:false};
   }
-  async applyToDemand({request,demandId,input}){
+  async applyToDemand({request,demandId,input,idempotencyKey}){
     const member=await this.member(request),application=applicationDraft(input);
-    const result=await this.repository.stageApplication({memberId:member.id,demandId,application});
+    const result=await this.repository.stageApplication({memberId:member.id,demandId,application,idempotencyKey});
     return {id:result?.id||null,status:'submitted',humanReviewRequired:true,contactDisclosed:false,deliveryMode:'operator_relay_only'};
   }
   async reviewDemand({request,demandId,input,idempotencyKey}){
@@ -38,11 +38,10 @@ class AgentMvpService{
     await this.repository.reviewDemand({adminId:admin.userId,demandId,decision,publicProjection:transition,authorizationId:admin.authorizationId});
     return {decision,status:transition.nextStatus,distributionMode:transition.distributionMode,humanReviewed:true,automaticPublish:false,automaticPush:false,contactDisclosed:false};
   }
-  async prepareDirectionalCandidate({request,demandId,targetMemberId,criteria,lastSentAt,idempotencyKey}){
-    const admin=await this.adminSessionService.authorizeAction({request,permission:'demand.review',idempotencyKey});
-    const candidate=directionalCandidate({demandId,targetMemberId,criteria,lastSentAt});
-    await this.repository.upsertDirectionalCandidate({adminId:admin.userId,candidate,authorizationId:admin.authorizationId});
-    return {status:candidate.status,matchedDimensionCount:candidate.matchedDimensionCount,suppressedBy14DayWindow:candidate.suppressedBy14DayWindow,nextEligibleAt:candidate.nextEligibleAt,notificationSent:false,contactDisclosed:false};
+  async prepareDirectionalCandidate({request,demandId,targetMemberId,criteria,idempotencyKey}){
+    const candidate=directionalCandidate({demandId,targetMemberId,criteria}),admin=await this.adminSessionService.authorizeAction({request,permission:'demand.review',idempotencyKey});
+    const result=await this.repository.upsertDirectionalCandidate({adminId:admin.userId,candidate,authorizationId:admin.authorizationId});
+    return {status:result?.status||'recorded',matchedDimensionCount:candidate.matchedDimensionCount,suppressedBy14DayWindow:result?.suppressedBy14DayWindow===true,nextEligibleAt:result?.nextEligibleAt||null,notificationSent:false,contactDisclosed:false};
   }
   async dispatchApplication({request,applicationId,input,idempotencyKey}){
     const decision=String(input?.decision||'');if(!DISPATCH_DECISIONS.has(decision))throw bad('分发决定无效');
@@ -50,9 +49,9 @@ class AgentMvpService{
     await this.repository.dispatchApplication({adminId:admin.userId,applicationId,decision,safeReasonCode:input?.safeReasonCode,authorizationId:admin.authorizationId});
     return {decision,humanReviewed:true,notificationSent:false,contactDisclosed:false,deliveryMode:'operator_relay_only'};
   }
-  async recordOwnerDecision({request,applicationId,decision}){
+  async recordOwnerDecision({request,applicationId,decision,idempotencyKey}){
     const member=await this.member(request),transition=applicationTransition({currentStatus:'shortlisted',decision});
-    await this.repository.recordOwnerDecision({memberId:member.id,applicationId,decision});
+    await this.repository.recordOwnerDecision({memberId:member.id,applicationId,decision,idempotencyKey});
     return {status:transition.nextStatus,operatorRelayRequired:transition.operatorRelayRequired,contactDisclosed:false,deliveryMode:'operator_relay_only'};
   }
   async recordOperatorRelay({request,applicationId,decision,idempotencyKey}){
