@@ -62,6 +62,15 @@ CloudBase 服务页面配置的同名变量优先于镜像默认值。若漏填�
 - `/admin/` 能打开运营后台匿名演示。
 - 不上传真实文件，不配置飞书，不录入真实会员或订单。
 
+也可以在项目根目录执行在线验收；不传参数时检查小程序 staging 配置中的地址，也可以显式传入刚绑定的自定义域名：
+
+```bash
+pnpm run staging:smoke
+pnpm run staging:smoke -- https://test-api.pennysclub.com
+```
+
+该命令只读取公共 DNS、`/healthz`、`/member/` 和 `/admin/`，不会登录控制台、读取 Secret 或写入业务数据。它会验证服务确实是 `cloudbase_staging_demo`、匿名内存数据且两个演示页面可用；如果误指向 production bootstrap 会立即失败。
+
 若 CloudBase 报“就绪探针连接失败”，先核对服务端口是否为 3000、构建目录是否为仓库根目录、容器日志中进程是否保持运行。不要通过把私钥写进仓库来排查。
 
 ## 从测试走向正式环境
