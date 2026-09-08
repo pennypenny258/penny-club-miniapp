@@ -49,6 +49,7 @@ macOS 非技术用户也可直接双击 `start-preview.command` 启动并打开�
 
 ## 文档
 
+- [当前进度与下一阶段看板](docs/current-progress.md)
 - [技术架构](docs/architecture.md)
 - [数据模型](docs/data-model.md)
 - [页面与接口](docs/pages-and-api.md)
