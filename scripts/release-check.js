@@ -20,7 +20,7 @@ if (project.setting?.urlCheck === false) issues.push('项目仍关闭服务器�
 if (/environment:\s*['"]development['"]/.test(runtimeText)) issues.push('运行环境仍为 development');
 if (/demoMode:\s*true/.test(runtimeText)) issues.push('演示身份模式仍开启');
 if (/http:\/\//.test(runtimeText)) issues.push('API 仍包含非 HTTPS 地址');
-if (/cloudbase-staging/.test(runtimeText)) issues.push('仍包含仅供联调的 CloudBase 默认域名配置');
+if (/cloudbase-staging/.test(runtimeText)) issues.push('仍包含仅供联调的 CloudBase staging 档位');
 
 if (process.env.NODE_ENV === 'production') {
   if (process.env.DEPLOYMENT_PROFILE === 'cloudbase_staging_demo') issues.push('生产发布仍使用 CloudBase 匿名测试配置');

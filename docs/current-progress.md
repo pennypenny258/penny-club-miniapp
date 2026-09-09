@@ -1,20 +1,20 @@
 # Penny's Club 当前进度与下一阶段看板
 
-更新时间：2026-09-08。此文件是后续异步开发的进度入口；产品细节仍以对应专题文档和已确认需求为准。
+更新时间：2026-09-09。此文件是后续异步开发的进度入口；产品细节仍以对应专题文档和已确认需求为准。
 
 ## 一句话状态
 
-会员端与运营后台的匿名演示版已经可以完整运行，当前代码和 GitHub `main` 保持同步，347 项自动化测试全部通过；正式上线仍被真实身份、云端 RPC 验收、私有存储、域名和生产验收安全锁阻断，不能录入真实会员资料。
+会员端与运营后台的匿名演示版已经可以完整运行，专用测试服务和 `https://test-api.pennysclub.com` 已通过在线验收；正式上线仍被真实身份、云端 RPC 验收、私有存储和生产验收安全锁阻断，不能录入真实会员资料。
 
 ## 已验证完成
 
-| 范围 | 当前状态 | 2026-09-08 验证 |
+| 范围 | 当前状态 | 2026-09-09 验证 |
 | --- | --- | --- |
-| Git | 本地 `main` 与 GitHub `main` 一致 | 本轮变更完成后已提交并同步；具体提交见仓库历史 |
+| Git | 本地 `main` 包含已完成的测试环境恢复变更 | 当前本地领先 GitHub `main`；待本轮验证后合并提交并尝试推送 |
 | 自动化测试 | 会员、CRM、会籍、Agent、权限、导入、存储边界和部署保护已有测试 | 347/347 通过 |
 | 匿名 staging 预检 | Docker/端口、匿名数据边界和敏感配置保护 | `staging:check` 通过 |
 | 小程序 staging 预检 | HTTPS 测试地址、无 cookie、无伪造微信身份 | `miniprogram:staging-check` 通过 |
-| staging 在线验收 | DNS、HTTPS、部署档位、会员端和后台探测 | 已提供 `staging:smoke`；当前准确报告自定义域名未解析、默认域名连接超时 |
+| staging 在线验收 | DNS、HTTPS、部署档位、会员端和后台探测 | `test-api.pennysclub.com` 的 DNS/HTTPS 正常；`/healthz`、`/member/`、`/admin/` 均返回 200 |
 | 数据库离线包 | 001—011、私有存储、导入、后台身份、未来绑定 RPC 和 Agent RPC 均有离线校验 | 所有离线检查通过；这不代表云端已执行 |
 | 本地会员端 | 动态、活动、Agents、我的四个入口 | 浏览器逐页打开通过 |
 | 本地预览 | 匿名演示服务 | 已恢复在 `http://127.0.0.1:3000/member/` |
@@ -45,18 +45,18 @@
 - 项目记录显示 CloudBase PG 的 001—008 是当前基线；009 管理员治理明确延期，不应继续重试。
 - 标准版环境中的独立测试服务 `penny-club-test-api` 已于 2026-09-09 从 GitHub `main` 重新部署为版本 `007`，staging 五项非敏感环境变量保持完整，且未改动 `penny-club-prod-api`。
 - CloudBase 默认测试域名的 `/healthz`、`/member/` 和 `/admin/` 已通过在线只读验收；返回 `cloudbase_staging_demo`、`anonymousDemoOnly: true` 和 `memory_demo`。
-- 小程序 staging 配置继续指向该独立测试服务的默认 HTTPS 域名，且仍只适合开发者工具匿名联调。
-- `test-api.pennysclub.com` 的 CloudBase 归属 TXT 已准备写入 DNSPod，但 DNSPod 保存操作要求账号 MFA；扫码通过后还需完成证书关联、CNAME 与全路径路由。
-- 正式发布检查仍按设计失败：服务器域名校验关闭、development/演示模式、存在 HTTP 本机地址、仍含仅测试的 CloudBase 默认域名配置。
+- 自定义域名 `test-api.pennysclub.com` 已完成 CloudBase 归属 TXT、DNSPod CNAME、HTTPS 证书和 `/` 全路径路由；CloudBase 状态为 `SUCCESS`，DNS 状态为 `OK`。
+- 小程序 staging 配置已改为 `https://test-api.pennysclub.com`，仍只适合匿名演示和开发者工具/真机联调。
+- 测试域名当前关联免费 HTTPS 证书 `afF8zywK`，有效期至 2026-12-08；到期前需完成续期或替换。
+- 正式发布检查仍按设计失败：服务器域名校验关闭、development/演示模式、存在 HTTP 本机地址，且仍保留仅供联调的 CloudBase staging 档位。
 
 ## 下一阶段优先级
 
-### P0：先恢复一个稳定的匿名测试环境
+### P0：收尾匿名测试环境
 
-1. 完成 DNSPod MFA，并保存 `test-api.pennysclub.com` 的域名归属 TXT。
-2. 关联有效 HTTPS 证书，配置 CNAME、HTTP 网关全路径透传和 `penny-club-test-api` 路由。
-3. 自定义域名稳定后，把小程序 staging 地址改为 `https://test-api.pennysclub.com`，重新做开发者工具和真机匿名验收。
-4. `penny-club-prod-api` 继续保持 production bootstrap 锁定态；不要把 staging 环境变量或匿名数据放入正式服务。
+1. 在微信开发者工具和真机上重新完成四个 Tab 的匿名验收，并确认小程序请求已走 `test-api.pennysclub.com`。
+2. `penny-club-prod-api` 继续保持 production bootstrap 锁定态；不要把 staging 环境变量或匿名数据放入正式服务。
+3. 在 2026-12-08 前续期或替换 `test-api.pennysclub.com` 的 HTTPS 证书，并重跑 `staging:smoke`。
 
 ### P1：完成真实 MVP 的最小闭环
 

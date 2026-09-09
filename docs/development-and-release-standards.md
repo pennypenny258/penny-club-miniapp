@@ -13,7 +13,7 @@ https://developers.weixin.qq.com/miniprogram/dev/framework/
 1. 会员端保持原生微信小程序结构；新增登录、支付、订阅消息、隐私授权等能力时，只使用官方提供且与当前主体/类目匹配的能力和流程。
 2. 客户端不保存 AppSecret、支付密钥、API v3 密钥、私有文件永久地址或其他服务端秘密；这些只能保存在服务端受控环境。
 3. 客户端展示不是权限控制。会籍、资源下载、会议链接、需求披露和联系方式访问必须由服务端再次授权。
-4. `touristappid`、`urlCheck: false`、HTTP 本机地址和 CloudBase 默认测试域名都只用于开发联调，不得进入体验版或正式版。小程序请求层不发送 `x-demo-user`；匿名联调不等于真实登录。
+4. `urlCheck: false`、HTTP 本机地址、CloudBase staging 档位和 `test-api.pennysclub.com` 都只用于匿名开发联调，不得直接当作正式生产配置。小程序请求层不发送 `x-demo-user`；匿名联调不等于真实登录。
 5. 正式环境必须关闭演示身份；微信登录凭证由服务端按官方流程校验，并由服务端建立微信身份与会员档案绑定。
 6. 支付结果、订阅消息发送结果和隐私授权状态均以官方能力的服务端校验或回调为准，不以客户端页面状态作为事实依据。
 7. 日志和错误上报不得包含 openid/unionid 明文、手机号、会议链接、交易材料、支付密钥或完整支付报文。
@@ -38,4 +38,4 @@ https://developers.weixin.qq.com/miniprogram/dev/framework/
 
 ## 当前骨架结论
 
-当前 `project.config.json` 使用 `touristappid` 并关闭域名校验，`runtime.js` 使用 HTTP 本地接口及演示身份。这些配置适合本地原型，发布预检会主动失败，直到真实账号和生产配置完成。该失败是预期的安全保护。
+当前 `project.config.json` 已配置 AppID，但仍关闭域名校验；仓库同时保留 HTTP 本地档位和匿名 CloudBase staging 档位。这些配置适合开发联调，发布预检会主动失败，直到真实身份、生产 API 和官方合法域名配置完成。该失败是预期的安全保护。
