@@ -40,23 +40,23 @@
 
 ## 云端与域名现状
 
-以下结论只来自公开网络探测和项目记录，未把“代码准备完成”误写成“云端已经上线”：
+以下结论来自公开网络探测、CloudBase 控制台和在线只读验收，仍不把“匿名测试可用”误写成“正式生产上线”：
 
 - 项目记录显示 CloudBase PG 的 001—008 是当前基线；009 管理员治理明确延期，不应继续重试。
-- `test-api.pennysclub.com` 当前公共 DNS 无解析记录，因此自定义测试域名尚未接通。
-- CloudBase 默认测试域名能够解析 IP，但 12 秒内未返回 `/healthz`；结合此前控制台显示，测试服务需要在 CloudBase 中确认是否仍暂停、部署是否成功以及流量是否已切到新版本。
-- 小程序当前仍指向 CloudBase 默认测试域名，且关闭合法域名校验，只适合开发者工具联调。
+- 标准版环境中的独立测试服务 `penny-club-test-api` 已于 2026-09-09 从 GitHub `main` 重新部署为版本 `007`，staging 五项非敏感环境变量保持完整，且未改动 `penny-club-prod-api`。
+- CloudBase 默认测试域名的 `/healthz`、`/member/` 和 `/admin/` 已通过在线只读验收；返回 `cloudbase_staging_demo`、`anonymousDemoOnly: true` 和 `memory_demo`。
+- 小程序 staging 配置继续指向该独立测试服务的默认 HTTPS 域名，且仍只适合开发者工具匿名联调。
+- `test-api.pennysclub.com` 的 CloudBase 归属 TXT 已准备写入 DNSPod，但 DNSPod 保存操作要求账号 MFA；扫码通过后还需完成证书关联、CNAME 与全路径路由。
 - 正式发布检查仍按设计失败：服务器域名校验关闭、development/演示模式、存在 HTTP 本机地址、仍含仅测试的 CloudBase 默认域名配置。
 
 ## 下一阶段优先级
 
 ### P0：先恢复一个稳定的匿名测试环境
 
-1. 在 CloudBase 确认 `penny-club-test-api` 使用 GitHub `main`、Dockerfile、端口 3000 和 staging 五项环境变量。
-2. 恢复测试服务并验证默认域名的 `/healthz`、`/member/`、`/admin/`。
-3. 完成 `test-api.pennysclub.com` 的域名归属 TXT、免费 HTTPS 证书、CNAME/HTTP 路由和全路径透传。
-4. 自定义域名稳定后，把小程序 staging 地址改为 `https://test-api.pennysclub.com`，重新做开发者工具和真机匿名验收。
-5. `penny-club-prod-api` 继续保持 production bootstrap 锁定态；不要把 staging 环境变量或匿名数据放入正式服务。
+1. 完成 DNSPod MFA，并保存 `test-api.pennysclub.com` 的域名归属 TXT。
+2. 关联有效 HTTPS 证书，配置 CNAME、HTTP 网关全路径透传和 `penny-club-test-api` 路由。
+3. 自定义域名稳定后，把小程序 staging 地址改为 `https://test-api.pennysclub.com`，重新做开发者工具和真机匿名验收。
+4. `penny-club-prod-api` 继续保持 production bootstrap 锁定态；不要把 staging 环境变量或匿名数据放入正式服务。
 
 ### P1：完成真实 MVP 的最小闭环
 
