@@ -10,7 +10,7 @@
 
 | 范围 | 当前状态 | 2026-09-09 验证 |
 | --- | --- | --- |
-| Git | 本地 `main` 包含已完成的测试环境恢复变更 | 当前本地领先 GitHub `main`；待本轮验证后合并提交并尝试推送 |
+| Git | 本地 `main` 与 GitHub `main` 一致 | 测试环境恢复、自定义域名和配置更新已提交并推送 |
 | 自动化测试 | 会员、CRM、会籍、Agent、权限、导入、存储边界和部署保护已有测试 | 347/347 通过 |
 | 匿名 staging 预检 | Docker/端口、匿名数据边界和敏感配置保护 | `staging:check` 通过 |
 | 小程序 staging 预检 | HTTPS 测试地址、无 cookie、无伪造微信身份 | `miniprogram:staging-check` 通过 |
