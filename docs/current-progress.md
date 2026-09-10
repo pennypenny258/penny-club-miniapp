@@ -10,7 +10,7 @@
 
 | 范围 | 生产状态 | 已取得的证据 |
 | --- | --- | --- |
-| 自动化测试 | 通过 | 361/361 通过；CSV 与 XLSX 浏览器载荷分别有回归测试 |
+| 自动化测试 | 通过 | 362/362 通过；CSV 与 XLSX 浏览器载荷、生产浏览器安全响应头分别有回归测试 |
 | 生产数据库 | 可用 | CloudBase PostgreSQL `postgres-ezqm0sis`，高可用运行；014 迁移已登记且校验和锁定 |
 | 恢复点 | 可用 | 手工备份 `pennys-club-pre-production-intake-20260910`（ID `87679197874494`）已完成；自动全量和日志备份保留 7 天 |
 | 正式管理员 | 可用 | CloudBase 用户名/密码登录、服务端会话、撤销、RBAC 与审计已通过合成管理员验收 |
@@ -56,7 +56,7 @@
 
 ## 当前只剩的 P0 收尾
 
-1. 将提交 `7e92528` 推送到 GitHub `main`，从它构建 011（或下一顺序版本）。
+1. 将提交 `31fba4d` 推送到 GitHub `main`，从它构建 011（或下一顺序版本）。
 2. 新版本先保持手动灰度，仅允许 `pennys_canary=prod-intake-final` 条件命中；重跑健康、readiness、静态资源、登录和 CSV UI 演练。
 3. 在 DNSPod 新增 `api` CNAME → `api.pennysclub.com.tcbaccess.tencentcloudbase.com`，等待解析生效并验证证书主机名。
 4. 从 `https://api.pennysclub.com/production-admin/` 完成一次合成管理员浏览器登录和合成 CSV 预检/确认/回滚。
