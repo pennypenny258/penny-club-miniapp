@@ -1,6 +1,6 @@
 # Penny's Club 当前进度与下一阶段看板
 
-更新时间：2026-09-09。此文件是后续异步开发的进度入口；产品细节仍以对应专题文档和已确认需求为准。
+更新时间：2026-09-10。此文件是后续异步开发的进度入口；产品细节仍以对应专题文档和已确认需求为准。
 
 ## 一句话状态
 
@@ -18,6 +18,7 @@
 | 数据库离线包 | 001—011、私有存储、导入、后台身份、未来绑定 RPC 和 Agent RPC 均有离线校验 | 所有离线检查通过；这不代表云端已执行 |
 | 本地会员端 | 动态、活动、Agents、我的四个入口 | 浏览器逐页打开通过 |
 | 本地预览 | 匿名演示服务 | 已恢复在 `http://127.0.0.1:3000/member/` |
+| 微信开发者工具 | 正式 AppID、四个 Tab、staging 请求链路 | `wx220dbae7ecd50002` 下四页均渲染且 0 错误；请求命中 `test-api.pennysclub.com` 并返回 200 |
 
 ## 已完成的产品能力（匿名演示）
 
@@ -47,6 +48,7 @@
 - CloudBase 默认测试域名的 `/healthz`、`/member/` 和 `/admin/` 已通过在线只读验收；返回 `cloudbase_staging_demo`、`anonymousDemoOnly: true` 和 `memory_demo`。
 - 自定义域名 `test-api.pennysclub.com` 已完成 CloudBase 归属 TXT、DNSPod CNAME、HTTPS 证书和 `/` 全路径路由；CloudBase 状态为 `SUCCESS`，DNS 状态为 `OK`。
 - 小程序 staging 配置已改为 `https://test-api.pennysclub.com`，仍只适合匿名演示和开发者工具/真机联调。
+- 微信公众平台已核对正式账号“佩妮创投会员服务”的 AppID 为 `wx220dbae7ecd50002`，小程序工程已从旧测试 AppID 切换至该正式 AppID；服务器 `request` 合法域名已配置为 `https://test-api.pennysclub.com`，并已从平台接口和开发者工具实际请求链路双重确认。
 - 测试域名当前关联免费 HTTPS 证书 `afF8zywK`，有效期至 2026-12-08；到期前需完成续期或替换。
 - 正式发布检查仍按设计失败：服务器域名校验关闭、development/演示模式、存在 HTTP 本机地址，且仍保留仅供联调的 CloudBase staging 档位。
 
@@ -54,7 +56,7 @@
 
 ### P0：收尾匿名测试环境
 
-1. 在微信开发者工具和真机上重新完成四个 Tab 的匿名验收，并确认小程序请求已走 `test-api.pennysclub.com`。
+1. ✅ 微信开发者工具四个 Tab、正式 AppID、合法域名和 staging 实际请求链路已完成匿名验收；下一步只需补充手机体验版真机验收。
 2. `penny-club-prod-api` 继续保持 production bootstrap 锁定态；不要把 staging 环境变量或匿名数据放入正式服务。
 3. 在 2026-12-08 前续期或替换 `test-api.pennysclub.com` 的 HTTPS 证书，并重跑 `staging:smoke`。
 
