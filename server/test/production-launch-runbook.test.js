@@ -2,19 +2,20 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const doc=fs.readFileSync(path.join(__dirname,'..','..','docs','production-launch-runbook.md'),'utf8');
 
-test('production runbook states current boundary and strict migration order',()=>{
-  for(const text of ['当前处于哪一步','001、CloudBase 002、003、040','正式写入','004 → 140 → 190','005 → 250 → 260 → 290','006 → 340 → 390','007 → 440 → 490','008 → 540 → 590','停止在 008 基线','009 → 640 → 690 已延期','现有 011 → 740 → 790'])assert.equal(doc.includes(text),true,text);
-  assert.ok(doc.indexOf('004 → 140 → 190')<doc.indexOf('011 → 740 → 790'));
+test('production runbook records the verified production intake baseline',()=>{
+  for(const text of ['penny-club-prod-d6fcqtv83346494d','penny-club-prod-api','api.pennysclub.com','014_production_intake_008_baseline','87679197874494','ahFAKdsj','wx220dbae7ecd50002'])assert.equal(doc.includes(text),true,text);
 });
 
-test('production runbook does not ask the operator to retry deferred governance SQL',()=>{
-  for(const text of ['不再通过 CloudBase SQL 编辑器重试','生产继续保持 bootstrap 锁定态','两个生产环境已成功完成的 001–008 保持不动'])assert.equal(doc.includes(text),true,text);
+test('production runbook requires canary validation before full traffic and real data',()=>{
+  const required=['pennys_canary=prod-intake-final','一行合成 CSV','受控回滚','切换到 100%','首批只允许 1–3 条','private_review_pending'];
+  for(const text of required)assert.equal(doc.includes(text),true,text);
+  assert.ok(doc.indexOf('一行合成 CSV')<doc.indexOf('切换到 100%'));
 });
 
-test('production runbook keeps secrets server-only and cloud actions user-owned',()=>{
-  for(const text of ['用户在 CloudBase 操作','用户在微信公众平台操作','不要开启数据库外网 IPv4','浏览器和小程序绝不能获得','需要用户再次明确批准','不让规则或模型自动发布需求'])assert.equal(doc.includes(text),true,text);
+test('production runbook keeps identity, secrets and protected data server-side',()=>{
+  for(const text of ['前端不能自报角色','不使用 `*`','不开放数据库公网','不得进入 Git、聊天、截图、浏览器前端或小程序包','不会自动生成公开名册','私密链接加密'])assert.equal(doc.includes(text),true,text);
 });
 
-test('production runbook provides an exact non-sensitive locked bootstrap deployment',()=>{
-  for(const text of ['penny-club-prod','pennypenny258/penny-club-miniapp','penny-club-prod-api','cloudbase_production_bootstrap','production_bootstrap_disabled','服务端口 / 容器端口','`3000`','GET /healthz','businessApisEnabled','业务 API 返回 503','不要填写生产环境 ID'])assert.equal(doc.includes(text),true,text);
+test('production runbook defines fail-closed incident and maintenance controls',()=>{
+  for(const text of ['memoryFallback=true','停止新写入','不要删除历史审计记录','2026-12-09 20:59:59','90 天周期','回退演示内存'])assert.equal(doc.includes(text),true,text);
 });

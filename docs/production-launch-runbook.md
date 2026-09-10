@@ -1,198 +1,124 @@
-# 正式上线 Runbook（非技术用户版）
+# Penny's Club 生产资料录入 Runbook
 
-这份清单用于把当前匿名演示安全地推进到真实生产。必须按顺序完成；任何一步失败都停止，不能通过关闭校验、开放数据库公网或把密钥放进代码来绕过。
+更新时间：2026-09-10。本文档用于把会员资料和活动信息安全地录入正式环境。任何检查失败都停止；不能通过关闭校验、开放数据库公网、改用演示内存或把密钥放入前端来绕过。
 
-## 当前处于哪一步
+## 当前生产基线
 
-目前已经完成：
-
-- 私有 GitHub 仓库与 CloudBase 云托管匿名 staging，可访问健康检查、会员端和后台。
-- CloudBase PG 空测试库已人工执行 001、CloudBase 002 安全变体、003、040，并通过 090 只读终检。
-- 本地完成 CRM Excel 脱敏预检、导入审阅工作台、微信身份/后台会话/私有存储/受控导入等代码边界。
-- 已创建独立 CloudBase 标准版生产环境 `penny-club-prod`；尚未部署正式业务，也未配置任何生产 Secret。
-- 生产镜像默认采用 `cloudbase_production_bootstrap` 锁定档：只提供健康检查和未配置说明，不加载匿名演示页面，不启用 CRM 或数据库。
-
-目前仍未完成：正式自有域名、正式微信 AppID 登录、真实后台身份、004—011 后续迁移、私有对象存储、生产服务端 Secret、真实 CRM 写入。当前页面中的“正式写入”必须继续禁用。
-
-## 现在可做：部署生产初始化锁定服务
-
-这一步不需要数据库、环境 ID、API Key、AppSecret 或真实数据。它只用于确认 Git 构建、容器端口和 HTTPS 健康检查正常。
-
-在 `penny-club-prod` 的“云托管 → 新建服务 / Git 平台部署”页面逐项填写：
-
-| 页面字段 | 填写值 |
+| 项目 | 生产基线 |
 | --- | --- |
-| Git 平台 | GitHub（使用已授权账号） |
-| 仓库 | 私有仓库 `pennypenny258/penny-club-miniapp` |
-| 分支 | `main` |
-| 服务名 | `penny-club-prod-api` |
-| 构建目录 | 仓库根目录 `.`；页面留空代表根目录时可留空 |
-| 构建方式 | Dockerfile / 自动识别 Dockerfile |
-| Dockerfile 路径 | `Dockerfile`；已自动识别时无需另填构建命令 |
-| 自定义构建命令 | 留空 |
-| 启动命令 | 留空，使用镜像内的 `npm start` |
-| 服务端口 / 容器端口 | `3000` |
-| 健康检查 | HTTP `GET /healthz` |
+| CloudBase 环境 | `penny-club-prod-d6fcqtv83346494d` |
+| 云托管服务 | `penny-club-prod-api` |
+| 正式域名 | `api.pennysclub.com` |
+| PostgreSQL | `postgres-ezqm0sis`，高可用 |
+| 数据库迁移 | `014_production_intake_008_baseline` |
+| 迁移校验和 | `59c86bfe2ac730a4ded2e4ec8cb3cfe590367614c9fbba9dace126a0cd319ce2` |
+| 手工恢复点 | `pennys-club-pre-production-intake-20260910`，ID `87679197874494` |
+| 正式证书 | `ahFAKdsj`，到期 `2026-12-09 20:59:59` |
+| 小程序 AppID | `wx220dbae7ecd50002` |
 
-首次只填写 `config/cloudbase-production-bootstrap.env.example` 中的非敏感变量：
+版本 010 已通过条件灰度和合成数据 HTTP 验收。最新 CSV 浏览器兼容修复必须从提交 `7e92528` 或其后继提交构建新版本，再完成本页的最终验收。
 
-```text
-NODE_ENV=production
-DEPLOYMENT_PROFILE=cloudbase_production_bootstrap
-DEMO_DATA_ONLY=false
-DATA_REPOSITORY=production_bootstrap_disabled
-PORT=3000
-WECHAT_LOGIN_ENABLED=false
-FORMAL_ADMIN_AUTH_ENABLED=false
-FORMAL_AGENT_ROUTES_ENABLED=false
-FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false
-ADMIN_GOVERNANCE_ENABLED=false
-CLOUDBASE_CATALOG_READS_ENABLED=false
-CLOUDBASE_STORAGE_ENABLED=false
-GOVERNED_MEMBER_IMPORTS_ENABLED=false
-GOVERNED_MATERIALIZATION_ENABLED=false
-```
+## 上线前硬门禁
 
-如果部署日志在 `server.js` 初始化阶段退出，先确认运行版本已包含生产 bootstrap 修复提交，且每个值都没有引号、反引号或首尾空格。临时排障时可以仅保留 `NODE_ENV`、`DEPLOYMENT_PROFILE`、`DEMO_DATA_ONLY`、`DATA_REPOSITORY` 和 `PORT`；其余能力开关缺省也是关闭，不能改为 `true`。
+以下项目必须全部成立，才可以上传第一批真实资料：
 
-此时不要填写生产环境 ID、PG gateway API Key、`DATABASE_URL`、微信 AppSecret、会话/加密/HMAC 密钥、Bucket、飞书或支付凭据。CloudBase 平台自身可能自动注入的系统变量无需复制进仓库，也不要发送到聊天。
+- 全量自动化测试通过，且生产迁移离线检查通过。
+- 正式服务 `/healthz` 返回 200，档位为 `cloudbase_production_intake`。
+- `/api/production-admin/readiness` 返回 200，并明确：正式管理员必需、持久化开启、会员导入为治理私有批次、活动私密链接加密、无内存回退、无凭据暴露。
+- 正式域名 DNS、HTTPS 主机名和证书链正常。
+- `api.pennysclub.com` 是 CloudBase Web 安全域名；不使用 `*`。
+- 正式管理员浏览器登录成功，前端不能自报角色。
+- 一行合成 CSV 完成“预检 → 私有批次确认 → 受控回滚”，数据库无合成残留。
+- 合成活动完成“保存 → 公开投影 → 取消 → 私密链接清理”，取消后不再公开。
+- 临时合成管理员的会话、角色和身份绑定已经撤销，CloudBase 临时用户已经删除。
+- 新版本已经从条件灰度切换到 100%，旧版本不再承载业务流量。
 
-部署完成后的正确验收结果：
+## 最终发布顺序
 
-- `/healthz` 返回 HTTP 200，`deploymentProfile` 是 `cloudbase_production_bootstrap`，`anonymousDemoOnly` 与 `businessApisEnabled` 都是 `false`，`serviceState` 是 `production_bootstrap_not_configured`。
-- `/` 显示“生产初始化服务已启动”，并明确业务尚未配置。
-- `/admin/`、`/member/` 和业务 API 返回 503；这是正确的安全锁定结果，不是部署故障。
-- 若看到匿名会员、匿名 CRM 或演示后台，立即停止，不录入任何数据，并核对部署分支、镜像版本及以上变量。
+1. 推送最新 `main`，确认远端包含 CSV 文本上传修复。
+2. 更新 `penny-club-prod-api`，选择“发布版本后手动切换流量”。
+3. 使用查询条件 `pennys_canary=prod-intake-final` 做灰度，不直接切全量。
+4. 验证健康、readiness、正式录入 HTML/CSS/JS 和受保护 API。
+5. DNSPod 新增 CNAME：主机记录 `api`，记录值 `api.pennysclub.com.tcbaccess.tencentcloudbase.com`。
+6. 等待解析和 Web 安全域名生效，从 `https://api.pennysclub.com/production-admin/` 做浏览器合成登录与 CSV 演练。
+7. 完成合成数据清理和只读终检。
+8. 将新版本切到 100%，再次验证正式域名。
+9. 把 `https://api.pennysclub.com` 加入微信公众平台 `request` 合法域名，并完成开发者工具与真机检查。
 
-staging 服务如需继续展示匿名演示，必须在它自己的服务配置中显式保留 `NODE_ENV=staging`、`DEPLOYMENT_PROFILE=cloudbase_staging_demo`、`DEMO_DATA_ONLY=true`；生产与 staging 不得共用服务或变量组。
+## 正式管理员登录
 
-## 严格上线顺序
+- 使用 CloudBase 正式用户名/密码登录；密码只进入 CloudBase 身份接口，不保存在 Penny's Club 前端。
+- Penny's Club 服务端用外部 access token 建立短时、可撤销的管理员会话。
+- 角色和权限来自数据库身份绑定与 RBAC；任何请求头、Cookie 或表单中的自报角色无效。
+- 管理员会话与写操作不得出现在截图、日志、聊天或浏览器本地永久存储中。
+- 标准版暂不支持应用级 MFA，因此首版继续禁用批量公开名册、高风险自动物化和无 step-up 的页面回滚。
 
-### 1. 建立独立生产环境与恢复点（用户在 CloudBase 操作）
+## 第一批真实会员资料
 
-1. 保留现有 staging 作为匿名测试，不在其中录入真实数据。
-2. 新建独立生产环境和生产 PostgreSQL；确认区域、账单负责人、控制台管理员与告警联系人。
-3. 配置数据库备份与恢复演练，记录恢复负责人。不要开启数据库外网 IPv4。
+首批只允许 1–3 条已获得明确上传授权的记录。
 
-完成标志：生产与 staging 明确分离，生产空库可恢复，但还没有真实数据。
+### 上传前
 
-### 2. 准备正式域名（用户在域名服务商、备案与 CloudBase 操作）
+1. 从工作表复制最小必要字段到新的 CSV/XLSX；移除付款原文、聊天记录、内部备注、附件和无关列。
+2. 确认每位会员的使用目的、公开范围和留存期限；授权不明确的记录不上传。
+3. 原始文件只保存在受控设备，不通过聊天、邮件或截图传递。
 
-1. 申请项目方控制的 API 子域名并完成中国大陆所需备案。
-2. 在 CloudBase 云托管绑定自有域名并配置有效 HTTPS 证书。
-3. 保留默认 CloudBase 域名只作平台排障，不把它当正式小程序域名。
+### 预检与确认
 
-完成标志：自有 HTTPS 域名可访问 `/healthz`，证书有效。
+1. 登录 `https://api.pennysclub.com/production-admin/`，选择文件后先执行脱敏预检。
+2. 页面只应显示总行数、错误数、待复核数、缺手机号数和缺微信号数，不应显示原始行或敏感值。
+3. 错误行为 0 才能继续；重复、缺关键字段或授权不明时停止并线下核实。
+4. 勾选“私有批次”并确认；记录返回的批次 ID。
+5. 返回状态必须是 `private_review_pending`，`persistent=true`，`sensitiveValuesReturned=false`。
 
-### 3. 准备正式微信小程序身份（用户在微信公众平台操作）
+### 人工复核
 
-1. 使用项目方主体的正式小程序 AppID；不要使用测试号或仓库占位值。
-2. 在微信公众平台把正式 API 域名加入 `request` 合法域名。
-3. 生成或重置 AppSecret 后，只放入 CloudBase 云托管服务端环境变量；不要粘贴到聊天、GitHub、Dockerfile、小程序或截图。
-4. 此时仍保持 `WECHAT_LOGIN_ENABLED=false`，直到第 5 步身份迁移和集成测试完成。
+- 私有导入批次不会自动生成公开名册，也不会自动完成 CRM 主档物化。
+- 人工核对唯一身份、会籍来源、群状态和公开授权后，才可进入后续物化。
+- 首批不做批量公开名册发布；公开信息必须单独同意、单独审核。
+- 异常时由受控 SQL/服务角色执行回滚；HTTP 页面故意不提供无 step-up 的高风险一键回滚。
 
-完成标志：AppID 与合法域名已准备，AppSecret 仅由用户在云托管服务端保管。
+## 正式活动信息
 
-### 4. 执行后续数据库迁移（用户在 CloudBase SQL 控制台操作）
+1. 录入主题、线上/线下、等待开启/已完成、开始结束时间，以及线下活动地点。
+2. 会议链接、回放链接和纪要定位符只进入加密私有字段；列表只显示“是否可用”。
+3. 分享者和参会者只有在明确勾选公开展示同意后才能进入公开投影。
+4. 活动保存后分别核对后台列表和会员端公开投影。
+5. 取消活动时确认公开投影移除，私密会议/回放定位符被清理，并存在审计记录。
 
-先备份并确认仍是预期环境。已执行的 001、CloudBase 002、003、040 不得修改或重跑覆盖。之后按以下顺序逐包执行，每包都必须“迁移 → 版本记录 → 只读终检”：
+## 回滚与事件处理
 
-1. 004 → 140 → 190：微信 subject 与最小会籍投影。
-2. 005 → 250 → 260 → 290：私有资料存储元数据与私有 Bucket 准备。
-3. 006 → 340 → 390：受控会员导入批次。
-4. 007 → 440 → 490：人工复核后的分域物化与补偿。
-5. 008 → 540 → 590：正式后台会话与 RBAC。
-6. **停止在 008 基线**：009 → 640 → 690 已延期，不再通过 CloudBase SQL 编辑器重试。它是非 MVP 的管理员治理增强，不是 CRM/Agent 业务前置。
-7. 010：资料分类不属于当前 CRM + Agent MVP，延期。
-8. 现有 011 → 740 → 790 人为依赖 009，当前不得执行。后续将另做只依赖 006–008、并在官方支持通道验证过的 CRM MVP 前向包。
+出现以下任一情况立即停止继续上传：
 
-当前替代路线见 `docs/mvp-route-without-admin-governance.md`。两个生产环境已成功完成的 001–008 保持不动，不删除、不重跑；在新的 008 基线网关和 CRM 前向包完成离线验证前，生产继续保持 bootstrap 锁定态。
+- readiness 不是 200 或出现 `memoryFallback=true`；
+- 前端或 API 返回手机号、微信号、姓名原值、付款原文、私密链接、对象键或服务端凭据；
+- 批次状态不是 `private_review_pending`；
+- DNS/证书错误、浏览器 CORS 错误、管理员权限异常；
+- 审计缺失、幂等失效或重复写入。
 
-任何 SQL 报错都立即停止，不继续版本记录或下一包。`ExecutePGSql` 不能作为日常业务写入通道。
+处理顺序：停止新写入 → 记录批次/活动 ID → 撤销管理员会话 → 用受控 SQL/服务角色回滚 → 只读检查残留 → 修复并重新执行合成 canary。不要删除历史审计记录。
 
-完成标志：所有计划迁移的只读终检通过，匿名和普通登录数据库角色不能读取私有事实域。
+## 备份、证书与密钥
 
-### 5. 配置服务端身份与 PG gateway（用户在 CloudBase 云托管操作）
+- 手工恢复点已创建；自动全量与日志备份保留 7 天。CloudBase 托管数据库当前不能直接启用删除保护，因此删除环境或实例前必须再次核对恢复点。
+- 正式证书 `ahFAKdsj` 到期时间是 2026-12-09 20:59:59；到期前续签或替换，并重跑 DNS、TLS 与浏览器登录验收。
+- 生产 CloudBase API Key 为 90 天周期；在 2026-12-09 前轮换并验证旧 Key 失效。
+- 任何 AppSecret、API Key、数据库口令、连接串、会话密钥、加密/HMAC 密钥都不得进入 Git、聊天、截图、浏览器前端或小程序包。
+- 密钥轮换后必须更新管理员 subject 哈希并保留只含非敏感摘要的审计记录。
 
-只在云托管服务端填写 `config/cloudbase-postgres-gateway.production.env.example` 中的变量类别。核心包括：生产模式、CloudBase 环境标识、上海区域、已应用迁移版本、仅服务端 API Key、请求超时和响应大小限制。
+## 发布后每日最小检查
 
-- API Key / service role 只能存在 Node 服务端，浏览器和小程序绝不能获得。
-- 不设置 `DATABASE_URL`，不开放数据库公网，不让前端直连 PostgREST。
-- 先保持目录读取、微信登录、CRM 导入、物化和存储开关全部为 `false`。
-
-完成标志：缺少任一配置时服务拒绝启动；网关失败返回安全 503，绝不回退演示内存。
-
-### 6. 启用正式后台登录（用户配置身份，开发方验收）
-
-1. 配置外部已验证后台身份提供方、服务端会话哈希/加密密钥和 CloudBase PG 会话存储。
-2. 通过一次性预置 subject 哈希完成首位系统管理员引导。
-3. 分配运营、审核、审计角色并验证最小权限、近期再认证、幂等和职责分离。
-4. 演示角色头、Cookie 自报角色和前端传角色不得在生产生效。
-
-完成标志：正式后台会话可撤销，敏感操作有审计，未登录与越权请求均失败关闭。
-
-### 7. 启用微信登录与会籍门禁（用户配置 AppSecret，开发方验收）
-
-1. 配置 AppID、AppSecret、subject HMAC、会员会话加密/发行方/受众和撤销存储。
-2. 先用匿名测试微信账号完成 code 交换、用户主动手机号授权、CRM 唯一候选自动绑定、异常候选人工复核、会话过期和撤销测试。`wx.login` 不返回昵称、微信号或群状态；手机号只能由用户主动授权后单独验证。
-3. 每次会员访问都重新读取最小会籍投影；大群状态、CRM、付款复核和运营结论缺一不可。
-4. 验收通过后才设置 `WECHAT_LOGIN_ENABLED=true` 和会员身份提供方。
-
-当前代码已经准备好可注入的官方 `code2Session`、服务端 access token 与手机号 code 交换器，但没有注入运行时路由。未来 Secret 只在 CloudBase 云托管服务端设置：`WECHAT_MINIPROGRAM_APP_SECRET`、`WECHAT_IDENTITY_SUBJECT_HMAC_KEY`、`MEMBER_SESSION_ENCRYPTION_KEY`；不要把实际值写进 Git 部署配置模板。004/008 现阶段只覆盖最小 entitlement 读取与后台授权，CRM 精确匹配、绑定写入/重算和会员会话撤销适配器仍是启用前阻断项。
-
-完成标志：小程序不持有 AppSecret，未绑定或无有效会籍无法读取会员内容。
-
-正式会员绑定和 Agent HTTP 边界虽然已挂载，但此时仍保持 `FORMAL_MEMBER_BINDING_ROUTES_ENABLED=false`、`FORMAL_AGENT_ROUTES_ENABLED=false`。先验收 004、服务端微信/手机号证明、`MEMBER_BINDING_MODE=crm_exact_match_or_operator_review` 和 008 异常复核，再只打开绑定；绑定与会话验收通过后才允许打开 Agent。用户当前不要打开任何一个开关。
-
-### 8. 建立私有对象存储（用户在 CloudBase 存储控制台操作）
-
-1. 创建私有 Bucket，不开启公共读写。
-2. 配置仅 Node 服务端使用的存储身份、Bucket 标识和对象定位加密密钥。
-3. 上传、查看、下载都由 Node 先做会籍、发布状态和下载开关校验；不返回对象键或长期裸链接。
-4. PDF、Office、图片和视频预览/转码未接入前，页面继续显示“在线预览能力待配置”。
-
-完成标志：未授权访问、关闭下载和未发布资料都不能触碰私有对象。
-
-### 9. 小批量真实 CRM 导入（需要用户再次明确批准）
-
-1. 先使用脱敏副本走完“上传 → 预检 → 冲突处理 → 人工确认 → 补偿/回滚”演练。
-2. 再选一小批真实历史续费表；默认只预检，确认脱敏计数、到期月待补、重复和冲突。
-3. 由不同职责人员完成匹配复核和明确物化确认。
-4. 付款、OCR 和订单只生成候选；公开名册独立同意、独立审核；大群状态仍是最终门禁。
-5. 验收审计、幂等和回滚后，才扩大后续批次。
-
-完成标志：真实 CRM 持久化可追溯、可补偿，会员端不返回 CRM、付款、联系方式或内部备注。
-
-### 10. 发布前最终检查（用户与开发方共同完成）
-
-1. 关闭 demo 身份、开发域名和“不校验合法域名”。
-2. 运行全量测试、staging 检查、小程序检查和 `release:check`，所有阻断项必须为零。
-3. 在微信开发者工具、体验版和真机验证登录、会籍门禁、需求三种分发方式、私有下载和退出/撤销。
-4. 确认日志、错误页和审计响应不包含 Secret、手机号、微信号、付款原值、对象键或联系人。
-
-只有这一步全部通过，才提交微信审核和生产发布。
-
-## CRM 身份绑定 + Agent 统一 Readiness 与 Canary
-
-本地或未来受控后台可打开“上线检查”查看 `/api/admin/production-readiness`。该接口只返回布尔状态、阻断类别和匿名 canary 清单，不接收、保存或回显任何 Secret。
-
-必须严格按以下顺序推进，不能跳步：
-
-1. 生产环境保持非演示，Node 服务只使用 CloudBase 服务端网关。
-2. 只读确认 004 / 008 基线与未来 012；当前 012 **尚未应用**。
-3. 分别只读验收 binding RPC、match-token RPC 和 Agent RPC manifests；当前这些证据**尚未验证**，Agent RPC 也未部署。
-4. 用户仅在 CloudBase 云托管服务端配置微信 AppSecret、subject HMAC、会话加密、持久撤销和正式后台会话类别；页面没有 Secret 输入框。当前微信服务端 Secret **缺失或未验收**。
-5. 使用匿名测试账号完成页面列出的 canary；每项必须有人工记录，任何失败都停止。
-6. 最后、单独打开正式绑定与 Agent 路由；不能与迁移、凭据配置或 canary 同时变更。
-
-当前正确状态是 `blocked_safe`：`cloudWritesEnabled=false`、`formalRoutesEnabled=false`、`memoryFallback=false`、`demoFallback=false`。微信、RPC 或数据库失败都必须返回安全 503；manifest 不匹配必须拒绝启动；canary 失败必须保持路由关闭。
-
-匿名 canary 至少覆盖：code2Session 不泄露 session_key、明确手机号授权、唯一有效 CRM 自动绑定、异常匹配进入人工队列、会话撤销、Agent 人工终审、3-of-4 与 14 天去重、三段式申请及运营代转、依赖异常无回退。canary 不得使用真实 CRM、联系人、付款或附件。
+- `/healthz` 和 readiness 正常；
+- 最近失败日志不含敏感原值；
+- 没有未知管理员、长期会话或越权角色；
+- 待复核批次有负责人，没有绕过人工复核的物化；
+- 公开活动和名册只包含经授权字段；
+- 备份任务成功，证书与 API Key 未接近到期。
 
 ## 绝不能做
 
-- 不把 AppSecret、API Key、数据库密码、连接串或证书发到聊天、GitHub、前端或小程序。
-- 不开启数据库公网 IPv4来绕过后端网关，不把 `service_role` 给浏览器。
-- 不在匿名 staging 或本地演示导入真实 CRM、订单、名册或附件。
-- 不在网关失败时回退到内存并宣称写入成功。
-- 不让规则或模型自动发布需求、定向推送或释放联系人。
+- 不在 staging、本地演示、测试脚本、聊天、截图或 Git 中放真实 CRM、订单、名册或附件。
+- 不开放数据库公网，不让浏览器或小程序直连数据库或持有 service role。
+- 不在依赖失败时回退演示内存并宣称写入成功。
+- 不让模型或规则自动发布会员、需求、联系人或高风险匹配结果。
+- 不为赶进度关闭合法域名、CORS、身份、RBAC、审计、幂等或加密校验。
