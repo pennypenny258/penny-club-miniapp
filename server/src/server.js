@@ -201,9 +201,10 @@ function serveStatic(req, res) {
 }
 
 const server = http.createServer(async (req, res) => {
+  const requestPathname = new URL(req.url, `http://${req.headers.host || 'localhost'}`).pathname;
   if (handleProductionBootstrap(req,res,{deployment,repository})) return;
   if (await productionIntakeHttp(req,res)) return;
-  if(deployment.productionIntakeOnly){if(req.url.startsWith('/production-admin/')&&serveStatic(req,res))return;if(req.url!=='/healthz')return json(res,404,{error:'该生产服务仅开放受控资料录入接口'})}
+  if(deployment.productionIntakeOnly){if(requestPathname.startsWith('/production-admin/')&&serveStatic(req,res))return;if(requestPathname!=='/healthz')return json(res,404,{error:'该生产服务仅开放受控资料录入接口'})}
   if (await formalMemberBindingHttp(req,res)) return;
   if (await formalAgentHttp(req,res)) return;
   if (req.method === 'OPTIONS') return json(res, 204, {});
