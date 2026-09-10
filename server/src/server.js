@@ -196,7 +196,13 @@ function serveStatic(req, res) {
   const ext = path.extname(file); const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript' };
   const cacheControl = req.url.startsWith('/admin/')||productionAdminRoute ? 'no-store, max-age=0' : 'no-cache';
   const headers={ 'content-type': `${types[ext] || 'text/plain'}; charset=utf-8`, 'cache-control': cacheControl,'x-content-type-options':'nosniff','referrer-policy':'no-referrer' };
-  if(productionAdminRoute)headers['content-security-policy']="default-src 'self'; connect-src 'self' https://penny-club-prod-d6fcqtv83346494d.api.tcloudbasegateway.com; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+  if(productionAdminRoute){
+    headers['content-security-policy']="default-src 'self'; connect-src 'self' https://penny-club-prod-d6fcqtv83346494d.api.tcloudbasegateway.com; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+    headers['x-frame-options']='DENY';
+    headers['permissions-policy']='camera=(), microphone=(), geolocation=()';
+    headers['cross-origin-resource-policy']='same-origin';
+    headers['strict-transport-security']='max-age=31536000; includeSubDomains';
+  }
   res.writeHead(200, headers); fs.createReadStream(file).pipe(res); return true;
 }
 

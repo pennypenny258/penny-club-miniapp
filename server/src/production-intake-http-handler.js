@@ -18,5 +18,5 @@ function createProductionIntakeHttpHandler({config,sessionService,crmCoordinator
   }
 }
 function body(req,maxBytes){return new Promise((resolve,reject)=>{let raw='',large=false;req.on('data',chunk=>{if(large)return;raw+=chunk;if(Buffer.byteLength(raw,'utf8')>maxBytes){large=true;raw=''}});req.on('end',()=>{if(large)return reject(Object.assign(new Error('请求体过大'),{statusCode:413,code:'REQUEST_TOO_LARGE'}));try{resolve(raw?JSON.parse(raw):{})}catch{reject(Object.assign(new Error('JSON 格式无效'),{statusCode:400,code:'INVALID_JSON'}))}});req.on('error',()=>reject(Object.assign(new Error('请求读取失败'),{statusCode:400,code:'REQUEST_READ_FAILED'})))})}
-function respond(res,status,value){res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','referrer-policy':'no-referrer'});res.end(JSON.stringify(value))}
+function respond(res,status,value){res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff','x-frame-options':'DENY','referrer-policy':'no-referrer','permissions-policy':'camera=(), microphone=(), geolocation=()','cross-origin-resource-policy':'same-origin','strict-transport-security':'max-age=31536000; includeSubDomains'});res.end(JSON.stringify(value))}
 module.exports={createProductionIntakeHttpHandler};
