@@ -32,9 +32,9 @@ test('small batch canary never picks members automatically or writes CRM facts',
 test('CRM persistence activation is exact, server-only and fail closed',()=>{
   assert.equal(resolveCrmPersistentImportConfig({}).enabled,false);
   assert.throws(()=>resolveCrmPersistentImportConfig({GOVERNED_MEMBER_IMPORTS_ENABLED:'true'}),/配置不完整/);
-  const key=Buffer.alloc(32,5).toString('base64'),production={CRM_PERSISTENT_IMPORTS_ENABLED:'true',GOVERNED_MEMBER_IMPORTS_ENABLED:'true',GOVERNED_MATERIALIZATION_ENABLED:'true',NODE_ENV:'production',DATA_REPOSITORY:'cloudbase_gateway',CLOUDBASE_PG_ENV_ID:'fixture-env',CLOUDBASE_PG_SERVER_API_KEY:'fixture-server-only',CLOUDBASE_PG_REGION:'ap-shanghai',CRM_PERSISTENCE_MIGRATION_APPLIED:'011_crm_master_import',GOVERNED_IMPORT_ENCRYPTION_KEY:key,MEMBER_MATCH_HMAC_KEY:key,GOVERNED_IMPORT_ADMIN_PROVIDER:'external_verified_session',GOVERNED_IMPORT_AUDIT_STORE:'cloudbase_pg',GOVERNED_IMPORT_IDEMPOTENCY_STORE:'cloudbase_pg'};
+  const key=Buffer.alloc(32,5).toString('base64'),production={CRM_PERSISTENT_IMPORTS_ENABLED:'true',GOVERNED_MEMBER_IMPORTS_ENABLED:'true',GOVERNED_MATERIALIZATION_ENABLED:'true',NODE_ENV:'production',DATA_REPOSITORY:'cloudbase_gateway',CLOUDBASE_PG_ENV_ID:'fixture-env',CLOUDBASE_PG_SERVER_API_KEY:'fixture-server-only',CLOUDBASE_PG_REGION:'ap-shanghai',CRM_PERSISTENCE_MIGRATION_APPLIED:'014_production_intake_008_baseline',GOVERNED_IMPORT_ENCRYPTION_KEY:key,MEMBER_MATCH_HMAC_KEY:key,GOVERNED_IMPORT_ADMIN_PROVIDER:'external_verified_session',GOVERNED_IMPORT_AUDIT_STORE:'cloudbase_pg',GOVERNED_IMPORT_IDEMPOTENCY_STORE:'cloudbase_pg'};
   assert.throws(()=>resolveCrmPersistentImportConfig({...production,DEMO_DATA_ONLY:'true'}),/匿名 staging/);
-  assert.throws(()=>resolveCrmPersistentImportConfig({...production,CRM_PERSISTENCE_MIGRATION_APPLIED:'009_admin_governance'}),/011_crm_master_import/);
+  assert.throws(()=>resolveCrmPersistentImportConfig({...production,CRM_PERSISTENCE_MIGRATION_APPLIED:'009_admin_governance'}),/014_production_intake_008_baseline/);
   const config=resolveCrmPersistentImportConfig(production);assert.equal(config.safeSummary.memoryFallback,false);assert.equal(JSON.stringify(config.safeSummary).includes('fixture-server-only'),false);
 });
 

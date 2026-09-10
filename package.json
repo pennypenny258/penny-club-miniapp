@@ -20,6 +20,7 @@
     "db:cloudbase-admin-auth:check": "node scripts/cloudbase-admin-auth-check.js",
     "db:cloudbase-admin-governance:check": "node scripts/cloudbase-admin-governance-check.js",
     "db:cloudbase-crm-master-import:check": "node scripts/cloudbase-crm-master-import-check.js",
+    "db:cloudbase-production-intake:check": "node scripts/cloudbase-production-intake-check.js",
     "db:cloudbase-member-binding-rpc:check": "node scripts/cloudbase-member-binding-rpc-check.js",
     "db:cloudbase-agent-rpc:check": "node scripts/cloudbase-agent-rpc-check.js",
     "release:check": "node scripts/release-check.js"

@@ -31,7 +31,17 @@ const { resolveFormalAgentHttpConfig } = require('./agent-http-config');
 const { createFormalAgentHttpHandler } = require('./agent-http-handler');
 const { resolveFormalMemberBindingHttpConfig } = require('./member-binding-http-config');
 const { createFormalMemberBindingHttpHandler } = require('./member-binding-http-handler');
-const { buildCrmSpreadsheetPreview, buildCrmSmallBatchCanaryPreview, resolveCrmPersistentImportConfig } = require('./persistence/crm-import-pipeline');
+const { buildCrmSpreadsheetPreview, buildCrmSmallBatchCanaryPreview, resolveCrmPersistentImportConfig, CrmPersistentImportCoordinator } = require('./persistence/crm-import-pipeline');
+const { resolveGovernedImportConfig } = require('./persistence/governed-import-config');
+const { GovernedImportProtector, GovernedImportService } = require('./persistence/governed-import-service');
+const { CloudBaseGovernedImportRepository } = require('./persistence/governed-import-repository');
+const { resolveFormalAdminAuthConfig } = require('./auth/admin-auth-config');
+const { FormalAdminSessionService } = require('./auth/admin-session-service');
+const { CloudBaseAdminSessionRepository } = require('./auth/admin-session-repository');
+const { CloudBaseAdminIdentityVerifier } = require('./auth/cloudbase-admin-identity-verifier');
+const { ActivityPrivateProtector, CloudBaseProductionActivityRepository, ProductionActivityService } = require('./persistence/production-activity');
+const { resolveProductionIntakeHttpConfig } = require('./production-intake-http-config');
+const { createProductionIntakeHttpHandler } = require('./production-intake-http-handler');
 const { resolveCrmMatchTokenPreparationConfig } = require('./persistence/crm-match-token-provisioning');
 const { resolveCloudBaseCrmMatchTokenTransportConfig } = require('./persistence/cloudbase-crm-match-token-transport');
 const { resolveCloudBaseAgentRpcConfig } = require('./persistence/cloudbase-agent-rpc-transport');
@@ -43,6 +53,9 @@ const persistenceConfig = resolvePersistenceConfig(process.env);
 assertRuntimeRepositoryReady(persistenceConfig);
 const repository = createRepository({config:persistenceConfig,store});
 const crmPersistentImportConfig = resolveCrmPersistentImportConfig(process.env);
+const governedImportConfig = resolveGovernedImportConfig(process.env);
+const formalAdminAuthConfig = resolveFormalAdminAuthConfig(process.env);
+const productionIntakeHttpConfig = resolveProductionIntakeHttpConfig(process.env);
 const crmMatchTokenPreparationConfig = resolveCrmMatchTokenPreparationConfig(process.env);
 const crmMatchTokenTransportConfig = resolveCloudBaseCrmMatchTokenTransportConfig(process.env);
 const agentRpcConfig = resolveCloudBaseAgentRpcConfig(process.env);
@@ -60,6 +73,16 @@ const formalAgentHttpConfig = resolveFormalAgentHttpConfig(process.env);
 const formalMemberBindingHttpConfig = resolveFormalMemberBindingHttpConfig(process.env);
 const formalAgentHttp = createFormalAgentHttpHandler({config:formalAgentHttpConfig});
 const formalMemberBindingHttp = createFormalMemberBindingHttpHandler({config:formalMemberBindingHttpConfig});
+let productionIntakeHttp=createProductionIntakeHttpHandler({config:productionIntakeHttpConfig});
+if(productionIntakeHttpConfig.enabled){
+  const adminRepository=new CloudBaseAdminSessionRepository({config:persistenceConfig});
+  const adminSessionService=new FormalAdminSessionService({config:formalAdminAuthConfig,identityVerifier:new CloudBaseAdminIdentityVerifier({config:persistenceConfig}),repository:adminRepository});
+  const governedRepository=new CloudBaseGovernedImportRepository({config:persistenceConfig});
+  const governedService=new GovernedImportService({repository:governedRepository,protector:new GovernedImportProtector(governedImportConfig),adminResolver:request=>adminSessionService.resolveRequest(request)});
+  const crmCoordinator=new CrmPersistentImportCoordinator({config:crmPersistentImportConfig,stagingService:governedService});
+  const activityService=new ProductionActivityService({repository:new CloudBaseProductionActivityRepository({config:persistenceConfig}),protector:new ActivityPrivateProtector(process.env.ACTIVITY_PRIVATE_LINK_ENCRYPTION_KEY),adminSessionService});
+  productionIntakeHttp=createProductionIntakeHttpHandler({config:productionIntakeHttpConfig,sessionService:adminSessionService,crmCoordinator,activityService,previewBuilder:buildCrmSpreadsheetPreview});
+}
 
 function json(res, status, body) {
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': '*' });
@@ -166,16 +189,21 @@ function recordMembershipDecision(user, actor) {
 function serveStatic(req, res) {
   const pathname = new URL(req.url, 'http://localhost').pathname;
   const memberRoute = pathname.startsWith('/member/');
-  const relative = memberRoute ? (pathname === '/member/' ? 'member.html' : pathname.slice('/member/'.length)) : (pathname === '/admin/' ? 'index.html' : pathname.slice('/admin/'.length));
+  const productionAdminRoute=pathname.startsWith('/production-admin/');
+  const relative = productionAdminRoute?(pathname==='/production-admin/'?'production-admin.html':pathname.slice('/production-admin/'.length)):memberRoute ? (pathname === '/member/' ? 'member.html' : pathname.slice('/member/'.length)) : (pathname === '/admin/' ? 'index.html' : pathname.slice('/admin/'.length));
   const file = path.normalize(path.join(publicDir, relative));
   if (!file.startsWith(publicDir) || !fs.existsSync(file)) return false;
   const ext = path.extname(file); const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript' };
-  const cacheControl = req.url.startsWith('/admin/') ? 'no-store, max-age=0' : 'no-cache';
-  res.writeHead(200, { 'content-type': `${types[ext] || 'text/plain'}; charset=utf-8`, 'cache-control': cacheControl }); fs.createReadStream(file).pipe(res); return true;
+  const cacheControl = req.url.startsWith('/admin/')||productionAdminRoute ? 'no-store, max-age=0' : 'no-cache';
+  const headers={ 'content-type': `${types[ext] || 'text/plain'}; charset=utf-8`, 'cache-control': cacheControl,'x-content-type-options':'nosniff','referrer-policy':'no-referrer' };
+  if(productionAdminRoute)headers['content-security-policy']="default-src 'self'; connect-src 'self' https://penny-club-prod-d6fcqtv83346494d.api.tcloudbasegateway.com; img-src 'self' data:; style-src 'self'; script-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+  res.writeHead(200, headers); fs.createReadStream(file).pipe(res); return true;
 }
 
 const server = http.createServer(async (req, res) => {
   if (handleProductionBootstrap(req,res,{deployment,repository})) return;
+  if (await productionIntakeHttp(req,res)) return;
+  if(deployment.productionIntakeOnly){if(req.url.startsWith('/production-admin/')&&serveStatic(req,res))return;if(req.url!=='/healthz')return json(res,404,{error:'该生产服务仅开放受控资料录入接口'})}
   if (await formalMemberBindingHttp(req,res)) return;
   if (await formalAgentHttp(req,res)) return;
   if (req.method === 'OPTIONS') return json(res, 204, {});

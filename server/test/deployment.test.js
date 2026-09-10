@@ -53,6 +53,12 @@ test('production bootstrap requires an explicit locked non-demo configuration',(
   assert.throws(()=>validateDeploymentEnvironment({...environment,DATABASE_URL:'postgresql:\/\/fixture'}),/DATABASE_URL/);
 });
 
+test('production intake profile enables only the governed production surface',()=>{
+  const environment={NODE_ENV:'production',DEPLOYMENT_PROFILE:'cloudbase_production_intake',DEMO_DATA_ONLY:'false',DATA_REPOSITORY:'cloudbase_gateway',CLOUDBASE_PG_MIGRATIONS_APPLIED:'014_production_intake_008_baseline',PRODUCTION_INTAKE_ROUTES_ENABLED:'true',FORMAL_ADMIN_AUTH_ENABLED:'true',GOVERNED_MEMBER_IMPORTS_ENABLED:'true',CRM_PERSISTENT_IMPORTS_ENABLED:'true',ADMIN_AUTH_MODE:'external_session',ADMIN_IDENTITY_PROVIDER:'external_verified'};
+  assert.deepEqual(validateDeploymentEnvironment(environment),{profile:'cloudbase_production_intake',anonymousDemoOnly:false,bootstrapOnly:false,businessApisEnabled:true,productionIntakeOnly:true});
+  for(const changed of [{NODE_ENV:'test'},{DEMO_DATA_ONLY:'true'},{DATA_REPOSITORY:'memory_demo'},{CLOUDBASE_PG_MIGRATIONS_APPLIED:'008_admin_session_rbac'},{PRODUCTION_INTAKE_ROUTES_ENABLED:'false'},{FORMAL_ADMIN_AUTH_ENABLED:'false'},{GOVERNED_MEMBER_IMPORTS_ENABLED:'false'},{CRM_PERSISTENT_IMPORTS_ENABLED:'false'},{ADMIN_AUTH_MODE:'demo_header'},{ADMIN_IDENTITY_PROVIDER:'demo_identity'}])assert.throws(()=>validateDeploymentEnvironment({...environment,...changed}));
+});
+
 test('CloudBase staging profile rejects local storage and real integrations', () => {
   assert.throws(() => validateDeploymentEnvironment({
     DEPLOYMENT_PROFILE: 'cloudbase_staging_demo',

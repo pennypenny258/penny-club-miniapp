@@ -6,7 +6,7 @@ const path=require('node:path');
 
 const migrationsDirectory=path.join(__dirname,'..','..','db','migrations');
 function checksum(text){return crypto.createHash('sha256').update(text).digest('hex')}
-function loadMigrations(directory=migrationsDirectory){return fs.readdirSync(directory).filter(name=>/^\d{3}_[a-z0-9_]+\.sql$/.test(name)).sort().map(name=>{const sql=fs.readFileSync(path.join(directory,name),'utf8');return {version:name.replace(/\.sql$/,''),name,sql,checksum:checksum(sql)}})}
+function loadMigrations(directory=migrationsDirectory){return fs.readdirSync(directory).filter(name=>/^\d{3}_[a-z0-9_]+\.sql$/.test(name)&&!/_\d{3}_baseline\.sql$/.test(name)).sort().map(name=>{const sql=fs.readFileSync(path.join(directory,name),'utf8');return {version:name.replace(/\.sql$/,''),name,sql,checksum:checksum(sql)}})}
 async function runMigrations({client,migrations=loadMigrations()}){
   if(!client||typeof client.query!=='function')throw new Error('迁移执行需要已授权的服务端 PostgreSQL 客户端');
   await client.query('BEGIN');

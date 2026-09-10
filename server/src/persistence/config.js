@@ -6,6 +6,7 @@ const REQUIRED_MIGRATION = '002_security';
 // 009 is a deferred governance enhancement. The MVP gateway contract is built
 // only on the CloudBase schema that has been verified through 008.
 const CLOUDBASE_GATEWAY_REQUIRED_MIGRATION = '008_admin_session_rbac';
+const PRODUCTION_INTAKE_MIGRATION = '014_production_intake_008_baseline';
 const CLOUDBASE_GATEWAY_REGION = 'ap-shanghai';
 
 function hasValue(value){return Boolean(String(value||'').trim())}
@@ -15,7 +16,7 @@ function booleanFlag(value,fallback,name){if(value===undefined||value===null||va
 function resolvePersistenceConfig(environment=process.env){
   const mode=String(environment.DATA_REPOSITORY||'memory_demo').trim();
   const databaseUrlPresent=hasValue(environment.DATABASE_URL);
-  const cloudbaseConfigPresent=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE'].some(key=>hasValue(environment[key]))
+  const cloudbaseConfigPresent=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_APIKEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE'].some(key=>hasValue(environment[key]))
     || (hasValue(environment.CLOUDBASE_CATALOG_READS_ENABLED)&&environment.CLOUDBASE_CATALOG_READS_ENABLED!=='false');
   if(!['memory_demo','postgres','cloudbase_gateway','production_bootstrap_disabled'].includes(mode))throw new Error('DATA_REPOSITORY 只允许 memory_demo、postgres、cloudbase_gateway 或 production_bootstrap_disabled');
   if(mode==='production_bootstrap_disabled'){
@@ -50,27 +51,31 @@ function resolvePersistenceConfig(environment=process.env){
 }
 
 function resolveCloudBaseGatewayConfig(environment){
-  const required=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE'];
+  const serverApiKey=String(environment.CLOUDBASE_PG_SERVER_API_KEY||environment.CLOUDBASE_APIKEY||'').trim();
+  const required=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_REGION','CLOUDBASE_PG_MIGRATIONS_APPLIED','CLOUDBASE_PG_CREDENTIAL_PURPOSE'];
   const missing=required.filter(key=>!hasValue(environment[key]));
+  if(!serverApiKey)missing.push('CLOUDBASE_PG_SERVER_API_KEY/CLOUDBASE_APIKEY');
   if(missing.length)throw new Error(`CloudBase PostgreSQL 网关配置不完整：缺少 ${missing.join(', ')}`);
   if(environment.NODE_ENV!=='production')throw new Error('CloudBase PostgreSQL 真实数据模式只允许在 NODE_ENV=production 启用');
   if(environment.DEPLOYMENT_PROFILE==='cloudbase_staging_demo'||environment.DEMO_DATA_ONLY==='true')throw new Error('匿名 staging 禁止启用 CloudBase PostgreSQL 真实数据模式');
   const envId=String(environment.CLOUDBASE_PG_ENV_ID).trim();
   if(!/^[a-z][a-z0-9-]{2,62}$/i.test(envId))throw new Error('CLOUDBASE_PG_ENV_ID 格式无效');
   if(environment.CLOUDBASE_PG_REGION!==CLOUDBASE_GATEWAY_REGION)throw new Error(`CLOUDBASE_PG_REGION 当前只允许 ${CLOUDBASE_GATEWAY_REGION}`);
-  if(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED!==CLOUDBASE_GATEWAY_REQUIRED_MIGRATION)throw new Error(`CloudBase PostgreSQL 迁移版本必须为 ${CLOUDBASE_GATEWAY_REQUIRED_MIGRATION}`);
+  const expectedMigration=environment.DEPLOYMENT_PROFILE==='cloudbase_production_intake'?PRODUCTION_INTAKE_MIGRATION:CLOUDBASE_GATEWAY_REQUIRED_MIGRATION;
+  if(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED!==expectedMigration)throw new Error(`CloudBase PostgreSQL 迁移版本必须为 ${expectedMigration}`);
   if(hasValue(environment.DATABASE_URL))throw new Error('cloudbase_gateway 模式禁止同时配置 DATABASE_URL，避免混合访问路径');
   if(environment.CLOUDBASE_PG_CREDENTIAL_PURPOSE!=='server_runtime')throw new Error('CloudBase 网关运行时只允许 server_runtime 凭据用途');
   const timeoutMs=integer(environment.CLOUDBASE_PG_TIMEOUT_MS,5000,1000,15000,'CLOUDBASE_PG_TIMEOUT_MS');
   const maxResponseBytes=integer(environment.CLOUDBASE_PG_MAX_RESPONSE_BYTES,1048576,1024,5242880,'CLOUDBASE_PG_MAX_RESPONSE_BYTES');
   const catalogReadsEnabled=booleanFlag(environment.CLOUDBASE_CATALOG_READS_ENABLED,false,'CLOUDBASE_CATALOG_READS_ENABLED');
-  return {mode:'cloudbase_gateway',enabled:true,runtimeEnvironment:'production',envId,region:CLOUDBASE_GATEWAY_REGION,origin:`https://${envId}.api.tcloudbasegateway.com`,serverApiKey:String(environment.CLOUDBASE_PG_SERVER_API_KEY).trim(),timeoutMs,maxResponseBytes,catalogReadsEnabled,safeSummary:{mode:'cloudbase_gateway',persistent:true,transport:'https_postgrest',serverOnly:true,allowlistedReadViews:true,catalogReadsEnabled,credentialsExposed:false}};
+  return {mode:'cloudbase_gateway',enabled:true,runtimeEnvironment:'production',deploymentProfile:environment.DEPLOYMENT_PROFILE||null,migration:expectedMigration,envId,region:CLOUDBASE_GATEWAY_REGION,origin:`https://${envId}.api.tcloudbasegateway.com`,serverApiKey,timeoutMs,maxResponseBytes,catalogReadsEnabled,safeSummary:{mode:'cloudbase_gateway',persistent:true,transport:'https_postgrest',serverOnly:true,platformManagedApiKey:hasValue(environment.CLOUDBASE_APIKEY)&&!hasValue(environment.CLOUDBASE_PG_SERVER_API_KEY),allowlistedReadViews:true,catalogReadsEnabled,credentialsExposed:false}};
 }
 
 function assertRuntimeRepositoryReady(config){
   if(config.mode==='memory_demo'||config.mode==='production_bootstrap_disabled')return true;
+  if(config.mode==='cloudbase_gateway'&&config.deploymentProfile==='cloudbase_production_intake'&&config.migration===PRODUCTION_INTAKE_MIGRATION)return true;
   const error=new Error('PostgreSQL 持久化仅完成仓库契约与离线验证；业务 API 尚未逐域接线，拒绝以真实数据模式启动');
   error.code=config.mode==='cloudbase_gateway'?'CLOUDBASE_GATEWAY_RUNTIME_NOT_ACTIVATED':'POSTGRES_RUNTIME_PHASE1_NOT_ACTIVATED';throw error;
 }
 
-module.exports={PRIVATE_SCHEMA,APPLICATION_ROLE,REQUIRED_MIGRATION,CLOUDBASE_GATEWAY_REQUIRED_MIGRATION,CLOUDBASE_GATEWAY_REGION,resolvePersistenceConfig,assertRuntimeRepositoryReady};
+module.exports={PRIVATE_SCHEMA,APPLICATION_ROLE,REQUIRED_MIGRATION,CLOUDBASE_GATEWAY_REQUIRED_MIGRATION,PRODUCTION_INTAKE_MIGRATION,CLOUDBASE_GATEWAY_REGION,resolvePersistenceConfig,assertRuntimeRepositoryReady};

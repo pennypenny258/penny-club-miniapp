@@ -2,9 +2,10 @@
 
 const CLOUDBASE_STAGING_PROFILE = 'cloudbase_staging_demo';
 const CLOUDBASE_PRODUCTION_BOOTSTRAP_PROFILE = 'cloudbase_production_bootstrap';
+const CLOUDBASE_PRODUCTION_INTAKE_PROFILE = 'cloudbase_production_intake';
 
 const PRODUCTION_BOOTSTRAP_FORBIDDEN_VALUES = Object.freeze([
-  'DATABASE_URL','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_ENV_ID',
+  'DATABASE_URL','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_APIKEY','CLOUDBASE_PG_ENV_ID',
   'CLOUDBASE_STORAGE_BUCKET_ID','OBJECT_LOCATOR_ENCRYPTION_KEY',
   'GOVERNED_IMPORT_ENCRYPTION_KEY','MEMBER_MATCH_HMAC_KEY',
   'CRM_MATCH_TOKEN_ACTIVE_HMAC_KEY','CRM_MATCH_TOKEN_PREVIOUS_HMAC_KEY',
@@ -38,6 +39,13 @@ function parsePort(value) {
 
 function validateDeploymentEnvironment(environment = process.env) {
   const profile = String(environment.DEPLOYMENT_PROFILE || 'local_development').trim();
+  if(profile===CLOUDBASE_PRODUCTION_INTAKE_PROFILE){
+    if(environment.NODE_ENV!=='production'||environment.DEMO_DATA_ONLY!=='false'||environment.DATA_REPOSITORY!=='cloudbase_gateway')throw new Error('生产录入档必须是 production、非演示且使用 cloudbase_gateway');
+    if(environment.CLOUDBASE_PG_MIGRATIONS_APPLIED!=='014_production_intake_008_baseline')throw new Error('生产录入档必须锁定 014_production_intake_008_baseline');
+    if(environment.PRODUCTION_INTAKE_ROUTES_ENABLED!=='true'||environment.FORMAL_ADMIN_AUTH_ENABLED!=='true'||environment.GOVERNED_MEMBER_IMPORTS_ENABLED!=='true'||environment.CRM_PERSISTENT_IMPORTS_ENABLED!=='true')throw new Error('生产录入档必须显式启用正式认证、受控导入与录入路由');
+    if(environment.ADMIN_AUTH_MODE==='demo_header'||String(environment.ADMIN_IDENTITY_PROVIDER||'').includes('demo'))throw new Error('生产录入档禁止演示后台身份');
+    return {profile,anonymousDemoOnly:false,bootstrapOnly:false,businessApisEnabled:true,productionIntakeOnly:true};
+  }
   if (profile === CLOUDBASE_PRODUCTION_BOOTSTRAP_PROFILE) {
     if (environment.NODE_ENV !== 'production') throw new Error('生产初始化档必须设置 NODE_ENV=production');
     if (environment.DEMO_DATA_ONLY !== 'false') throw new Error('生产初始化档必须显式设置 DEMO_DATA_ONLY=false');
@@ -61,6 +69,7 @@ function validateDeploymentEnvironment(environment = process.env) {
     'FEISHU_APP_SECRET',
     'DATABASE_URL',
     'CLOUDBASE_PG_SERVER_API_KEY',
+    'CLOUDBASE_APIKEY',
     'CLOUDBASE_PG_ENV_ID',
     'CLOUDBASE_CATALOG_READS_ENABLED',
     'CLOUDBASE_STORAGE_ENABLED',
@@ -118,4 +127,4 @@ function validateDeploymentEnvironment(environment = process.env) {
   return { profile, anonymousDemoOnly: true };
 }
 
-module.exports = { CLOUDBASE_STAGING_PROFILE, CLOUDBASE_PRODUCTION_BOOTSTRAP_PROFILE, parsePort, validateDeploymentEnvironment };
+module.exports = { CLOUDBASE_STAGING_PROFILE, CLOUDBASE_PRODUCTION_BOOTSTRAP_PROFILE, CLOUDBASE_PRODUCTION_INTAKE_PROFILE, parsePort, validateDeploymentEnvironment };

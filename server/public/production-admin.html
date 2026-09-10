@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Penny’s Club 安全资料录入</title><link rel="stylesheet" href="production-admin.css"></head>
+<body>
+  <main>
+    <header><p class="eyebrow">PENNY’S CLUB · PRODUCTION</p><h1>安全资料录入</h1><p>仅用于正式管理员。会员表格进入私有待复核批次；会议与回放链接在服务端加密；不会回退到演示内存。</p><div id="status" class="status">尚未登录</div></header>
+    <section id="login-panel"><h2>管理员登录</h2><label>CloudBase 用户名<input id="username" autocomplete="username" maxlength="48"></label><label>密码<input id="password" type="password" autocomplete="current-password"></label><button id="login">登录</button><p class="hint">密码只发送到 CloudBase 身份认证接口，不经过 Penny’s Club 服务器，也不会保存在本页面。</p></section>
+    <div id="workspace" hidden>
+      <section><h2>会员资料受控导入</h2><label>Excel / CSV 文件<input id="crm-file" type="file" accept=".xlsx,.csv"></label><button id="preview-crm">先做脱敏预检</button><pre id="crm-result">尚未选择文件</pre><label class="check"><input id="confirm-private" type="checkbox">我确认将当前文件创建为私有待复核批次；不会自动公开或激活会籍</label><button id="confirm-crm" disabled>确认创建私有批次</button></section>
+      <section><h2>活动信息</h2><div class="grid"><label>主题<input id="activity-title" maxlength="160"></label><label>形式<select id="activity-format"><option value="online">线上</option><option value="offline">线下</option></select></label><label>状态<select id="activity-status"><option value="waiting">等待开启</option><option value="completed">已完成</option><option value="draft">草稿</option><option value="cancelled">已取消</option></select></label><label>开始时间<input id="activity-start" type="datetime-local"></label><label>结束时间<input id="activity-end" type="datetime-local"></label><label>城市<input id="activity-city" maxlength="80"></label><label class="wide">地点<input id="activity-venue" maxlength="200"></label><label class="wide">公开说明<textarea id="activity-description" maxlength="2000"></textarea></label><label class="wide">会议链接（仅线上等待开启）<input id="meeting-link" type="url" placeholder="https://"></label><label class="wide">回放链接（仅已完成活动）<input id="replay-link" type="url" placeholder="https://"></label><label class="wide">分享者（每行：公开称呼 | 角色 | 机构）<textarea id="speakers"></textarea></label><label class="wide">参会者（每行：公开称呼 | 角色 | 机构）<textarea id="participants"></textarea></label></div><label class="check"><input id="people-consent" type="checkbox">我确认以上分享者和参会者信息已获得对外展示授权，且不含手机号、邮箱或微信号</label><button id="save-activity">保存活动</button><pre id="activity-result"></pre><div id="activities"></div></section>
+    </div>
+  </main><script src="production-admin.js"></script>
+</body></html>

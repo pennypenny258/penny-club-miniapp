@@ -4,7 +4,7 @@ const {parseSpreadsheetUpload}=require('../spreadsheet-import');
 const {previewCrmVerificationCsv,crmVerificationFields}=require('../imports');
 const {buildCrmSmallBatchCanaryPlan}=require('../crm-small-batch-canary');
 
-const REQUIRED_CRM_MIGRATION='011_crm_master_import';
+const REQUIRED_CRM_MIGRATION='014_production_intake_008_baseline';
 const MAX_CRM_ROWS=10000;
 function present(value){return Boolean(String(value||'').trim())}
 function safeIssueCode(message,prefix){return `${prefix}_${crypto.createHash('sha256').update(String(message)).digest('hex').slice(0,12)}`}
@@ -20,8 +20,9 @@ function resolveCrmPersistentImportConfig(environment=process.env){
   }
   if(environment.NODE_ENV!=='production'||environment.DATA_REPOSITORY!=='cloudbase_gateway')throw new Error('CRM 持久化导入只允许生产 CloudBase HTTPS 后端网关模式');
   if(environment.DEPLOYMENT_PROFILE==='cloudbase_staging_demo'||environment.DEMO_DATA_ONLY==='true')throw new Error('匿名 staging 禁止启用 CRM 持久化导入');
-  const required=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_SERVER_API_KEY','CLOUDBASE_PG_REGION','CRM_PERSISTENCE_MIGRATION_APPLIED','GOVERNED_IMPORT_ENCRYPTION_KEY','MEMBER_MATCH_HMAC_KEY','GOVERNED_IMPORT_ADMIN_PROVIDER','GOVERNED_IMPORT_AUDIT_STORE','GOVERNED_IMPORT_IDEMPOTENCY_STORE'];
+  const required=['CLOUDBASE_PG_ENV_ID','CLOUDBASE_PG_REGION','CRM_PERSISTENCE_MIGRATION_APPLIED','GOVERNED_IMPORT_ENCRYPTION_KEY','MEMBER_MATCH_HMAC_KEY','GOVERNED_IMPORT_ADMIN_PROVIDER','GOVERNED_IMPORT_AUDIT_STORE','GOVERNED_IMPORT_IDEMPOTENCY_STORE'];
   const missing=required.filter(key=>!present(environment[key]));if(missing.length)throw new Error(`CRM 持久化导入配置不完整：缺少 ${missing.join(', ')}`);
+  if(!present(environment.CLOUDBASE_PG_SERVER_API_KEY)&&!present(environment.CLOUDBASE_APIKEY))throw new Error('CRM 持久化导入配置不完整：缺少 CloudBase 服务端 API Key');
   if(environment.CRM_PERSISTENCE_MIGRATION_APPLIED!==REQUIRED_CRM_MIGRATION)throw new Error(`CRM 持久化导入要求迁移版本 ${REQUIRED_CRM_MIGRATION}`);
   if(environment.GOVERNED_MEMBER_IMPORTS_ENABLED!=='true'||environment.GOVERNED_MATERIALIZATION_ENABLED!=='true')throw new Error('CRM 持久化导入必须同时启用受控批次与分域物化');
   if(environment.GOVERNED_IMPORT_ADMIN_PROVIDER!=='external_verified_session')throw new Error('CRM 持久化导入必须使用真实服务端后台会话');

@@ -1,0 +1,21 @@
+{
+  "purpose": "production member and activity intake built directly on the verified 008 baseline",
+  "baseline": "008_admin_session_rbac",
+  "incompatibleRecordedMigrations": [
+    "009_admin_governance",
+    "010_split_resource_sections",
+    "011_crm_master_import",
+    "012_member_binding_rpc",
+    "013_agent_gateway_rpc"
+  ],
+  "executionOrder": [
+    "server/db/migrations/014_production_intake_008_baseline.sql",
+    "server/db/cloudbase-pg-console/840_record_production_intake_version.sql",
+    "server/db/cloudbase-pg-console/890_verify_production_intake_readonly.sql"
+  ],
+  "checksums": {
+    "server/db/migrations/014_production_intake_008_baseline.sql": "59c86bfe2ac730a4ded2e4ec8cb3cfe590367614c9fbba9dace126a0cd319ce2",
+    "server/db/cloudbase-pg-console/840_record_production_intake_version.sql": "a1968f2f04aaf0748f5b5b6a27a9abd25407355a71497c70615c58109a1ebe25",
+    "server/db/cloudbase-pg-console/890_verify_production_intake_readonly.sql": "015f4c036915c298b0e443bf45474d0799167d7c0c772f5e62d603f987c79f1c"
+  }
+}
