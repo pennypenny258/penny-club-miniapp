@@ -1,24 +1,24 @@
 # Penny's Club 当前进度与下一阶段看板
 
-更新时间：2026-09-10。本文档是生产资料录入上线的事实入口；只记录已经验证的能力，不把“代码存在”写成“生产可用”。
+更新时间：2026-09-11。本文档是生产资料录入上线的事实入口；只记录已经验证的能力，不把“代码存在”写成“生产可用”。
 
 ## 一句话状态
 
-生产 PostgreSQL、正式管理员身份、受控会员导入、活动录入、审计、备份和正式 HTTPS 域名已经打通并完成全合成数据演练。当前只剩两项发布收尾：把最新 CSV 浏览器修复推送并发布为新版本，以及完成 DNSPod 的 `api` CNAME（需要账号微信扫码验证）。两项完成前仍不要上传真实资料。
+生产 PostgreSQL、正式管理员身份、受控会员导入、活动录入、审计、备份和正式 HTTPS 域名已打通并完成全合成数据演练。最新安全修复已推送至 GitHub，`api.pennysclub.com` 的 CNAME 和证书主机名已验证。但 CloudBase 标准版已于 2026-09-10 23:59:59 到期，生产资源当前处于“临时隔离”；恢复套餐并完成新版本灰度验收前，仍严禁上传真实资料。
 
 ## 已验证完成
 
 | 范围 | 生产状态 | 已取得的证据 |
 | --- | --- | --- |
 | 自动化测试 | 通过 | 362/362 通过；CSV 与 XLSX 浏览器载荷、生产浏览器安全响应头分别有回归测试 |
-| 生产数据库 | 可用 | CloudBase PostgreSQL `postgres-ezqm0sis`，高可用运行；014 迁移已登记且校验和锁定 |
+| 生产数据库 | 配置已验证，当前隔离 | CloudBase PostgreSQL `postgres-ezqm0sis`，高可用配置；014 迁移已登记且校验和锁定；套餐恢复前不视为可用 |
 | 恢复点 | 可用 | 手工备份 `pennys-club-pre-production-intake-20260910`（ID `87679197874494`）已完成；自动全量和日志备份保留 7 天 |
 | 正式管理员 | 可用 | CloudBase 用户名/密码登录、服务端会话、撤销、RBAC 与审计已通过合成管理员验收 |
 | 会员导入 | 可用但尚未放真实数据 | CSV 的“预检 → 私有批次确认 → 人工复核 → 可控回滚”通过 HTTP 与数据库双重合成演练；不会自动生成公开名册 |
 | 活动录入 | 可用但尚未放真实数据 | 线上/线下、等待/完成、公开投影、私密会议/回放链接加密、取消与清理通过合成演练 |
 | 数据泄露边界 | 通过 | HTTP 响应不返回联系方式原值、私密链接、对象定位符、服务端密钥或原始导入行；失败不回退内存 |
 | 正式服务 canary | 版本 010 通过 | `/healthz`、readiness、正式录入页与受保护 API 均符合 production intake 档位；当前仍由条件灰度承载 |
-| 正式域名 | CloudBase 侧完成 | `api.pennysclub.com` 归属校验与证书校验通过，免费证书 `ahFAKdsj` 已签发，全路径路由指向 `penny-club-prod-api` |
+| 正式域名 | DNS/TLS 已完成 | `api.pennysclub.com` CNAME 已指向 CloudBase；免费证书 `ahFAKdsj` 链和主机名验证通过；套餐隔离期间 HTTP 业务响应不可作为上线证据 |
 | 浏览器安全来源 | 已配置 | 只将 `api.pennysclub.com` 加入 Web 安全域名；没有通配符，CloudBase 提示约 10 分钟生效 |
 | 微信小程序身份 | 已准备 | 正式 AppID `wx220dbae7ecd50002`；生产域名完成公网后还需在微信公众平台加入 `request` 合法域名并真机验收 |
 
@@ -54,11 +54,11 @@
 4. CSV HTTP 预检和确认成功，批次进入 `private_review_pending`，响应未返回敏感值；随后完成受控回滚。
 5. 最终密钥轮换后，管理员身份绑定使用新 subject 哈希，轮换审计记录存在。
 
-## 当前只剩的 P0 收尾
+## 当前剩余的 P0 收尾
 
-1. 将提交 `31fba4d` 推送到 GitHub `main`，从它构建 011（或下一顺序版本）。
-2. 新版本先保持手动灰度，仅允许 `pennys_canary=prod-intake-final` 条件命中；重跑健康、readiness、静态资源、登录和 CSV UI 演练。
-3. 在 DNSPod 新增 `api` CNAME → `api.pennysclub.com.tcbaccess.tencentcloudbase.com`，等待解析生效并验证证书主机名。
+1. 恢复 CloudBase 生产环境套餐；当前标准版续费页显示 179.10 元/月，任何付费必须由账号所有者确认并完成。
+2. 从已推送的 GitHub `main` 提交 `1a9b537` 构建 011（或下一顺序版本）。
+3. 新版本先保持手动灰度，仅允许 `pennys_canary=prod-intake-final` 条件命中；重跑健康、readiness、静态资源、登录和 CSV UI 演练。
 4. 从 `https://api.pennysclub.com/production-admin/` 完成一次合成管理员浏览器登录和合成 CSV 预检/确认/回滚。
 5. 验收通过后把新版本切到 100%，删除临时合成管理员、撤销临时角色/会话并清除本机临时密钥。
 6. 把 `https://api.pennysclub.com` 加入微信公众平台 `request` 合法域名，完成开发者工具和真机检查。

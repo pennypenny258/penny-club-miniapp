@@ -1,6 +1,6 @@
 # Penny's Club 生产资料录入 Runbook
 
-更新时间：2026-09-10。本文档用于把会员资料和活动信息安全地录入正式环境。任何检查失败都停止；不能通过关闭校验、开放数据库公网、改用演示内存或把密钥放入前端来绕过。
+更新时间：2026-09-11。本文档用于把会员资料和活动信息安全地录入正式环境。任何检查失败都停止；不能通过关闭校验、开放数据库公网、改用演示内存或把密钥放入前端来绕过。
 
 ## 当前生产基线
 
@@ -16,12 +16,13 @@
 | 正式证书 | `ahFAKdsj`，到期 `2026-12-09 20:59:59` |
 | 小程序 AppID | `wx220dbae7ecd50002` |
 
-版本 010 已通过条件灰度和合成数据 HTTP 验收。最新 CSV 浏览器兼容修复与生产响应头加固必须从提交 `31fba4d` 或其后继提交构建新版本，再完成本页的最终验收。
+版本 010 已通过条件灰度和合成数据 HTTP 验收。最新 CSV 浏览器兼容修复与生产响应头加固已作为提交 `1a9b537` 推送至 GitHub `main`，但尚未构建新版本。`api.pennysclub.com` 的 CNAME 和 TLS 证书主机名已验证。CloudBase 标准版于 2026-09-10 23:59:59 到期后将资源临时隔离；套餐恢复并重跑全部门禁前，不得上传真实数据。
 
 ## 上线前硬门禁
 
 以下项目必须全部成立，才可以上传第一批真实资料：
 
+- CloudBase 套餐在有效期内，环境和资源未处于隔离、冻结或欠费状态。
 - 全量自动化测试通过，且生产迁移离线检查通过。
 - 正式服务 `/healthz` 返回 200，档位为 `cloudbase_production_intake`。
 - `/api/production-admin/readiness` 返回 200，并明确：正式管理员必需、持久化开启、会员导入为治理私有批次、活动私密链接加密、无内存回退、无凭据暴露。
@@ -35,12 +36,12 @@
 
 ## 最终发布顺序
 
-1. 推送最新 `main`，确认远端包含 CSV 文本上传修复和生产页面/API 安全响应头。
-2. 更新 `penny-club-prod-api`，选择“发布版本后手动切换流量”。
-3. 使用查询条件 `pennys_canary=prod-intake-final` 做灰度，不直接切全量。
-4. 验证健康、readiness、正式录入 HTML/CSS/JS 和受保护 API。
-5. DNSPod 新增 CNAME：主机记录 `api`，记录值 `api.pennysclub.com.tcbaccess.tencentcloudbase.com`。
-6. 等待解析和 Web 安全域名生效，从 `https://api.pennysclub.com/production-admin/` 做浏览器合成登录与 CSV 演练。
+1. 确认 CloudBase 套餐已恢复，环境隔离提示消失，数据库和云托管可正常访问。
+2. 确认 GitHub `main` 至少包含 `1a9b537`，且包含 CSV 文本上传修复和生产页面/API 安全响应头。
+3. 更新 `penny-club-prod-api`，选择“发布版本后手动切换流量”。
+4. 使用查询条件 `pennys_canary=prod-intake-final` 做灰度，不直接切全量。
+5. 验证健康、readiness、正式录入 HTML/CSS/JS 和受保护 API。
+6. 从 `https://api.pennysclub.com/production-admin/` 做浏览器合成登录与 CSV 演练。
 7. 完成合成数据清理和只读终检。
 8. 将新版本切到 100%，再次验证正式域名。
 9. 把 `https://api.pennysclub.com` 加入微信公众平台 `request` 合法域名，并完成开发者工具与真机检查。
