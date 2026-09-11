@@ -16,7 +16,7 @@
 在开发者工具左侧打开 `config/runtime-target.js`，把唯一的目标值从：
 
 ```js
-module.exports = 'local';
+module.exports = 'production';
 ```
 
 改为：
@@ -27,7 +27,7 @@ module.exports = 'cloudbase-staging';
 
 保存并重新编译。该目标只会解析到 `config/runtime-profiles.js` 中的白名单配置，未知目标会直接报错；它被明确标记为 `cloudbase_staging`、`testOnly: true` 和匿名演示模式，不会冒充生产。
 
-需要回到本机服务时，再把这一行改回 `local`。本机地址仍为 `http://localhost:3000`。
+需要回到本机服务时，可临时把这一行改为 `local`。两种联调结束后都必须恢复 `production`再提交；本机地址仍为 `http://localhost:3000`。
 
 ## 3. 仅在开发者工具临时关闭域名校验
 
@@ -36,7 +36,7 @@ module.exports = 'cloudbase-staging';
 3. 开发联调期间勾选“不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书”。不同版本的工具文字可能略有差异。
 4. 重新编译，打开“动态、活动、Agents、我的”检查匿名演示数据是否能加载。
 
-仓库中的 `project.config.json` 当前也保留 `urlCheck: false`，发布预检会持续拦截它。这个开关只适用于开发者工具临时调试，不能代表真机、体验版、审核版或正式版已经具备合法域名配置。
+仓库中的 `project.config.json` 保持 `urlCheck: true`。开发者工具会把本机偏好写入忽略提交的 `project.private.config.json`；只允许在该本地文件中临时关闭。开发者工具的本地开关不能代表真机、体验版、审核版或正式版已经具备合法域名配置。
 
 ## 4. 当前联调身份与能力边界
 
@@ -51,4 +51,4 @@ module.exports = 'cloudbase-staging';
 
 开发者工具和真机匿名验收可使用 `test-api.pennysclub.com`，并应在微信公众平台“小程序后台 → 开发 → 开发设置 → 服务器域名”中将它登记为 `request` 合法域名。绑定的免费 HTTPS 证书有效期至 2026-12-08，到期前需续期或替换并重新验证。
 
-正式上线时仍需准备独立生产域名（例如 `api.pennysclub.com`），创建生产运行配置、关闭演示模式并通过 `npm run release:check`。不要为了绕过微信域名校验长期依赖开发者工具的“不校验合法域名”选项。
+正式档位已锁定 `https://api.pennysclub.com`、关闭演示模式并启用正式会员绑定；正式上传前仍必须运行 `npm run release:check`，并在微信公众平台配置 request 合法域名。不要为了绕过微信域名校验长期依赖开发者工具的“不校验合法域名”选项。

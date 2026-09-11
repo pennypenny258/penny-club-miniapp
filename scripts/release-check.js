@@ -4,8 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const root = path.join(__dirname, '..');
 const project = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/project.config.json'), 'utf8'));
-const runtimeFiles = ['runtime.js', 'runtime-target.js', 'runtime-profiles.js'];
-const runtimeText = runtimeFiles.map(file => fs.readFileSync(path.join(root, 'miniprogram/config', file), 'utf8')).join('\n');
+const runtime = require('../miniprogram/config/runtime');
 const {resolvePersistenceConfig,assertRuntimeRepositoryReady}=require('../server/src/persistence/config');
 const {resolveWechatIdentityConfig}=require('../server/src/auth/wechat-config');
 const {resolvePrivateObjectStorageConfig}=require('../server/src/storage/config');
@@ -17,10 +16,11 @@ const issues = [];
 
 if (!project.appid || project.appid === 'touristappid') issues.push('AppID 仍为游客/占位配置');
 if (project.setting?.urlCheck === false) issues.push('项目仍关闭服务器域名校验');
-if (/environment:\s*['"]development['"]/.test(runtimeText)) issues.push('运行环境仍为 development');
-if (/demoMode:\s*true/.test(runtimeText)) issues.push('演示身份模式仍开启');
-if (/http:\/\//.test(runtimeText)) issues.push('API 仍包含非 HTTPS 地址');
-if (/cloudbase-staging/.test(runtimeText)) issues.push('仍包含仅供联调的 CloudBase staging 档位');
+if (runtime.target !== 'production' || runtime.environment !== 'production') issues.push('当前小程序运行目标不是 production');
+if (runtime.demoMode !== false || runtime.testOnly !== false) issues.push('演示/测试身份模式仍开启');
+if (!runtime.apiBase.startsWith('https://')) issues.push('正式 API 不是 HTTPS 地址');
+if (runtime.apiBase !== 'https://api.pennysclub.com') issues.push('正式 API 未锁定为 api.pennysclub.com');
+if (runtime.identityMode !== 'formal_member_binding' || runtime.formalBindingEnabled !== true) issues.push('正式会员身份绑定尚未启用');
 
 if (process.env.NODE_ENV === 'production') {
   if (process.env.DEPLOYMENT_PROFILE === 'cloudbase_staging_demo') issues.push('生产发布仍使用 CloudBase 匿名测试配置');

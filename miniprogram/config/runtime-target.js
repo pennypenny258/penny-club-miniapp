@@ -1,3 +1,3 @@
-// 微信开发者工具联调时只修改这一行：local 或 cloudbase-staging。
-// 这里没有 production 选项；正式发布必须使用独立配置并通过 release:check。
-module.exports = 'cloudbase-staging';
+// 仓库默认值必须是可发布的正式档位；不得把联调档位上传为正式小程序。
+// 本机或 CloudBase staging 联调时可临时改为 local / cloudbase-staging，提交前必须改回 production。
+module.exports = 'production';

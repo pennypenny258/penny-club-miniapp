@@ -21,6 +21,16 @@ test('CloudBase staging is HTTPS, test-only and never presented as production', 
   assert.notEqual(staging.environment, 'production');
 });
 
+test('production mini-program is pinned to the formal HTTPS API and member binding', () => {
+  const production = resolveRuntime('production');
+  assert.equal(production.apiBase, 'https://api.pennysclub.com');
+  assert.equal(production.environment, 'production');
+  assert.equal(production.testOnly, false);
+  assert.equal(production.demoMode, false);
+  assert.equal(production.identityMode, 'formal_member_binding');
+  assert.equal(production.formalBindingEnabled, true);
+});
+
 test('mini-program request layer has no cookie, custom demo identity header or fake login', () => {
   const root = path.join(__dirname, '..', '..');
   const api = fs.readFileSync(path.join(root, 'miniprogram/utils/api.js'), 'utf8');
@@ -30,7 +40,7 @@ test('mini-program request layer has no cookie, custom demo identity header or f
 });
 
 test('unknown runtime targets fail closed', () => {
-  assert.throws(() => resolveRuntime('production'), /未知的小程序运行目标/);
+  assert.throws(() => resolveRuntime('unknown-target'), /未知的小程序运行目标/);
 });
 
 test('mini-program Agent form uses three required fields and two member-facing modes',()=>{

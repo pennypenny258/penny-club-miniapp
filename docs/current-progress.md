@@ -10,7 +10,7 @@
 
 | 范围 | 生产状态 | 已取得的证据 |
 | --- | --- | --- |
-| 自动化测试 | 通过 | 362/362 通过；CSV 与 XLSX 浏览器载荷、生产浏览器安全响应头分别有回归测试 |
+| 自动化测试 | 通过 | 363/363 通过；CSV 与 XLSX 浏览器载荷、生产浏览器安全响应头和小程序生产档位均有回归测试 |
 | 生产数据库 | 配置已验证，当前隔离 | CloudBase PostgreSQL `postgres-ezqm0sis`，高可用配置；014 迁移已登记且校验和锁定；套餐恢复前不视为可用 |
 | 恢复点 | 可用 | 手工备份 `pennys-club-pre-production-intake-20260910`（ID `87679197874494`）已完成；自动全量和日志备份保留 7 天 |
 | 正式管理员 | 可用 | CloudBase 用户名/密码登录、服务端会话、撤销、RBAC 与审计已通过合成管理员验收 |
@@ -20,6 +20,7 @@
 | 正式服务 canary | 版本 010 通过 | `/healthz`、readiness、正式录入页与受保护 API 均符合 production intake 档位；当前仍由条件灰度承载 |
 | 正式域名 | DNS/TLS 已完成 | `api.pennysclub.com` CNAME 已指向 CloudBase；免费证书 `ahFAKdsj` 链和主机名验证通过；套餐隔离期间 HTTP 业务响应不可作为上线证据 |
 | 浏览器安全来源 | 已配置 | 只将 `api.pennysclub.com` 加入 Web 安全域名；没有通配符，CloudBase 提示约 10 分钟生效 |
+| 小程序发布基线 | 离线门禁通过 | 默认 target 为 production，只指向 `https://api.pennysclub.com`，开启 URL 校验、关闭 demo/test 身份并启用正式会员绑定；`release:check` 通过 |
 | 微信小程序身份 | 已准备 | 正式 AppID `wx220dbae7ecd50002`；生产域名完成公网后还需在微信公众平台加入 `request` 合法域名并真机验收 |
 
 ## 生产资料闭环的设计状态

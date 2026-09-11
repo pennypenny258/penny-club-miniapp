@@ -46,6 +46,6 @@
 
 再访问 `/member/` 和 `/admin/`，应为匿名演示页面。
 
-最后将 `miniprogram/config/runtime-profiles.js` 中 `cloudbase-staging.apiBase` 替换成该测试服务的 HTTPS 根域名；保留 `runtime-target.js` 的 `cloudbase-staging`。开发者工具保存后点“普通编译”。这只用于开发者工具，不可用于体验版或正式发布。
+`cloudbase-staging.apiBase` 已锁定为测试域名。只在开发者工具联调期间临时把 `runtime-target.js` 改为 `cloudbase-staging`；联调后必须恢复 `production`，且不得把 staging target 上传为体验版或正式版。
 
 如果 healthz 是 production bootstrap、503、或任何非匿名演示状态，停止测试，不修改正式服务，先核对服务名与以上五项变量。

@@ -5,7 +5,7 @@
   "compileType": "miniprogram",
   "setting": {
     "es6": true,
-    "urlCheck": false,
+    "urlCheck": true,
     "postcss": false,
     "compileWorklet": false,
     "minified": false,
