@@ -21,6 +21,7 @@
     "db:cloudbase-admin-governance:check": "node scripts/cloudbase-admin-governance-check.js",
     "db:cloudbase-crm-master-import:check": "node scripts/cloudbase-crm-master-import-check.js",
     "db:cloudbase-production-intake:check": "node scripts/cloudbase-production-intake-check.js",
+    "db:restore-rehearsal": "ALLOW_SYNTHETIC_RESTORE_REHEARSAL=1 bash scripts/postgres-restore-rehearsal.sh",
     "db:cloudbase-member-binding-rpc:check": "node scripts/cloudbase-member-binding-rpc-check.js",
     "db:cloudbase-agent-rpc:check": "node scripts/cloudbase-agent-rpc-check.js",
     "release:check": "node scripts/release-check.js"

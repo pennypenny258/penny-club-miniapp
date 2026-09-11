@@ -1,6 +1,8 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const doc=fs.readFileSync(path.join(__dirname,'..','..','docs','production-launch-runbook.md'),'utf8');
+const root=path.join(__dirname,'..','..');
+const doc=fs.readFileSync(path.join(root,'docs','production-launch-runbook.md'),'utf8');
+const rehearsal=fs.readFileSync(path.join(root,'scripts','postgres-restore-rehearsal.sh'),'utf8');
 
 test('production runbook records the verified production intake baseline',()=>{
   for(const text of ['penny-club-prod-d6fcqtv83346494d','penny-club-prod-api','api.pennysclub.com','014_production_intake_008_baseline','87679197874494','ahFAKdsj','wx220dbae7ecd50002'])assert.equal(doc.includes(text),true,text);
@@ -18,4 +20,10 @@ test('production runbook keeps identity, secrets and protected data server-side'
 
 test('production runbook defines fail-closed incident and maintenance controls',()=>{
   for(const text of ['memoryFallback=true','停止新写入','不要删除历史审计记录','2026-12-09 20:59:59','90 天周期','回退演示内存'])assert.equal(doc.includes(text),true,text);
+});
+
+test('restore rehearsal is local-only, synthetic, fail-closed and verifies security after restore',()=>{
+  for(const text of ['ALLOW_SYNTHETIC_RESTORE_REHEARSAL','--tmpfs','pg_dump','pg_restore','source_manifest','target_manifest','audit_append_only'])assert.equal(rehearsal.includes(text),true,text);
+  assert.equal(/DATABASE_URL|CLOUDBASE_PG_SERVER_API_KEY/.test(rehearsal),false);
+  for(const text of ['云快照克隆恢复','87652892369237','RPO','RTO'])assert.equal(doc.includes(text),true,text);
 });
